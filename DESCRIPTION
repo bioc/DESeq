@@ -1,0 +1,15 @@
+Package: DESeq
+Version: 0.6.0
+Date: 2009-12-27
+Title: Digital gene expresion analysis based on the negative binomial distribution
+Author: Simon Anders, EMBL Heidelberg <sanders@fs.tum.de>
+Maintainer: Simon Anders <sanders@fs.tum.de>
+Imports: genefilter, locfit, geneplotter, MASS, methods
+Depends: Biobase, locfit
+Suggests: 
+Description: Estimate variance-mean dependence in digital gene expression (e.g.,
+   RNA-Seq) data and test for differential expression based on a model using 
+   the negative binomial distribut
+License: GPL (>= 3)
+URL: http://www.bioconductor.org/
+

@@ -1,0 +1,558 @@
+%\VignetteIndexEntry{Analysing RNA-Seq data with the "DESeq" package}
+%\VignettePackage{DESeq}
+
+\documentclass{article}
+
+\usepackage{Sweave}
+\usepackage[a4paper]{geometry}
+\usepackage{hyperref,graphicx}
+
+\SweaveOpts{keep.source=TRUE,eps=FALSE,include=FALSE,width=4,height=4.5} 
+\newcommand{\Robject}[1]{\texttt{#1}}
+\newcommand{\Rpackage}[1]{\textit{#1}}
+\newcommand{\Rclass}[1]{\textit{#1}}
+\newcommand{\Rfunction}[1]{{\small\texttt{#1}}}
+
+\author{Simon Anders\\[1em]European Molecular Biology Laboratory (EMBL),\\ Heidelberg, Germany\\[1em]
+\texttt{sanders@fs.tum.de}}
+
+\title{\textsf{\textbf{Analysing RNA-Seq data with the ``DESeq'' package}}}
+
+\date{2009-12-27}
+
+\begin{document}
+
+\maketitle
+
+
+\section{Quick start}
+
+This first section just shows the commands necessary for an analysis at a glance. For detailed
+explanations, read on.
+
+The \Rpackage{DESeq} package expects count data, as obtained, e.g., from an RNA-Seq or other 
+high-throughput sequencing (HTS) experiment, in form of a matrix of integer values. Each column
+corresponds to a sample, i.e., typically one run on the sequencer. Each row corresponds to entity 
+for which you count hits, e.g., a gene, an exon, a binding region in ChIP-Seq, a window in CNV-Seq,
+or the like.
+
+\emph{Important:} Each column must stem from an independent experiment or sample. If you spread sample material
+from one experiment over several ``lanes'' of the sequencer in order to get better coverage, you must
+sum up the counts from the lanes to get a single column. Failing to do so will result in incorrect
+variance estimation and overly optimistic $p$ values
+
+Let's say you have the counts in a matrix \texttt{countTable}, and you further have a factor \texttt{conds}
+with as many element as there are columns in \texttt{countTable} that indicates treatment groups.
+
+Then, the minimal set of commands to run a full analysis is:
+<<eval=FALSE>>=
+library( DESeq )
+cds <- newCountDataSet( countsTable, conds )
+cds <- estimateSizeFactors( cds )
+cds <- estimateVarianceFunctions( cds )
+res <- nbinomTestForContrast( cds, "condA", "condB" )
+@
+The last command tests for differential expression between the conditions labelled \texttt{"condA"}
+and \texttt{"condB"}. It returns a data frame with $p$ values (raw and adjusted), mean values,
+fold changes, and other useful information.
+
+\section{Preparations}
+
+As example data, we use Tag-Seq data from an experiment studying certain
+human tissue culture samples, which P.\ Bertone kindly permitted us to use. As this
+data is not yet published, we have obscured annotation data and will, for now, stay some
+vague concerning its properties. We will amend this once Bertone and coworkers have published
+their paper.
+
+They extracted mRNA from the cultures and sequenced only the 3' end of the transcripts (SAGE, also known as Tag-Seq) with
+an Illumina GenomeAnalyzer, one lane per sample. They got from 6.8 to 13.6 mio reads from each lane,
+which they assigned to genes. They were able to assign 30\% to 50\% of the tags unambiguously to
+annotated genes and produced a table that gives these counts. A version of this table is distributed with the \Rpackage{DESeq} package as example data in a file called
+``TagSeqExample.tab''. The
+\Rfunction{system.file} function allows to see where R has stored the file when the package was
+installed:
+
+<<>>=
+library( DESeq )
+exampleFile = system.file( "TagSeqExample.tab", package="DESeq" )
+exampleFile
+@
+
+It is a tab-delimited file with column headers in then first line. We read it in with
+<<>>=
+countsTable <- read.delim( exampleFile, header=TRUE )
+head( countsTable )
+@
+
+The first column is the gene ID. (We have shuffled the table rows, removed the RefSeq IDs and replaced them with dummy identifiers of the form ``Gene\_\textit{NNNNN}''.) We use the gene IDs for the row names and remove the gene ID column:
+<<>>=
+rownames( countsTable ) <- countsTable$Gene
+countsTable <- countsTable[ , -1 ]
+@ % $
+
+We are now left with six columns, referring to the six samples. The first four (labelled
+``T1a'', ``T1b'', ``T2'', and ``T3'') are from tumorigenic tissue, the last two (labelled
+``N1'', ``N2'') are from non-tumorigenic tissue and served as control. 
+
+We code this information in the following vector, which assigns each sample a ``condition'':
+<<>>=
+conds <- c( "T", "T", "T", "T2", "N", "N" )
+@
+where ``T'' stands for ``tumorigenic'' and ``N'' for non-tumorigenic. The first three samples
+had a very similar histopathological phenotype, while the fourth sample was atypical, and
+hence, we assign it another condition (``T2'').
+
+
+We can now instantiate a \Rclass{CountDataSet}, which is the central data structure in the
+\Rpackage{DESeq} package:
+<<>>=
+cds <- newCountDataSet( countsTable, conds )
+@
+
+The \Rclass{CountDataSet} class is derived from the \Rclass{eSet} class and so shares all
+features of this standard Bioconductor class. Furthermore, accessors are provided for its data slots.
+For example, the counts can be accessed with the \Rfunction{counts} function.
+<<>>=
+head( counts(cds) )
+@
+
+One feature derived from the \Rclass{eSet} class is the possibility to subset. We can remove
+the first sample (i.e., the first column) as follows
+<<>>=
+cds <- cds[ ,-1 ]
+@
+We remove it because samples T1a and T1b were derived from the same individuum and are hence
+more similar than the others. In order to keep the present example simple we continue without
+sample T1a.
+
+As first processing step, we have to estimate the effective library size. This information is called the ``size
+factors'' vector, as the package only needs to now the relative library sizes. So, if a
+non-differentially expressed gene produces twice as many counts in one sample than in another, the size
+factor for this sample should be twice the large as the one for the other sample. You could simply use
+the actual total numbers of reads and assign them to the \Robject{cds} object:
+<<>>=
+libsizes <- c( T1a=6843583, T1b=7604834, T2=13625570, T3=12291910,
+   N1=12872125, N2=10502656 )
+sizeFactors(cds) <- libsizes[-1]
+@
+
+However, one seems to get better results by estimating the size factors from the count data using
+robust linear regression (with the \Rfunction{rlm} function from the \Rpackage{MASS} package). The
+function \Rfunction{estimateSizeFactors} does that for you.
+<<>>=
+cds <- estimateSizeFactors( cds )
+sizeFactors( cds )
+@
+
+\section{Variance estimation}
+
+The crucial processing step is the estimation of the variance functions, which
+estimate, for each condition, how the variance depends on the mean.
+<<>>=
+cds <- estimateVarianceFunctions( cds )
+@
+This is done by means of a local regression, as detailed in the paper.
+
+The point of these functions is to predict how much variance one should expect
+for counts at a certain level. For example, let us assume that we have found 123
+tags for a certain gene in the ``T1b'' sample.
+We may now calculate the expected ``raw variance'' as follows. First we get the
+``base level'', by which we mean this count value divided by the size factor.
+This makes the values from different columns comparable.
+Then, we insert this into the raw variance function to get the estimated ``raw
+variance'' which needs to be scaled up to the count level by multiplying with
+the size factor (squared, because this is a variance). Once we add the expected shot-
+noise variance (i.e., the variance due to the Poisson counting process), which is
+equal to the count value, we get the full variance. The square root of this full
+variance is then the estimated standard deviation for count values at the given level 
+(provided, of course, that our fundamental assumption is right that the mean allows to get a
+reasonable prediction for the variance).
+<<>>=
+countValue <- 123
+baseLevel <- countValue / sizeFactors(cds)["T1b"]
+rawVarFuncForGB <- rawVarFunc( cds, "T" )
+rawVariance <- rawVarFuncForGB( baseLevel )
+fullVariance <- countValue + rawVariance * sizeFactors(cds)["T1b"]^2
+sqrt( fullVariance )
+@
+
+You do not have to do the calculation just outlined yourself, the package does
+this automatically.
+
+\begin{figure}
+\centering
+\includegraphics[width=.7\textwidth]{DESeq-figSCV}
+\caption{Plot to show the estimated variances (as squared coefficients of variation (SCV), i.e., variance over squared mean), produced with the function \Rfunction{scvPlot}.}
+\label{figSCV}
+\end{figure}
+
+The function 'scvPlot' shows all the base variance functions in one plot:
+<<figSCV,fig=TRUE,width=5,height=5>>=
+scvPlot( cds )
+@
+In the produced plot (Fig.\ \ref{figSCV}), the x axis is the base mean, the y 
+axis the squared coefficient of variation (SCV),
+i.e., the ratio of the variance at base level to the square of the base mean. 
+The solid lines are the SCV for the raw variances, i.e., the noise due to biological 
+replication. There is one coloured solid line per condition, and, in case there are
+non-replicated conditions, a dashed black line for the maximum of the raw variances, 
+which is used for these. 
+
+On top of the variance, there is shot noise, i.e., the Poissonean variance inherent 
+to the process of counting reads. The amount of shot noise depends on the size factor, and
+hence, for each sample, a dotted line in the colour of its condition is plotted above the
+solid line. The dotted line is the base variance, i.e., the full variance, scaled down to
+base level by the size factors. The vertical distance between solid and dotted lines is the
+shot noise.
+
+The solid black line is a density estimate of the base means: Only were
+there is an appreciable number of base mean values, the variance estimates can be
+expected to be accurate. 
+
+It is instructive to observe at which count level the biological 
+noise starts to dominate the shot noise. At low counts, where shot noise dominates, higher
+sequencing depth (larger library size) will improve the signal-to-noise ratio while
+for high counts, where the biological noise dominates, only additional biological 
+replicates will help. 
+
+One should check whether the base variance functions seem to follow the
+empirical variance well. To this end, two diagnostic functions are provided.
+The function \Rfunction{baseVarDiagnostics} returns, for a specified condition,
+a data frame with four columns: the mean base level for each gene, the base
+variance as estimated from the count values of this gene only, and the fitted
+base variance, i.e., the predicted value from the local fit through the
+base variance estimates from all genes. As one typically has few replicates,
+the single-gene estimate of the base variance can deviate wildly from the
+fitted value. To see whether this might be too wild, the cumulative probability
+for this ratio of single-gene estimate to fitted value is calculated from the
+$\chi^2$ distribution, as explained in the paper. These values are the fourth
+column.
+<<>>=
+diagForT <- baseVarDiagnostics( cds, "T" )
+head( diagForT )
+@
+
+\begin{figure}
+\centering
+\includegraphics[width=.6\textwidth]{DESeq-figFit}
+\caption{Diagnostic plot to check the fit of the variance function.}
+\label{figFit}
+\end{figure}
+
+We may now plot the per-gene estimates of the base variance against the base
+levels and draw a line with the fit from the local regression:
+<<figFit,fig=TRUE>>=
+smoothScatter( log10(diagForT$baseMean), log10(diagForT$baseVar) )
+lines( log10(fittedBaseVar) ~ log10(baseMean), 
+   diagForT[ order(diagForT$baseMean), ], col="red" )
+@ % $
+
+As one can see (Fig.~\ref{figFit}), the fit (red line) follows the single-gene estimates well, even
+though the spread of the latter is considerable, as one should expect, given
+that each variance value is estimated from just three values.
+
+\begin{figure}
+\centering
+\includegraphics[width=\textwidth]{DESeq-figECDF}
+\caption{Another diagnostic plot to check the fit of the variance functions. This one is 
+produced with the function \Rfunction{residualsEcdfPlot}.}
+\label{figECDF}
+\end{figure}
+
+Another way to study the diagnostic data is to check whether the probabilities in the fourth column of the diagnostics
+data frame are uniform, as they should be. One may simple look at the histogram of 
+\texttt{diagForGB\$pchisq} but a more convenient way is the function 
+\Rfunction{residualsEcdfPlot}, which show empirical cumulative density functions 
+(ECDF) stratified by base level. 
+We look at them for the conditions ``T'' and ``N'':
+<<figECDF,fig=TRUE,width=14,height=7>>=
+par( mfrow=c(1,2 ) )
+residualsEcdfPlot( cds, "T" )
+residualsEcdfPlot( cds, "N" )
+@
+Fig.~\ref{figECDF} shows the output. In both cases, the ECDF curves follow the diagonal well,
+i.e., the fit is good. Only for very low counts (below 10), the deviations become stronger, but as at these levels,
+shot noise dominates, this is no reason for concern. 
+
+For the condition ``T2'', we cannot estimate a variance function  as we have no replicates. When a variance estimate is needed for ``T2'', the package will use the
+maximum of the variances estimated for all the other conditions. To see the assignment of conditions to 
+variance functions, use the \Rfunction{rawVarFuncTable} accessor function:
+<<>>=
+rawVarFuncTable( cds )
+@
+
+\section{Calling differential expression}
+
+Having estimated and verified the variance--mean dependence, it is now straight-forward to look for
+differentially expressed genesd. To contrast two conditions, e.g., to see whether there is differential
+expression between conditions ``N'' and ``T'', we simply call the function \Rfunction{nbinomTestForContrast}.
+It performs the tests as described in the paper and returns a data frame with the $p$ value and other
+useful data.
+<<>>=
+res <- nbinomTestForContrast( cds, "N", "T" )
+head(res)
+@
+For each gene, we get its mean expression level (at the base scale) in either condition, the fold change from
+the first to the second condition, the logarithm (to basis 2) of the fold change, and the
+$p$ value for the statistical significance of this change. The \texttt{padj} column contains the 
+$p$ values, adjusted for multiple testing with the Benjamini-Hochberg procedure, which controls false discovery 
+rate (FDR). The last two columns show the ratio of the single gene estimates for the base
+variance to the fitted value. This may help to notice false hits due to ``variance outliers''.
+
+\begin{figure}
+\centering
+\includegraphics[width=.6\textwidth]{DESeq-figDE}
+\caption{MvA plot for the contrast ``T'' vs.\ ``N''.}
+\label{figDE}
+\end{figure}
+
+Let us first plot the $\log_2$ fold changes against the base means, colouring in red those genes
+that are significant at 10\% FDR.
+<<figDE,fig=TRUE>>=
+plot( 
+   res$baseMean, 
+   res$log2FoldChange, 
+   log="x", pch=20, cex=.1, 
+   col = ifelse( res$padj < .1, "red", "black" ) )
+@
+See Fig.~\ref{figDE} for the plot.
+
+Finally, we may filter to the significant genes,
+<<>>=
+resSig <- res[ res$padj < .1, ]
+@
+and list, e.g., the most significantly differentially expressed genes:
+<<>>=
+head( resSig[ order(resSig$pval), ] )
+@
+
+We may also want to look at the most strongly down-regulated of the significant
+genes,
+<<>>=
+head( resSig[ order( resSig$foldChange, -resSig$baseMean ), ] )
+@
+or at the most strongly up-regulated ones:
+<<>>=
+head( resSig[ order( -resSig$foldChange, -resSig$baseMean ), ] )
+@
+
+\section{Working partially without replicates}
+
+If you have replicates for one condition but not for the other, you can still proceed as
+before. As already stated above, the testing function will simply take the maximum of all 
+estimated variance function for conditions without replicates. If we consider this acceptable,
+we can contrast the single ``T2'' sample against the two ``N'' samples.
+
+\begin{figure}
+\centering
+\includegraphics[width=.6\textwidth]{DESeq-figDE_T2}
+\caption{MvA plot for the contrast ``T2'' vs.\ ``N''.}
+\label{figDE_T2}
+\end{figure}
+
+
+<<>>=
+resT2vsN <- nbinomTestForContrast( cds, "N", "T2" )
+@
+We produce the same plot as before, again with
+<<figDE_T2,fig=TRUE>>=
+plot( 
+   resT2vsN$baseMean, 
+   resT2vsN$log2FoldChange, 
+   log="x", pch=20, cex=.1, 
+   col = ifelse( resT2vsN$padj < .1, "red", "black" ) )
+@
+The result (Fig.~\ref{figDE_T2}) shows the same symmetry in up- and down-regulation
+as in Fig.~\ref{figDE} but a striking asymmetry in the boundary line for significance. This
+has an easy explanation: low counts suffer from proportionally stronger shot noise than high counts, and this
+is more pronounced in the ``T2'' data than in the ``N'' data due to the lack of replicates. Hence
+a stronger signal is required to call a down-regulation significant than for an up-regulation.
+
+
+\section{Working without any replicates}
+
+Proper replicates are essential to interpret a biological experiment. After all, if one compares two
+conditions and finds a difference, how else would one know that this difference is due to the different conditions
+and would not have arisen between replicates, as well, just due to noise? Hence, any attempt to work without any
+replicates will lead to conclusions of very limited reliability.
+
+Nevertheless, such experiments are often undertaken, especially in HTS, and the \Rpackage{DESeq} package
+can deal with them, even though the soundness of the results may depend very much on the circumstances.
+
+Our primary assumption is still that the mean is a good predictor for the variance. Hence, if a number of genes 
+with similar expression level are compared between replicates, we expect that their variation is of
+comparable magnitude. Once we accept this assumption, we may argue as follows: Given two samples from 
+different conditions and a number of genes with comparable expression levels, of which we expect only a minority
+to be influenced by the condition, we may take the variance estimated from comparing their count rates \emph{across}
+conditions as ersatz for a proper estimate of the variance across replicates. After all,
+we assume most genes to behave the same in replicates as across conditions, and hence, the estimated variance 
+should not change too much due to the influence of the hopefully few differentially expressed genes. Furthermore,
+the differentially expressed genes will only cause the variance estimate to be too high, so that the test will err to the
+side of being too conservative, i.e., we only lose power.
+
+We shall now see how well this works for our example data, even though it has rather many differentially expressed genes.
+
+We reduce our count data set to just two columns, one ``T'' and one ``N'' sample:
+<<>>=
+cds2 <- cds[ ,c( "T1b", "N1" ) ]
+@
+
+Now, without any replicates at all, the \Rfunction{estimateVarianceFunctions} function will refuse to proceed unless we 
+instruct it to ignore the condition labels and estimate the variance pooled over all samples:
+<<>>=
+cds2 <- estimateVarianceFunctions( cds2, pool=TRUE )
+@
+
+Now, we can attempt to find differential expression:
+<<>>=
+res2 <- nbinomTestForContrast( cds2, "N", "T" )
+@
+
+\begin{figure}
+\centering
+\includegraphics[width=.6\textwidth]{DESeq-figDE2}
+\caption{MvA plot for the contrast ``T'' vs.\ ``N'', from a test using no replicates.}
+\label{figDE2}
+\end{figure}
+
+Unsurprisingly, we find much fewer hits, as can be seen from the plot (Fig.\ ref{figDE2})
+<<figDE2,fig=TRUE>>=
+plot( 
+   res2$baseMean,
+   res2$log2FoldChange, 
+   log="x", pch=20, cex=.1, 
+   col = ifelse( res2$padj < .1, "red", "black" ) )
+@
+and from this table, tallying the number of significant hits in our previous and our new, restricted analysis:
+<<>>=
+table( res_sig = res$padj < .1, res2_sig = res2$padj < .1 )
+@
+As can be seen, we have still found about 1/4 of the hits, and only a reasuringly small number of 
+new (and potentially false) hits.
+
+One may finally ask whether the reduction of discoveries to a quarter is due to the higher variance
+estimate, or due to the lower confidence in the base mean estimates, which is due to the reduced
+sample size. To see this, we run the original analysis again, but now using the new, worse variance function. 
+As this analysis is outside the standard work-flow, we have to use a lower-level function of the package,
+which does not recognize the \Rclass{CountDataSet} S4 object but instead expects all data to be 
+specified seperately. (This is inconvient normally but enables us here to substitute another variance function
+for the one that the \Rfunction{nbinomTestForContrast} function would use.)
+<<>>=
+colsN <- conditions(cds) == "N"
+colsT <- conditions(cds) == "T"
+baseMeansNT <- getBaseMeansAndVariances( 
+   counts(cds)[ , colsN|colsT ], 
+   sizeFactors(cds)[ colsN|colsT ] )$baseMean
+pvals2b <- nbinomTest(
+   counts(cds)[ ,colsN ],
+   counts(cds)[ ,colsT ],
+   sizeFactors(cds)[ colsN ],
+   sizeFactors(cds)[ colsT ],
+   rawVarFunc( cds2, "_pooled" )( baseMeansNT ),
+   rawVarFunc( cds2, "_pooled" )( baseMeansNT ) )
+@
+
+We adjust the $p$ values and then compare the hits with those found originally:
+<<>>=   
+padj2b <- p.adjust( pvals2b, method="BH" )
+table( res_sig = res$padj < .1, res2b_sig = padj2b < .1 )
+@ %$
+In conclusion, the worse variance estimates costs very roughly half of the hits, and the
+reduces sample size then another half, leaving us with a quarter of the original hits.
+
+\section{Sample clustering}
+
+Another feature of the \Rpackage{DESeq} package is the variance stabilizing transformation (VST).
+This is a monotonous function, which is calculated for each sample from the applicable
+variance function, that transforms the count data such that its variance becomes independent
+of the mean, i.e., it produces a homoskledastic version of the data.
+
+To demonstrate a potential use for this, we instantiate another CountDataSet and do not remove sample T1a this time:
+
+<<>>=
+cds3 <- newCountDataSet( countsTable, conds )
+cds3 <- estimateSizeFactors( cds3 )
+cds3 <- estimateVarianceFunctions( cds3 )
+@
+
+Now, we call the function \Rfunction{getVarianceStabilizedData},
+<<>>=
+vsd <- getVarianceStabilizedData( cds3 )
+@
+which returns a matrix of non-integer data:
+<<>>=
+head( vsd )
+@
+
+\begin{figure}
+\centering
+\includegraphics[width=.6\textwidth]{DESeq-figHeatmap}
+\caption{A heatmap showing the distances between the samples as calculated from the 
+variance-stabilizing transformation of the count data.}
+\label{figHeatmap}
+\end{figure}
+
+This data is now approximately homoskledastic and hence suitable as input to various statistical procedures, e.g., a simple distance calculation:
+<<>>=
+dists <- dist( t( vsd ) )
+@
+
+We visualize the distance matrix as a heatmap:
+<<figHeatmap,fig=TRUE>>=
+heatmap( as.matrix( dists ), symm=TRUE )
+@
+
+From the output (Fig.\ \ref{figHeatmap}), we can see, e.g., that the two samples T1a and T1b
+that were derived from the same patient are indeed quite similar, and that the sample T3
+with the atypical histopathological phenotype is not that different from sample T2.
+
+\appendix
+
+\section{Reference overview}
+
+The package defines one S4 class, \Rclass{CountDataSet}, which is derived from \Rclass{eSet}. To instantiate 
+an object, use the function \Rfunction{newCountDataSet}. Do not call \Rfunction{new} directly.
+
+The class's \texttt{assayData} is a locked environment containing a single object, namely the matrix
+\texttt{counts} with the count data. The \texttt{featureData} is not used internally, but the user may
+wish to store annotation there. The \texttt{phenoData} contains two columns, \texttt{\_sizeFactors}
+and \texttt{\_conditions} to hold the vector of size factors and the factor of conditions. The user may add
+further columns for annotation. 
+
+Furthermore, there is a slot \texttt{rawVarFuncs} of type environment that holds the raw variance functions.
+Each of these functions has a name to access it in the environment, which is either the name of a condition, or
+\texttt{"\_max"} for conditions without replicates in normal mode, or \texttt{"\_pooled"} for the single
+pooled estimate that \Rfunction{estimateVarianceFunction} produces when called with \texttt{pool=TRUE}.
+Finally, the slot \texttt{rawVarFuncTable} contains a named character vector that serves as a look-up table.
+The names are the conditions and the values are the function names, i.e., the hash keys for the \texttt{rawVarFuncs} environment.
+
+All these properties are checked by the validity method.
+
+The following slot accessors are provided: \Rfunction{counts}, \Rfunction{sizeFactors}, \Rfunction{conditions},
+\Rfunction{rawVarFunc}, \Rfunction{rawVarFuncTable}. To avoid accidental invalidation, a setter is provided only for
+\Rfunction{sizeFactors}. (The other slots may be change via the ``\texttt{@}'' syntax, but only at the user's risk.)
+
+All functions that perform actual calculations are offered in two variants: a ``core'' one that takes base types as explicit
+arguments, and a wrapper that takes a \Rclass{CountDataObject} and finds the data there itself. As these function pairs
+have rather different argument lists, they are not made as generic functions, but rather have two different names, as follows:
+\medskip
+
+\small{\noindent
+\begin{tabular}{lll}
+Purpose & Wrapper function & Core function \\
+\hline \\
+estimate size factors & \texttt{estimateSizeFactors} & \texttt{estimateSizeFactorsForCounts} \\
+estimate variance functions & \Rfunction{estimateVarianceFunctions} & \Rfunction{estimateRawVarianceFunction} \\
+calculate base means and variances & N/A & \Rfunction{getBaseMeansAndVariances} \\
+get diagnostics for variance fit & \Rfunction{baseVarDiagnostics} & \Rfunction{baseVarDiagnosticsForCounts} \\
+produce ECDF plot for variance residuals & \Rfunction{residualsEcdfPlot} & \Rfunction{residualsEcdfPlotFromDiagnostics} \\
+perform test & \Rfunction{nbinomTestForContrast} & \Rfunction{nbinomTest} 
+\end{tabular}
+}
+
+\section{Session Info}
+<<>>=
+sessionInfo()
+@
+
+\end{document}
