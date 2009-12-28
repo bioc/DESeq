@@ -9,7 +9,7 @@
    if the S4 interface is unsuitable for your task.
 }
 \usage{
-nbinomTest(countsA, countsB, sizeFactorsA, sizeFactorsB, rawVarFuncA, rawVarFuncB, eps = 0.003)
+nbinomTest(countsA, countsB, sizeFactorsA, sizeFactorsB, rawScvA, rawScvB, eps = 0.003)
 }
 \arguments{
   \item{countsA}{ 
@@ -23,11 +23,11 @@ nbinomTest(countsA, countsB, sizeFactorsA, sizeFactorsB, rawVarFuncA, rawVarFunc
   \item{sizeFactorsB}{
      Size factors for the columns of the matrix 'countsB'
 }
-  \item{rawVarFuncA}{
-     Raw variance function for 'countsA'
+  \item{rawScvA}{
+     Raw squared coefficient of variantion (SCV) for 'countsA', a vector with one value per gene
 }
-  \item{rawVarFuncB}{
-     Raw variance function for 'countsB'
+  \item{rawScvB}{
+     The same for 'countsB'
 }
   \item{eps}{
      Precision goal for the p value. This is only a rough guidance with no guarantee

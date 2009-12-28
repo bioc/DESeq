@@ -5,6 +5,9 @@
 \title{
    Estimate the size factors for a CountDataSet
 }
+\description{
+   Estimate the size factors for a CountDataSet
+}
 \usage{
 estimateSizeFactors(cds)
 }
