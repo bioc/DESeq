@@ -2,13 +2,13 @@
 \Rdversion{1.1}
 \alias{estimateSizeFactorsForCounts}
 \title{
-   Low-level fucntion to estimate size factors with robust regression.
+   Low-level function to estimate size factors with robust regression.
 }
 \description{
    Given a matrix or data frame of count data, this function estimates the size factors 
-   by regressing each column on the row-wise geometric mean of the counts. The regression
-   is done with the \code{rlm} function from the MASS package, with intercept forced to
-   zero. The regression coefficients are the size factors.
+   as follows: Each column is divided by the geometric means of the rows. The median
+   of these ratios (skipping the genes with a geometric mean of zero) is used as the
+   size factor for this column.
    
    Typically, you will not call this function directly, but use \code{\link{estimateSizeFactors}}.
 }

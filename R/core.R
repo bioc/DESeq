@@ -2,7 +2,7 @@ estimateSizeFactorsForCounts <- function( counts )
 {
    geomeans <- exp( rowMeans( log(counts) ) )
    apply( counts, 2, function(cnts) 
-      coef(rlm( cnts ~ geomeans + 0, maxit=40, acc=1e-3 )) )
+      median( ( cnts / geomeans )[ geomeans>0 ] ) )
 }
 
 

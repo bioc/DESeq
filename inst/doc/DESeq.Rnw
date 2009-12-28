@@ -136,9 +136,8 @@ libsizes <- c( T1a=6843583, T1b=7604834, T2=13625570, T3=12291910,
 sizeFactors(cds) <- libsizes[-1]
 @
 
-However, one seems to get better results by estimating the size factors from the count data using
-robust linear regression (with the \Rfunction{rlm} function from the \Rpackage{MASS} package). The
-function \Rfunction{estimateSizeFactors} does that for you.
+However, one seems to get better results by estimating the size factors from the count data. The
+function \Rfunction{estimateSizeFactors} does that for you. (See the man page of \Rfunction{estimateSizeFactorsForCounts} for technical details on the calculation.)
 <<>>=
 cds <- estimateSizeFactors( cds )
 sizeFactors( cds )

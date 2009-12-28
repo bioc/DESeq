@@ -24,7 +24,6 @@ export(
    getVarianceStabilizedData )
   
 import( Biobase )
-importFrom( MASS, rlm )
 importFrom( genefilter, rowVars )
 importFrom( geneplotter, multiecdf )
 

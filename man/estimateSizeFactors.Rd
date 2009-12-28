@@ -5,9 +5,6 @@
 \title{
    Estimate the size factors for a CountDataSet
 }
-\description{
-   Uses robust regression to estimate the size ratios between the libraries.
-}
 \usage{
 estimateSizeFactors(cds)
 }
@@ -27,7 +24,7 @@ estimateSizeFactors(cds)
    This estimates the size factors and stores the information in the object.
 
    Internally, the function calls \code{\link{estimateSizeFactorsForCounts}}. See there
-   for more details on the regression.
+   for more details on the calculation.
 }
 \value{
    The CountDataSet passed as parameters, with the size factors filled in.
