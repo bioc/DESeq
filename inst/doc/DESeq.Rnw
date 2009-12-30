@@ -98,7 +98,8 @@ We code this information in the following vector, which assigns each sample a ``
 <<>>=
 conds <- c( "T", "T", "T", "T2", "N", "N" )
 @
-where ``T'' stands for ``tumorigenic'' and ``N'' for non-tumorigenic. The first three samples
+where ``T'' stands for a sample derived from a certain tumour type and ``N'' for a sample 
+derived from non-pathological tissue. The first three samples
 had a very similar histopathological phenotype, while the fourth sample was atypical, and
 hence, we assign it another condition (``T2'').
 
@@ -291,10 +292,12 @@ useful data.
 res <- nbinomTestForContrast( cds, "N", "T" )
 head(res)
 @
-For each gene, we get its mean expression level (at the base scale) in either condition, the fold change from
+For each gene, we get its mean expression level (at the base scale) as a joint estimate from both conditions, and
+estimated separately for each  condition, the fold change from
 the first to the second condition, the logarithm (to basis 2) of the fold change, and the
 $p$ value for the statistical significance of this change. The \texttt{padj} column contains the 
-$p$ values, adjusted for multiple testing with the Benjamini-Hochberg procedure, which controls false discovery 
+$p$ values, adjusted for multiple testing with the Benjamini-Hochberg procedure (see the standard R function
+\Rfunction{p.adjust}), which controls false discovery 
 rate (FDR). The last two columns show the ratio of the single gene estimates for the base
 variance to the fitted value. This may help to notice false hits due to ``variance outliers''.
 
