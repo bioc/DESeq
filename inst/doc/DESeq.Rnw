@@ -25,6 +25,17 @@
 \maketitle
 
 
+\begin{abstract}
+In RNA-Seq and related assay types (including comparative ChIP-Seq etc.), one 
+works with tables of count data, which report, for each sample, the number of
+reads that have been assigned to a gene (or other kind of class).\\
+The package ``DESeq'' provides a powerful tool to estimate the variance in such
+data and test for differential expression. \\
+The present vignette explains the use of the package; for an exposition of 
+the statistical method employed, see our paper.\footnote{Our paper has not yet been published. 
+Please contact me if you would like to get a preprint.}
+\end{abstract}
+
 \section{Quick start}
 
 This first section just shows the commands necessary for an analysis at a glance. For detailed
