@@ -147,6 +147,12 @@ residualsEcdfPlotFromDiagnostics <- function( fitdiag, ncuts=7,
       col = c( cols, "darkgreen" ), lty="solid" )
 }  
 
+# Note: The following function is never called; it is here only for
+# documentation purposes, as it has been used to produce the data object
+# scvBiasCorrectionFits, which is stored in the file
+# inst/scvBiasCorrectionFits.rda, gets loadewd by the line after this
+# function and is used by the function adjustScvForBias
+
 prepareScvBiasCorrectionFits <- function( maxnrepl=15, mu=100000, ngenes=10000,
       true_raw_scv = c( seq( 0, 2, length.out=100 )[-1], seq( 2, 10, length.out=20 )[-1] ) )
    lapply( 2:maxnrepl, function( m ) {
