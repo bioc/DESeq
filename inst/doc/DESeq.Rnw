@@ -91,13 +91,13 @@ exampleFile
 
 It is a tab-delimited file with column headers in then first line. We read it in with
 <<>>=
-countsTable <- read.delim( exampleFile, header=TRUE )
+countsTable <- read.delim( exampleFile, header=TRUE, stringsAsFactors=TRUE )
 head( countsTable )
 @
 
 The first column is the gene ID. (We have shuffled the table rows, removed the RefSeq IDs and replaced them with dummy identifiers of the form ``Gene\_\textit{NNNNN}''.) We use the gene IDs for the row names and remove the gene ID column:
 <<>>=
-rownames( countsTable ) <- countsTable$Gene
+rownames( countsTable ) <- countsTable$gene
 countsTable <- countsTable[ , -1 ]
 @ % $
 

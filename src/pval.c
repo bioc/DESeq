@@ -2,6 +2,7 @@
 #include <limits.h>
 #include <Rinternals.h>
 #include <Rmath.h>
+#include <R_ext/Rdynload.h>
 
 void add_from_middle( long int kS, double pobs, double muA, double vA, 
       double muB, double vB, int upwards, double eps,
@@ -71,3 +72,13 @@ SEXP add_from_middle_for_R( SEXP kS, SEXP pobs, SEXP muA, SEXP vA,
       REAL(eps)[0], REAL(res), REAL(res) + 1 );
   return res;
 }   
+
+R_CallMethodDef callMethods[] = {
+   { "add_from_middle_for_R", &add_from_middle_for_R, 8 },
+   { NULL, NULL, 0 }
+};
+
+void R_init_DESeq( DllInfo *info )
+{
+  R_registerRoutines(info, NULL, callMethods, NULL, NULL);
+}

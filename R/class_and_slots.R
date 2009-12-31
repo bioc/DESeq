@@ -18,7 +18,7 @@ newCountDataSet <- function( countData, conditions, sizeFactors=NULL,
       sizeFactors <- rep( NA_real_, length(conditions) )
    if( is.null( phenoData ) )
       phenoData <- annotatedDataFrameFrom( countData, byrow=FALSE )
-   if( is.null( featureData ) )
+   if( is.null( featureData ) ) 
       featureData <- annotatedDataFrameFrom( countData, byrow=TRUE )
       
    phenoData$`_condition` <- conditions
