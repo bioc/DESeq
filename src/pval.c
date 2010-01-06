@@ -74,7 +74,7 @@ SEXP add_from_middle_for_R( SEXP kS, SEXP pobs, SEXP muA, SEXP vA,
 }   
 
 R_CallMethodDef callMethods[] = {
-   { "add_from_middle_for_R", &add_from_middle_for_R, 8 },
+   { "add_from_middle_for_R", (DL_FUNC) &add_from_middle_for_R, 8 },
    { NULL, NULL, 0 }
 };
 
