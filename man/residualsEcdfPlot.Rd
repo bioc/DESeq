@@ -6,7 +6,7 @@ Produce a diagnostic plot to check the fit of a raw variance function.
 }
 \description{
 The residuals of the fit should follow a scaled chi-squared distribution. This function
-calls \code{\link{baseVarDiagnostics}} to get the cumulative chi-squared 
+calls \code{\link{varianceFitDiagnostics}} to get the cumulative chi-squared 
 probabilities of the residuals and plots their ECDFs, stratified by base means.
 }
 \usage{
@@ -32,7 +32,7 @@ residualsEcdfPlot(cds, condition, ncuts = 7)
 None, but a plot is produced.
 }
 \seealso{
-\code{\link{residualsEcdfPlotFromDiagnostics}}, \code{\link{baseVarDiagnostics}}
+\code{\link{residualsEcdfPlotFromDiagnostics}}, \code{\link{varianceFitDiagnostics}}
 }
 \examples{
 # See the vignette for an example.

@@ -10,9 +10,9 @@ export(
    rawVarFuncTable,
    estimateSizeFactors,
    estimateVarianceFunctions,
-   baseVarDiagnosticsForCounts,
+   varianceFitDiagnosticsForMatrix,
    residualsEcdfPlotFromDiagnostics,
-   baseVarDiagnostics,
+   varianceFitDiagnostics,
    residualsEcdfPlot,
    nbinomTestForContrast,
    getBaseMeansAndVariances,
@@ -21,7 +21,8 @@ export(
    nbinomTest,
    estimateSizeFactorsForCounts,
    scvPlot,
-   getVarianceStabilizedData )
+   getVarianceStabilizedData,
+   makeExampleCountDataSet )
   
 import( Biobase )
 importFrom( genefilter, rowVars )

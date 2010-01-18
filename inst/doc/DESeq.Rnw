@@ -228,7 +228,7 @@ replicates will help.
 
 One should check whether the base variance functions seem to follow the
 empirical variance well. To this end, two diagnostic functions are provided.
-The function \Rfunction{baseVarDiagnostics} returns, for a specified condition,
+The function \Rfunction{varianceFitDiagnostics} returns, for a specified condition,
 a data frame with four columns: the mean base level for each gene, the base
 variance as estimated from the count values of this gene only, and the fitted
 base variance, i.e., the predicted value from the local fit through the
@@ -239,7 +239,7 @@ for this ratio of single-gene estimate to fitted value is calculated from the
 $\chi^2$ distribution, as explained in the paper. These values are the fourth
 column.
 <<>>=
-diagForT <- baseVarDiagnostics( cds, "T" )
+diagForT <- varianceFitDiagnostics( cds, "T" )
 head( diagForT )
 @
 
@@ -557,7 +557,7 @@ Purpose & Wrapper function & Core function \\
 estimate size factors & \texttt{estimateSizeFactors} & \texttt{estimateSizeFactorsForCounts} \\
 estimate variance functions & \Rfunction{estimateVarianceFunctions} & \Rfunction{estimateRawVarianceFunction} \\
 calculate base means and variances & N/A & \Rfunction{getBaseMeansAndVariances} \\
-get diagnostics for variance fit & \Rfunction{baseVarDiagnostics} & \Rfunction{baseVarDiagnosticsForCounts} \\
+get diagnostics for variance fit & \Rfunction{varianceFitDiagnostics} & \Rfunction{varianceFitDiagnosticsForMatrix} \\
 produce ECDF plot for variance residuals & \Rfunction{residualsEcdfPlot} & \Rfunction{residualsEcdfPlotFromDiagnostics} \\
 perform test & \Rfunction{nbinomTestForContrast} & \Rfunction{nbinomTest} 
 \end{tabular}

@@ -40,13 +40,13 @@ estimateVarianceFunctions <- function( cds, pool=FALSE, ... )
    cds
 }
 
-baseVarDiagnostics <- function( cds, cond )
+varianceFitDiagnostics <- function( cds, cond )
 {
    stopifnot( is( cds, "CountDataSet" ) )
    stopifnot(cond %in% levels(conditions(cds)) )  
    ensureHasVarFuncs( cds )
       
-   baseVarDiagnosticsForCounts(
+   varianceFitDiagnosticsForMatrix(
       counts(cds)[,conditions(cds)==cond], 
       sizeFactors(cds)[conditions(cds)==cond],
       rawVarFunc( cds, cond ) )
@@ -56,7 +56,7 @@ residualsEcdfPlot <- function( cds, condition, ncuts=7 )
 {
    stopifnot( is( cds, "CountDataSet" ) )   
    ensureHasVarFuncs( cds )
-   fitdiag <- baseVarDiagnostics( cds, condition )
+   fitdiag <- varianceFitDiagnostics( cds, condition )
    residualsEcdfPlotFromDiagnostics( fitdiag, ncuts,
       sprintf( "Residuals ECDF plot for condition '%s'", condition ) )
 }  

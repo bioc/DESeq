@@ -1,17 +1,17 @@
-\name{baseVarDiagnosticsForCounts}
+\name{varianceFitDiagnosticsForMatrix}
 \Rdversion{1.1}
-\alias{baseVarDiagnosticsForCounts}
+\alias{varianceFitDiagnosticsForMatrix}
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{
    A lower-level function to get fit diagnostics
 }
 \description{
-Usually, you call \code{\link{baseVarDiagnostics}}, which in turn counts 
-\code{\link{baseVarDiagnosticsForCounts}}. If you do not have your data in a
+Usually, you call \code{\link{varianceFitDiagnostics}}, which in turn counts 
+\code{\link{varianceFitDiagnosticsForMatrix}}. If you do not have your data in a
 CountDataSet object, you may want to call this function directly.
 }
 \usage{
-baseVarDiagnosticsForCounts(counts, sizeFactors, rawVarFunc)
+varianceFitDiagnosticsForMatrix(counts, sizeFactors, rawVarFunc)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -26,14 +26,14 @@ baseVarDiagnosticsForCounts(counts, sizeFactors, rawVarFunc)
 }
 }
 \details{
-See \code{\link{baseVarDiagnostics}} for more explanation
+See \code{\link{varianceFitDiagnostics}} for more explanation
 }
 \value{
-The same return value as described for \code{\link{baseVarDiagnostics}}.
+The same return value as described for \code{\link{varianceFitDiagnostics}}.
 }
 
 \seealso{
-\code{\link{baseVarDiagnostics}},\code{\link{residualsEcdfPlotFromDiagnostics}}
+\code{\link{varianceFitDiagnostics}},\code{\link{residualsEcdfPlotFromDiagnostics}}
 }
 \author{
    Simon Anders, EMBL Heidelberg, sanders@fs.tum.de

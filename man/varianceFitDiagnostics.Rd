@@ -1,6 +1,6 @@
-\name{baseVarDiagnostics}
+\name{varianceFitDiagnostics}
 \Rdversion{1.1}
-\alias{baseVarDiagnostics}
+\alias{varianceFitDiagnostics}
 
 \title{
    Generate a data frame with diagnostic information on the fit of a base variance function.
@@ -11,7 +11,7 @@
    produces a data frame with useful data for this purpose. 
 }
 \usage{
-baseVarDiagnostics(cds, cond)
+varianceFitDiagnostics(cds, cond)
 }
 \arguments{
   \item{cds}{
@@ -47,5 +47,9 @@ should be uniformly distributed. You can check this with a histogram, or more co
    Simon Anders, EMBL Heidelberg, sanders@fs.tum.de
 }
 \examples{
-# See the vignette for an example.
+cds <- makeExampleCountDataSet()
+cds <- estimateSizeFactors( cds )
+cds <- estimateVarianceFunctions( cds )
+bvd <- varianceFitDiagnostics( cds, "A" )
+head( bvd )
 }

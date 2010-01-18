@@ -103,7 +103,7 @@ nbinomTest <- function( countsA, countsB, sizeFactorsA, sizeFactorsB,
 }
 
 
-baseVarDiagnosticsForCounts <- function( counts, sizeFactors, rawVarFunc )
+varianceFitDiagnosticsForMatrix <- function( counts, sizeFactors, rawVarFunc )
 {
    res <- getBaseMeansAndVariances( counts, sizeFactors )
    res$fittedRawVar <- rawVarFunc( res$baseMean )

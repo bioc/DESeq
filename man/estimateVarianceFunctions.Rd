@@ -48,7 +48,7 @@ estimateVarianceFunctions(cds, pool = FALSE, ...)
    The CountDataSet cds, with the slots rawVarFuncs and rawVarFuncTable updated.
 }
 \seealso{
-   \code{\link{scvPlot}} to visualize the result and \code{\link{baseVarDiagnostics}} to check the fit
+   \code{\link{scvPlot}} to visualize the result and \code{\link{varianceFitDiagnostics}} to check the fit
 }
 \author{
    Simon Anders, EMBL Heidelberg, sanders@fs.tum.de
