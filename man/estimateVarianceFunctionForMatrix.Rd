@@ -1,6 +1,6 @@
-\name{estimateRawVarianceFunction}
+\name{estimateVarianceFunctionForMatrix}
 \Rdversion{1.1}
-\alias{estimateRawVarianceFunction}
+\alias{estimateVarianceFunctionForMatrix}
 \title{
    Lower-level function to estimate a raw variance function.
 }
@@ -10,7 +10,7 @@
    in the form of a CountDataSet object, you may want to call this function directly.
 }
 \usage{
-estimateRawVarianceFunction(counts, sizeFactors, ...)
+estimateVarianceFunctionForMatrix(counts, sizeFactors, ...)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -19,7 +19,7 @@ estimateRawVarianceFunction(counts, sizeFactors, ...)
      considered as replicates of the same condition.
 }
   \item{sizeFactors}{
-     the size factors of the columns, as estimated e.g. with \code{\link{estimateSizeFactorsForCounts}}
+     the size factors of the columns, as estimated e.g. with \code{\link{estimateSizeFactorsForMatrix}}
 }
   \item{\dots}{
       Options to be passed to the \code{lp} function of the locfit package. Use this

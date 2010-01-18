@@ -6,7 +6,7 @@
 }
 \description{
     This function calls, for each condition that has replicates, the 
-    lower-level function \code{\link{estimateRawVarianceFunction}} 
+    lower-level function \code{\link{estimateVarianceFunctionForMatrix}} 
     to estimate the raw variance function for this condition.     
 }
 \usage{

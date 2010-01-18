@@ -1,7 +1,7 @@
 estimateSizeFactors <- function( cds )
 {
    stopifnot( is( cds, "CountDataSet" ) )
-   sizeFactors(cds) <- estimateSizeFactorsForCounts( counts(cds) )
+   sizeFactors(cds) <- estimateSizeFactorsForMatrix( counts(cds) )
    cds
 }
 
@@ -16,7 +16,7 @@ estimateVarianceFunctions <- function( cds, pool=FALSE, ... )
    if( pool ) {
 
       cds@rawVarFuncs[["_pooled"]] <-
-         estimateRawVarianceFunction( counts(cds), sizeFactors(cds), ... )
+         estimateVarianceFunctionForMatrix( counts(cds), sizeFactors(cds), ... )
       rawVarFuncTable(cds) <- rep( "_pooled", length( levels( conditions(cds) ) ) )
 
    } else {
@@ -26,7 +26,7 @@ estimateVarianceFunctions <- function( cds, pool=FALSE, ... )
          stop( "None of your conditions is replicated. Use pool=TRUE to pool across conditions." )
       nonreplicated <- names( which( tapply( conditions(cds), conditions(cds), length ) == 1 ) )
       for( cond in replicated )
-         cds@rawVarFuncs[[cond]] <- estimateRawVarianceFunction( 
+         cds@rawVarFuncs[[cond]] <- estimateVarianceFunctionForMatrix( 
             counts(cds)[ , conditions(cds)==cond ], sizeFactors(cds)[ conditions(cds)==cond ], ... )
       cds@rawVarFuncs[["_max"]] <- function( x, reportSize=FALSE )
          apply( rbind( sapply( replicated, function(cond) 
@@ -61,7 +61,7 @@ residualsEcdfPlot <- function( cds, condition, ncuts=7 )
       sprintf( "Residuals ECDF plot for condition '%s'", condition ) )
 }  
 
-nbinomTestForContrast <- function( cds, condA, condB, pvals_only=FALSE )
+nbinomTest <- function( cds, condA, condB, pvals_only=FALSE )
 {
    stopifnot( is( cds, "CountDataSet" ) )   
    ensureHasVarFuncs( cds )
@@ -80,7 +80,7 @@ nbinomTestForContrast <- function( cds, condA, condB, pvals_only=FALSE )
    rawScvA <- adjustScvForBias( rawScvA, rawVarFunc( cds, condA )( reportSize=TRUE ) )
    rawScvB <- adjustScvForBias( rawScvB, rawVarFunc( cds, condB )( reportSize=TRUE ) )
 
-   pval <- nbinomTest( 
+   pval <- nbinomTestForMatrices( 
       counts(cds)[,colA], 
       counts(cds)[,colB], 
       sizeFactors(cds)[colA], 

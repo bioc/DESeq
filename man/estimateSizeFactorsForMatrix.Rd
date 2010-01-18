@@ -1,6 +1,6 @@
-\name{estimateSizeFactorsForCounts}
+\name{estimateSizeFactorsForMatrix}
 \Rdversion{1.1}
-\alias{estimateSizeFactorsForCounts}
+\alias{estimateSizeFactorsForMatrix}
 \title{
    Low-level function to estimate size factors with robust regression.
 }
@@ -13,7 +13,7 @@
    Typically, you will not call this function directly, but use \code{\link{estimateSizeFactors}}.
 }
 \usage{
-estimateSizeFactorsForCounts(counts)
+estimateSizeFactorsForMatrix(counts)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{

@@ -1,4 +1,4 @@
-estimateSizeFactorsForCounts <- function( counts )
+estimateSizeFactorsForMatrix <- function( counts )
 {
    geomeans <- exp( rowMeans( log(counts) ) )
    apply( counts, 2, function(cnts) 
@@ -16,7 +16,7 @@ getBaseMeansAndVariances <- function( counts, sizeFactors ) {
       baseVar = rowVars( t( t(counts) / sizeFactors ) ) )
 }   
 
-estimateRawVarianceFunction <- function( counts, sizeFactors, ... ) {
+estimateVarianceFunctionForMatrix <- function( counts, sizeFactors, ... ) {
 
    # This function should be called with a matrix of counts adjusted for
    # library size ratios, whose columns are replicates of an experimental
@@ -50,7 +50,7 @@ safepredict <- function( fit, x )
    res   
 }
 
-nbinomTestRaw <- function( kA, kB, muA, vA, muB, vB, eps=0 )
+nbinomTestForMatricesRaw <- function( kA, kB, muA, vA, muB, vB, eps=0 )
 {
    # Let kA and kB be two count observations from two random variables, for
    # which the null hypothesis assumes negative binomial distributions with
@@ -82,7 +82,7 @@ nbinomTestRaw <- function( kA, kB, muA, vA, muB, vB, eps=0 )
 }
 
 
-nbinomTest <- function( countsA, countsB, sizeFactorsA, sizeFactorsB, 
+nbinomTestForMatrices <- function( countsA, countsB, sizeFactorsA, sizeFactorsB, 
    rawScvA, rawScvB, eps=3e-3 )
 {
    kAs <- rowSums( cbind(countsA) )
@@ -98,7 +98,7 @@ nbinomTest <- function( countsA, countsB, sizeFactorsA, sizeFactorsB,
    fullVarB <- muBs + rawScvB * baseMeans^2 * sum(sizeFactorsB^2)
    
    sapply( 1:nrow(cbind(countsA)), function(i) {
-      nbinomTestRaw( kAs[i], kBs[i], muAs[i], fullVarA[i], muBs[i], fullVarB[i], eps )
+      nbinomTestForMatricesRaw( kAs[i], kBs[i], muAs[i], fullVarA[i], muBs[i], fullVarB[i], eps )
    } )
 }
 

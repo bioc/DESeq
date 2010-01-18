@@ -61,7 +61,7 @@ library( DESeq )
 cds <- newCountDataSet( countsTable, conds )
 cds <- estimateSizeFactors( cds )
 cds <- estimateVarianceFunctions( cds )
-res <- nbinomTestForContrast( cds, "condA", "condB" )
+res <- nbinomTest( cds, "condA", "condB" )
 @
 The last command tests for differential expression between the conditions labelled \texttt{"condA"}
 and \texttt{"condB"}. It returns a data frame with $p$ values (raw and adjusted), mean values,
@@ -149,7 +149,7 @@ sizeFactors(cds) <- libsizes[-1]
 @
 
 However, one seems to get better results by estimating the size factors from the count data. The
-function \Rfunction{estimateSizeFactors} does that for you. (See the man page of \Rfunction{estimateSizeFactorsForCounts} for technical details on the calculation.)
+function \Rfunction{estimateSizeFactors} does that for you. (See the man page of \Rfunction{estimateSizeFactorsForMatrix} for technical details on the calculation.)
 <<>>=
 cds <- estimateSizeFactors( cds )
 sizeFactors( cds )
@@ -296,11 +296,11 @@ rawVarFuncTable( cds )
 
 Having estimated and verified the variance--mean dependence, it is now straight-forward to look for
 differentially expressed genesd. To contrast two conditions, e.g., to see whether there is differential
-expression between conditions ``N'' and ``T'', we simply call the function \Rfunction{nbinomTestForContrast}.
+expression between conditions ``N'' and ``T'', we simply call the function \Rfunction{nbinomTest}.
 It performs the tests as described in the paper and returns a data frame with the $p$ value and other
 useful data.
 <<>>=
-res <- nbinomTestForContrast( cds, "N", "T" )
+res <- nbinomTest( cds, "N", "T" )
 head(res)
 @
 For each gene, we get its mean expression level (at the base scale) as a joint estimate from both conditions, and
@@ -365,7 +365,7 @@ we can contrast the single ``T2'' sample against the two ``N'' samples.
 
 
 <<>>=
-resT2vsN <- nbinomTestForContrast( cds, "N", "T2" )
+resT2vsN <- nbinomTest( cds, "N", "T2" )
 @
 We produce the same plot as before, again with
 <<figDE_T2,fig=TRUE>>=
@@ -418,7 +418,7 @@ cds2 <- estimateVarianceFunctions( cds2, pool=TRUE )
 
 Now, we can attempt to find differential expression:
 <<>>=
-res2 <- nbinomTestForContrast( cds2, "N", "T" )
+res2 <- nbinomTest( cds2, "N", "T" )
 @
 
 \begin{figure}
@@ -449,14 +449,14 @@ sample size. To see this, we run the original analysis again, but now using the 
 As this analysis is outside the standard work-flow, we have to use a lower-level function of the package,
 which does not recognize the \Rclass{CountDataSet} S4 object but instead expects all data to be 
 specified seperately. (This is inconvient normally but enables us here to substitute another variance function
-for the one that the \Rfunction{nbinomTestForContrast} function would use.)
+for the one that the \Rfunction{nbinomTest} function would use.)
 <<>>=
 colsN <- conditions(cds) == "N"
 colsT <- conditions(cds) == "T"
 baseMeansNT <- getBaseMeansAndVariances( 
    counts(cds)[ , colsN|colsT ], 
    sizeFactors(cds)[ colsN|colsT ] )$baseMean
-pvals2b <- nbinomTest(
+pvals2b <- nbinomTestForMatrices(
    counts(cds)[ ,colsN ],
    counts(cds)[ ,colsT ],
    sizeFactors(cds)[ colsN ],
@@ -554,12 +554,12 @@ have rather different argument lists, they are not made as generic functions, bu
 \begin{tabular}{lll}
 Purpose & Wrapper function & Core function \\
 \hline \\
-estimate size factors & \texttt{estimateSizeFactors} & \texttt{estimateSizeFactorsForCounts} \\
-estimate variance functions & \Rfunction{estimateVarianceFunctions} & \Rfunction{estimateRawVarianceFunction} \\
+estimate size factors & \texttt{estimateSizeFactors} & \texttt{estimateSizeFactorsForMatrix} \\
+estimate variance functions & \Rfunction{estimateVarianceFunctions} & \Rfunction{estimateVarianceFunctionForMatrix} \\
 calculate base means and variances & N/A & \Rfunction{getBaseMeansAndVariances} \\
 get diagnostics for variance fit & \Rfunction{varianceFitDiagnostics} & \Rfunction{varianceFitDiagnosticsForMatrix} \\
 produce ECDF plot for variance residuals & \Rfunction{residualsEcdfPlot} & \Rfunction{residualsEcdfPlotFromDiagnostics} \\
-perform test & \Rfunction{nbinomTestForContrast} & \Rfunction{nbinomTest} 
+perform test & \Rfunction{nbinomTest} & \Rfunction{nbinomTestForMatrices} 
 \end{tabular}
 }
 

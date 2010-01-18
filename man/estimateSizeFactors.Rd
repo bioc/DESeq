@@ -26,7 +26,7 @@ estimateSizeFactors(cds)
    
    This estimates the size factors and stores the information in the object.
 
-   Internally, the function calls \code{\link{estimateSizeFactorsForCounts}}. See there
+   Internally, the function calls \code{\link{estimateSizeFactorsForMatrix}}. See there
    for more details on the calculation.
 }
 \value{
@@ -37,7 +37,7 @@ estimateSizeFactors(cds)
    Simon Anders, EMBL Heidelberg, sanders@fs.tum.de
 }
 \seealso{
-\code{\link{estimateSizeFactorsForCounts}}
+\code{\link{estimateSizeFactorsForMatrix}}
 }
 \examples{
 # See the vignette for an example.

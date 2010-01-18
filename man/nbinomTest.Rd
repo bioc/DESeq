@@ -1,6 +1,6 @@
-\name{nbinomTestForContrast}
+\name{nbinomTest}
 \Rdversion{1.1}
-\alias{nbinomTestForContrast}
+\alias{nbinomTest}
 
 \title{
    Test for differences between the base means for two conditions
@@ -11,7 +11,7 @@
    RNA-Seq). 
 }
 \usage{
-nbinomTestForContrast(cds, condA, condB, pvals_only = FALSE)
+nbinomTest(cds, condA, condB, pvals_only = FALSE)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -29,7 +29,7 @@ nbinomTestForContrast(cds, condA, condB, pvals_only = FALSE)
 }
 }
 \details{
-   See \code{\link{nbinomTest}} for more technical informations
+   See \code{\link{nbinomTestForMatrices}} for more technical informations
 }
 \value{
 A data frame with the following columns:

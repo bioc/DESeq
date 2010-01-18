@@ -17,7 +17,7 @@ getBaseMeansAndVariances(counts, sizeFactors)
      considered as replicates of the same condition.
 }
   \item{sizeFactors}{
-     the size factors of the columns, as estimated e.g. with \code{\link{estimateSizeFactorsForCounts}}
+     the size factors of the columns, as estimated e.g. with \code{\link{estimateSizeFactorsForMatrix}}
 }
 }
 \value{
