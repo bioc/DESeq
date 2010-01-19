@@ -30,11 +30,11 @@ In RNA-Seq and related assay types (including comparative ChIP-Seq etc.), one
 works with tables of count data, which report, for each sample, the number of
 reads that have been assigned to a gene (or other kind of class).\\
 The package ``DESeq'' provides a powerful tool to estimate the variance in such
-data and test for differential expression. \\
+data and test for differential expression.\footnote{Other Bioconductor packages for this use case (but employing different methods) are \Rpackage{edgeR} and \Rpackage{baySeq}.} \\
 The present vignette explains the use of the package; for an exposition of 
 the statistical method employed, see our paper.\footnote{The companion paper for DESeq is: 
 S.\ Anders, W.\ Huber: ``Differential expression analysis for sequence count data''. 
-This paper is currently under review. If you would like to get a pre-print, please contact me.}
+This paper is currently under review. If you would like to get a pre-print, please contact me.}\\ 
 \end{abstract}
 
 \section{Quick start}
@@ -45,7 +45,7 @@ The \Rpackage{DESeq} package expects count data, as obtained, e.g., from an RNA-
 high-throughput sequencing (HTS) experiment, in form of a matrix of integer values. Each column
 corresponds to a sample, i.e., typically one run on the sequencer. Each row corresponds to entity 
 for which you count hits, e.g., a gene, an exon, a binding region in ChIP-Seq, a window in CNV-Seq,
-or the like.
+or the like. 
 
 \emph{Important:} Each column must stem from an independent experiment or sample. If you spread sample material
 from one experiment over several ``lanes'' of the sequencer in order to get better coverage, you must
@@ -105,6 +105,8 @@ It is a tab-delimited file with column headers in the first line. We read it in 
 countsTable <- read.delim( exampleFile, header=TRUE, stringsAsFactors=TRUE )
 head( countsTable )
 @
+
+To obtain such a table for your own data, you will need other software; this is out of the scope of DESeq. In the course materials from the Workshops section of the Bioconductor web page, you might find further information how to do this with the \Rpackage{ShortRead} and \Rpackage{IRanges} packages.
 
 The first column is the gene ID. (We have shuffled the table rows, removed the RefSeq IDs and replaced them with dummy identifiers of the form ``Gene\_\textit{NNNNN}''.) We use the gene IDs for the row names and remove the gene ID column:
 <<>>=
