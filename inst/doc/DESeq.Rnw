@@ -96,7 +96,7 @@ installed:
 
 <<>>=
 library( DESeq )
-exampleFile = system.file( "data/TagSeqExample.tab", package="DESeq" )
+exampleFile = system.file( "extra/TagSeqExample.tab", package="DESeq" )
 exampleFile
 @
 

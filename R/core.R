@@ -162,7 +162,7 @@ prepareScvBiasCorrectionFits <- function( maxnrepl=15, mu=100000, ngenes=10000,
          mean( rowVars(k) / rowMeans(k)^2 ) } )
       locfit( true_raw_scv ~ lp( est_raw_scv, nn=.2 ) ) } )
 
-load( system.file ( "data/scvBiasCorrectionFits.rda", package="DESeq" ) )
+load( system.file ( "extra/scvBiasCorrectionFits.rda", package="DESeq" ) )
 
 adjustScvForBias <- function( scv, nsamples ) 
 {
