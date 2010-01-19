@@ -57,7 +57,7 @@ with as many element as there are columns in \texttt{countTable} that indicates 
 
 <<echo=FALSE,results=hide>>=
 library( DESeq )
-countsTable <- read.delim( system.file( "data/TagSeqExample.tab", package="DESeq" ), header=TRUE, stringsAsFactors=TRUE )
+countsTable <- read.delim( system.file( "extra/TagSeqExample.tab", package="DESeq" ), header=TRUE, stringsAsFactors=TRUE )
 conds <- c( "T", "T", "T", "T2", "N", "N" )
 @
 
