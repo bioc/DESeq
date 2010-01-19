@@ -35,7 +35,7 @@ newCountDataSet(countData, conditions, sizeFactors = NULL, phenoData = NULL, fea
   \item{phenoData}{
       You may pass an AnnotatedDataFrame here to describe the columns of the count matrix. Note that the
       package always adds two rows (or creates a new AnnotatedDataFrame with only these two rows in case
-      you do not supply one) with names "_condition" and "_sizeFactor" to store this information.
+      you do not supply one) with names "condition" and "sizeFactor" to store this information.
 }
   \item{featureData}{
       You may pass an AnnotatedDataFrame here to describe the rows of the count matrix. The package will just

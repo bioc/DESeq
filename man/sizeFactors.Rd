@@ -7,7 +7,7 @@
 }
 \description{
     The sizeFactors vector is a factor that assigns to each column of the count data
-    a value, the size factor, such that count values in teh columns can be brought to
+    a value, the size factor, such that count values in the columns can be brought to
     a common scale by dividing by the corresponding size factor.
 }
 \usage{

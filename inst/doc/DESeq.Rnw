@@ -18,7 +18,7 @@
 
 \title{\textsf{\textbf{Analysing RNA-Seq data with the ``DESeq'' package}}}
 
-\date{2009-12-27}
+\date{2010-01-19}
 
 \begin{document}
 
@@ -32,14 +32,14 @@ reads that have been assigned to a gene (or other kind of class).\\
 The package ``DESeq'' provides a powerful tool to estimate the variance in such
 data and test for differential expression. \\
 The present vignette explains the use of the package; for an exposition of 
-the statistical method employed, see our paper.\footnote{Our paper has not yet been published. 
-Please contact me if you would like to get a preprint.}
+the statistical method employed, see our paper.\footnote{The companion paper for DESeq is: 
+S.\ Anders, W.\ Huber: ``Differential expression analysis for sequence count data''. 
+This paper is currently under review. If you would like to get a pre-print, please contact me.}
 \end{abstract}
 
 \section{Quick start}
 
-This first section just shows the commands necessary for an analysis at a glance. For detailed
-explanations, read on.
+This first section just shows the commands necessary for an analysis at a glance. For a more gentle introduction, start reading at Section \ref{sec:prep}.
 
 The \Rpackage{DESeq} package expects count data, as obtained, e.g., from an RNA-Seq or other 
 high-throughput sequencing (HTS) experiment, in form of a matrix of integer values. Each column
@@ -55,6 +55,17 @@ variance estimation and overly optimistic $p$ values
 Let's say you have the counts in a matrix \texttt{countTable}, and you further have a factor \texttt{conds}
 with as many element as there are columns in \texttt{countTable} that indicates treatment groups.
 
+<<echo=FALSE,results=hide>>=
+library( DESeq )
+countsTable <- read.delim( system.file( "data/TagSeqExample.tab", package="DESeq" ), header=TRUE, stringsAsFactors=TRUE )
+conds <- c( "T", "T", "T", "T2", "N", "N" )
+@
+
+<<>>=
+head(countsTable)
+conds
+@
+
 Then, the minimal set of commands to run a full analysis is:
 <<eval=FALSE>>=
 library( DESeq )
@@ -67,7 +78,7 @@ The last command tests for differential expression between the conditions labell
 and \texttt{"condB"}. It returns a data frame with $p$ values (raw and adjusted), mean values,
 fold changes, and other useful information.
 
-\section{Preparations}
+\section{Preparations} \label{sec:prep}
 
 As example data, we use Tag-Seq data from an experiment studying certain
 human tissue culture samples, which P.\ Bertone kindly permitted us to use. As this
@@ -75,7 +86,7 @@ data is not yet published, we have obscured annotation data and will, for now, s
 vague concerning its properties. We will amend this once Bertone and coworkers have published
 their paper.
 
-They extracted mRNA from the cultures and sequenced only the 3' end of the transcripts (SAGE, also known as Tag-Seq) with
+They extracted mRNA from the cultures and sequenced only the 3' end of the transcripts (Tag-Seq) with
 an Illumina GenomeAnalyzer, one lane per sample. They got from 6.8 to 13.6 mio reads from each lane,
 which they assigned to genes. They were able to assign 30\% to 50\% of the tags unambiguously to
 annotated genes and produced a table that gives these counts. A version of this table is distributed with the \Rpackage{DESeq} package as example data in a file called
@@ -85,11 +96,11 @@ installed:
 
 <<>>=
 library( DESeq )
-exampleFile = system.file( "TagSeqExample.tab", package="DESeq" )
+exampleFile = system.file( "data/TagSeqExample.tab", package="DESeq" )
 exampleFile
 @
 
-It is a tab-delimited file with column headers in then first line. We read it in with
+It is a tab-delimited file with column headers in the first line. We read it in with
 <<>>=
 countsTable <- read.delim( exampleFile, header=TRUE, stringsAsFactors=TRUE )
 head( countsTable )
@@ -102,8 +113,8 @@ countsTable <- countsTable[ , -1 ]
 @ % $
 
 We are now left with six columns, referring to the six samples. The first four (labelled
-``T1a'', ``T1b'', ``T2'', and ``T3'') are from tumorigenic tissue, the last two (labelled
-``N1'', ``N2'') are from non-tumorigenic tissue and served as control. 
+``T1a'', ``T1b'', ``T2'', and ``T3'') are from cancerous tissue, the last two (labelled
+``N1'', ``N2'') are from healthy tissue and served as control. 
 
 We code this information in the following vector, which assigns each sample a ``condition'':
 <<>>=
@@ -140,7 +151,7 @@ sample T1a.
 As first processing step, we have to estimate the effective library size. This information is called the ``size
 factors'' vector, as the package only needs to now the relative library sizes. So, if a
 non-differentially expressed gene produces twice as many counts in one sample than in another, the size
-factor for this sample should be twice the large as the one for the other sample. You could simply use
+factor for this sample should be twice as large as the one for the other sample. You could simply use
 the actual total numbers of reads and assign them to the \Robject{cds} object:
 <<>>=
 libsizes <- c( T1a=6843583, T1b=7604834, T2=13625570, T3=12291910,
@@ -157,14 +168,22 @@ sizeFactors( cds )
 
 \section{Variance estimation}
 
-The crucial processing step is the estimation of the variance functions, which
-estimate, for each condition, how the variance depends on the mean.
+As explained in detail in the paper, the core assumption of this method it that the mean is a good
+predictor of the variance, i.e., that genes with a similar expression level also have similar
+variance across replicates. Hence, we need to estimate for each condition a function that allows
+to predict the variance from the mean. This estimation is done by calculating, for each gene, 
+the sample mean and variance within replicates and then fitting a curve to this data.
+
+This computation is performed by the following command.
 <<>>=
 cds <- estimateVarianceFunctions( cds )
 @
-This is done by means of a local regression, as detailed in the paper.
 
-The point of these functions is to predict how much variance one should expect
+{\footnotesize
+In order to use the package, you do not need to know what precisely these raw variance functions
+estimate. For the interested reader, a few extra details are given here:
+
+The point of the variance functions is to predict how much variance one should expect
 for counts at a certain level. For example, let us assume that we have found 123
 tags for a certain gene in the ``T1b'' sample.
 We may now calculate the expected ``raw variance'' as follows. First we get the
@@ -187,8 +206,15 @@ fullVariance <- countValue + rawVariance * sizeFactors(cds)["T1b"]^2
 sqrt( fullVariance )
 @
 
-You do not have to do the calculation just outlined yourself, the package does
+Of course, you do not have to do the calculation just outlined yourself, the package does
 this automatically.
+\bigskip
+}
+
+If you are confident that the package did a good job in estimating the variance
+functions, you may now skip directly to the Section \ref{sec:DE}. If you, however, would like to check
+whether the fit was good, the rest of this sections explains how to inspect and 
+verify the variance function estimates.
 
 \begin{figure}
 \centering
@@ -271,7 +297,7 @@ produced with the function \Rfunction{residualsEcdfPlot}.}
 \end{figure}
 
 Another way to study the diagnostic data is to check whether the probabilities in the fourth column of the diagnostics
-data frame are uniform, as they should be. One may simple look at the histogram of 
+data frame are uniform, as they should be. One may simply look at the histogram of 
 \texttt{diagForGB\$pchisq} but a more convenient way is the function 
 \Rfunction{residualsEcdfPlot}, which show empirical cumulative density functions 
 (ECDF) stratified by base level. 
@@ -292,10 +318,10 @@ variance functions, use the \Rfunction{rawVarFuncTable} accessor function:
 rawVarFuncTable( cds )
 @
 
-\section{Calling differential expression}
+\section{Calling differential expression} \label{sec:DE}
 
 Having estimated and verified the variance--mean dependence, it is now straight-forward to look for
-differentially expressed genesd. To contrast two conditions, e.g., to see whether there is differential
+differentially expressed genes. To contrast two conditions, e.g., to see whether there is differential
 expression between conditions ``N'' and ``T'', we simply call the function \Rfunction{nbinomTest}.
 It performs the tests as described in the paper and returns a data frame with the $p$ value and other
 useful data.
@@ -330,7 +356,7 @@ plot(
 @
 See Fig.~\ref{figDE} for the plot.
 
-Finally, we may filter to the significant genes,
+Finally, we may filter for the significant genes,
 <<>>=
 resSig <- res[ res$padj < .1, ]
 @
@@ -398,7 +424,7 @@ comparable magnitude. Once we accept this assumption, we may argue as follows: G
 different conditions and a number of genes with comparable expression levels, of which we expect only a minority
 to be influenced by the condition, we may take the variance estimated from comparing their count rates \emph{across}
 conditions as ersatz for a proper estimate of the variance across replicates. After all,
-we assume most genes to behave the same in replicates as across conditions, and hence, the estimated variance 
+we assume most genes to behave the same within replicates as across conditions, and hence, the estimated variance 
 should not change too much due to the influence of the hopefully few differentially expressed genes. Furthermore,
 the differentially expressed genes will only cause the variance estimate to be too high, so that the test will err to the
 side of being too conservative, i.e., we only lose power.
@@ -440,15 +466,15 @@ and from this table, tallying the number of significant hits in our previous and
 <<>>=
 table( res_sig = res$padj < .1, res2_sig = res2$padj < .1 )
 @
-As can be seen, we have still found about 1/4 of the hits, and only a reasuringly small number of 
+As can be seen, we have still found about 1/4 of the hits, and only a reassuringly small number of 
 new (and potentially false) hits.
 
 One may finally ask whether the reduction of discoveries to a quarter is due to the higher variance
 estimate, or due to the lower confidence in the base mean estimates, which is due to the reduced
 sample size. To see this, we run the original analysis again, but now using the new, worse variance function. 
 As this analysis is outside the standard work-flow, we have to use a lower-level function of the package,
-which does not recognize the \Rclass{CountDataSet} S4 object but instead expects all data to be 
-specified seperately. (This is inconvient normally but enables us here to substitute another variance function
+which does not recognise the \Rclass{CountDataSet} S4 object but instead expects all data to be 
+specified separately. (This is inconvenient normally but enables us here to substitute another variance function
 for the one that the \Rfunction{nbinomTest} function would use.)
 <<>>=
 colsN <- conditions(cds) == "N"
@@ -475,10 +501,10 @@ reduces sample size then another half, leaving us with a quarter of the original
 
 \section{Sample clustering}
 
-Another feature of the \Rpackage{DESeq} package is the variance stabilizing transformation (VST).
+Another feature of the \Rpackage{DESeq} package is the variance stabilising transformation (VST).
 This is a monotonous function, which is calculated for each sample from the applicable
 variance function, that transforms the count data such that its variance becomes independent
-of the mean, i.e., it produces a homoskledastic version of the data.
+of the mean, i.e., it produces a homoscedastic version of the data.
 
 To demonstrate a potential use for this, we instantiate another CountDataSet and do not remove sample T1a this time:
 
@@ -501,16 +527,16 @@ head( vsd )
 \centering
 \includegraphics[width=.6\textwidth]{DESeq-figHeatmap}
 \caption{A heatmap showing the distances between the samples as calculated from the 
-variance-stabilizing transformation of the count data.}
+variance-stabilising transformation of the count data.}
 \label{figHeatmap}
 \end{figure}
 
-This data is now approximately homoskledastic and hence suitable as input to various statistical procedures, e.g., a simple distance calculation:
+This data is now approximately homoscedastic and hence suitable as input to various statistical procedures, e.g., a simple distance calculation:
 <<>>=
 dists <- dist( t( vsd ) )
 @
 
-We visualize the distance matrix as a heatmap:
+We visualise the distance matrix as a heatmap:
 <<figHeatmap,fig=TRUE>>=
 heatmap( as.matrix( dists ), symm=TRUE )
 @
@@ -522,6 +548,9 @@ with the atypical histopathological phenotype is not that different from sample 
 \appendix
 
 \section{Reference overview}
+
+This appendix gives a terse overview of the class and all the functions defined in the package. The
+description assumed that the reader is familiar with the \texttt{eSet} class.
 
 The package defines one S4 class, \Rclass{CountDataSet}, which is derived from \Rclass{eSet}. To instantiate 
 an object, use the function \Rfunction{newCountDataSet}. Do not call \Rfunction{new} directly.

@@ -1,10 +1,10 @@
 Package: DESeq
-Version: 0.7.1
+Version: 0.7.3
 Date: 2010-01-19
 Title: Digital gene expresion analysis based on the negative binomial distribution
 Author: Simon Anders, EMBL Heidelberg <sanders@fs.tum.de>
 Maintainer: Simon Anders <sanders@fs.tum.de>
-Imports: genefilter, locfit, geneplotter, methods
+Imports: genefilter, geneplotter, methods
 Depends: Biobase, locfit
 Suggests: 
 Description: Estimate variance-mean dependence in count data from high-throughput
@@ -13,4 +13,4 @@ Description: Estimate variance-mean dependence in count data from high-throughpu
 License: GPL (>= 3)
 URL: http://www.bioconductor.org/
 biocViews: HighThroughputSequencing, ChIPseq, RNAseq, SAGE, 
-   DifferentialExpression, Genetics
+   DifferentialExpression

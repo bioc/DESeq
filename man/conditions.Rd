@@ -7,7 +7,7 @@
 \description{
     The conditions vector is a factor that assigns to each column of the count data
     a condition (or treatment, or phenotype, or the like). This information is stored
-    in the CountDataSet's "phenoData" slot as a row named "_condition".
+    in the CountDataSet's "phenoData" slot as a row named "condition".
 }
 \usage{
 conditions(cds)

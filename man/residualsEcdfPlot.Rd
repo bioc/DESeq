@@ -17,7 +17,7 @@ residualsEcdfPlot(cds, condition, ncuts = 7)
      a CountDataSet with raw variance functions     
 }
   \item{condition}{
-     the name fo a condition
+     the name of a condition
 }
   \item{ncuts}{
      the number of base mean strata (i.e, of curves)

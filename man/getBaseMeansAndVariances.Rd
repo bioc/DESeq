@@ -5,7 +5,7 @@
     Perform row-wise estimates of base-level means and variances for count data.
 }
 \description{
-    This fucntion is called internally by a number of other functions. You will need
+    This function is called internally by a number of other functions. You will need
     to call it directly only in very special cases.
 }
 \usage{

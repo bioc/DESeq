@@ -21,8 +21,8 @@ newCountDataSet <- function( countData, conditions, sizeFactors=NULL,
    if( is.null( featureData ) ) 
       featureData <- annotatedDataFrameFrom( countData, byrow=TRUE )
       
-   phenoData$`_condition` <- conditions
-   phenoData$`_sizeFactor` <- sizeFactors
+   phenoData$`condition` <- conditions
+   phenoData$`sizeFactor` <- sizeFactors
    
    cds <- new( "CountDataSet",
       assayData = assayDataNew( "environment", counts=countData ),
@@ -36,14 +36,14 @@ newCountDataSet <- function( countData, conditions, sizeFactors=NULL,
 }
 
 setValidity( "CountDataSet", function( object ) {
-   if( ! "_condition"  %in% names(pData(object)) )
-      return( "phenoData does not contain a '_condition' columns." )
-   if( ! is( pData(object)$`_condition`, "factor" ) )
-      return( "The '_condition' column in phenoData is not a factor." )
-   if( ! "_sizeFactor"  %in% names(pData(object)) )
-      return( "phenoData does not contain a '_sizeFactor' columns.")
-   if( ! is( pData(object)$`_sizeFactor`, "numeric" ) )
-      return( "The '_sizeFactors' column in phenoData is not numeric." )
+   if( ! "condition"  %in% names(pData(object)) )
+      return( "phenoData does not contain a 'condition' columns." )
+   if( ! is( pData(object)$`condition`, "factor" ) )
+      return( "The 'condition' column in phenoData is not a factor." )
+   if( ! "sizeFactor"  %in% names(pData(object)) )
+      return( "phenoData does not contain a 'sizeFactor' columns.")
+   if( ! is( pData(object)$`sizeFactor`, "numeric" ) )
+      return( "The 'sizeFactor' column in phenoData is not numeric." )
    if( length(object@rawVarFuncTable) != length(levels(conditions(object))) )
       return( "The rawVarFuncTable does not contain one element per condition." )
    if( any( names(object@rawVarFuncTable) != levels(conditions(object))) )
@@ -77,28 +77,28 @@ counts <- function( cds ) {
    
 sizeFactors <- function( cds ) {
    stopifnot( is( cds, "CountDataSet" ) )
-   sf <- pData(cds)$`_sizeFactor`
+   sf <- pData(cds)$`sizeFactor`
    names( sf ) <- colnames( counts(cds) )
    sf
 }   
    
 `sizeFactors<-` <- function( cds, value ) {
    stopifnot( is( cds, "CountDataSet" ) )
-   pData(cds)$`_sizeFactor` <- value
+   pData(cds)$`sizeFactor` <- value
    validObject( cds )
    cds
 }   
 
 conditions <- function( cds ) {
    stopifnot( is( cds, "CountDataSet" ) )
-   conds <- pData(cds)$`_condition`
+   conds <- pData(cds)$`condition`
    names( conds ) <- colnames( counts(cds) )
    conds
 }   
    
 `conditions<-` <- function( cds, value ) {
    stopifnot( is( cds, "CountDataSet" ) )
-   pData(cds)$`_condition` <- factor( value )
+   pData(cds)$`condition` <- factor( value )
    validObject( cds )
    cds
 }   

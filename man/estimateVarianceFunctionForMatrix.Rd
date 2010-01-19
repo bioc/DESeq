@@ -24,8 +24,8 @@ estimateVarianceFunctionForMatrix(counts, sizeFactors, ...)
   \item{\dots}{
       Options to be passed to the \code{lp} function of the locfit package. Use this
       to adjust the local fitting. For example, you may pass a value for \code{nn}
-      different from the default (0.7) if the fit seems to smotth or to rough. See
-      th documentation of the locfit package for details. Usually, you will not
+      different from the default (0.7) if the fit seems too smooth or too rough. See
+      the documentation of the locfit package for details. Usually, you will not
       need to adjuste the fitting, as the defaults seem to work quite fine.  
 }
 }
