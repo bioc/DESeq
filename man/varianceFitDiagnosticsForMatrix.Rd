@@ -36,8 +36,17 @@ The same return value as described for \code{\link{varianceFitDiagnostics}}.
 \code{\link{varianceFitDiagnostics}},\code{\link{residualsEcdfPlotFromDiagnostics}}
 }
 \author{
-   Simon Anders, EMBL Heidelberg, sanders@fs.tum.de
+   Simon Anders, sanders@fs.tum.de
 }
 \examples{
-# See the vignette for an example.
+cds <- makeExampleCountDataSet()
+cds <- estimateSizeFactors( cds )
+cds <- estimateVarianceFunctions( cds )
+colsA <- conditions(cds) == "A"
+vfd <- varianceFitDiagnosticsForMatrix( 
+          counts(cds)[,colsA], 
+          sizeFactors(cds)[colsA],
+          rawVarFunc( cds, "A" ) )
+head( vfd )
+
 }

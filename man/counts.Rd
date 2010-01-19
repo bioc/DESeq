@@ -18,6 +18,10 @@ counts(cds)
 }
 }
 \author{
-   Simon Anders, EMBL Heidelberg, sanders@fs.tum.de
+   Simon Anders, sanders@fs.tum.de
 }
-
+\examples{
+   cds <- makeExampleCountDataSet()
+   head( counts( cds ) )
+}   
+   

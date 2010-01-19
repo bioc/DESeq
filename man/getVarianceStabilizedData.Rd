@@ -30,9 +30,14 @@ getVarianceStabilizedData(cds)
    A matrix of the same dimension as the count data, containing the transformed data.
 }
 \author{
-   Simon Anders, EMBL Heidelberg, sanders@fs.tum.de
+   Simon Anders, sanders@fs.tum.de
 }
 
 \examples{
-# See vignette
+cds <- makeExampleCountDataSet()
+cds <- estimateSizeFactors( cds )
+cds <- estimateVarianceFunctions( cds )
+vsd <- getVarianceStabilizedData( cds )
+colsA <- conditions(cds) == "A"
+plot( rank( rowMeans( vsd[,colsA] ) ), genefilter::rowVars( vsd[,colsA] ) )
 }

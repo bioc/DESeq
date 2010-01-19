@@ -35,5 +35,8 @@ None, but a plot is produced.
 \code{\link{residualsEcdfPlotFromDiagnostics}}, \code{\link{varianceFitDiagnostics}}
 }
 \examples{
-# See the vignette for an example.
+cds <- makeExampleCountDataSet()
+cds <- estimateSizeFactors( cds )
+cds <- estimateVarianceFunctions( cds )
+residualsEcdfPlot( cds, "A" )
 }

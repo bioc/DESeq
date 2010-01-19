@@ -29,5 +29,10 @@ A data frame with one row for each row in 'counts' and two columns:
 }
 
 \author{
-   Simon Anders, EMBL Heidelberg, sanders@fs.tum.de
+   Simon Anders, sanders@fs.tum.de
+}
+\examples{
+cds <- makeExampleCountDataSet()
+cds <- estimateSizeFactors( cds )
+head( getBaseMeansAndVariances( counts(cds), sizeFactors(cds) ) )
 }

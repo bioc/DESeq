@@ -31,11 +31,15 @@ scvPlot(cds, xlim = NULL, ylim = NULL)
    None; but a plot is produced.
 }
 \author{
-   Simon Anders, EMBL Heidelberg, sanders@fs.tum.de
+   Simon Anders, sanders@fs.tum.de
 }
 \note{
 There is still a bug in this function, namely the colours between dashed and solid lines
 fail to match correctly. Furthermore, the displayed SCV values are not bias corrected.}
+
 \examples{
-# See the vignette for an example.
+cds <- makeExampleCountDataSet()
+cds <- estimateSizeFactors( cds )
+cds <- estimateVarianceFunctions( cds )
+scvPlot( cds, ylim = c(0, 2) )
 }

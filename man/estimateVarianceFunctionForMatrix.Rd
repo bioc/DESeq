@@ -36,6 +36,12 @@ estimateVarianceFunctionForMatrix(counts, sizeFactors, ...)
    variance, add the shot noise as well).
 }
 \author{
-   Simon Anders, EMBL Heidelberg, sanders@fs.tum.de
+   Simon Anders, sanders@fs.tum.de
 }
-
+\examples{
+cds <- makeExampleCountDataSet()
+cds <- estimateSizeFactors( cds )
+vf <- estimateVarianceFunctionForMatrix( counts(cds), sizeFactors(cds) )
+vf( head( counts(cds)[,1] / sizeFactors(cds)[1] ) )
+vf( reportSize=TRUE )
+}

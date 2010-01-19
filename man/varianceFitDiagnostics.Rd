@@ -44,12 +44,12 @@ should be uniformly distributed. You can check this with a histogram, or more co
 \code{\link{residualsEcdfPlot}}
 }
 \author{
-   Simon Anders, EMBL Heidelberg, sanders@fs.tum.de
+   Simon Anders, sanders@fs.tum.de
 }
 \examples{
 cds <- makeExampleCountDataSet()
 cds <- estimateSizeFactors( cds )
 cds <- estimateVarianceFunctions( cds )
-bvd <- varianceFitDiagnostics( cds, "A" )
-head( bvd )
+vfd <- varianceFitDiagnostics( cds, "A" )
+head( vfd )
 }

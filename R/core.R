@@ -157,9 +157,9 @@ prepareScvBiasCorrectionFits <- function( maxnrepl=15, mu=100000, ngenes=10000,
       true_raw_scv = c( seq( 0, 2, length.out=100 )[-1], seq( 2, 10, length.out=20 )[-1] ) )
    lapply( 2:maxnrepl, function( m ) {
       est_raw_scv <- sapply( true_raw_scv, function( alpha ) {
-	 k <- matrix( rnbinom( ngenes*m, mu=mu, size=1/alpha ), ncol=m )
-	 k <- k[ rowSums(k)>0, ]
-	 mean( rowVars(k) / rowMeans(k)^2 ) } )
+         k <- matrix( rnbinom( ngenes*m, mu=mu, size=1/alpha ), ncol=m )
+         k <- k[ rowSums(k)>0, ]
+         mean( rowVars(k) / rowMeans(k)^2 ) } )
       locfit( true_raw_scv ~ lp( est_raw_scv, nn=.2 ) ) } )
 
 load( system.file ( "scvBiasCorrectionFits.rda", package="DESeq" ) )

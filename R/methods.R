@@ -173,15 +173,16 @@ getVarianceStabilizedData <- function( cds ) {
 
 makeExampleCountDataSet <- function( ) 
 {
-   ngenes <- 2000
+   ngenes <- 10000
    q0 <- rexp( ngenes, rate=1/250 )
    is_DE <- runif( ngenes ) < .3
    lfc <- rnorm( ngenes, sd=2 )
-   q0A <- ifelse( is_DE, q0 * exp(  lfc/2 ), q0 )
-   q0B <- ifelse( is_DE, q0 * exp( -lfc/2 ), q0 )
-   m <- t( sapply( 1:ngenes, function(i) c(
-      rnbinom( 3, mu = q0A[i], size = 1/.2 ),
-      rnbinom( 2, mu = q0B[i], size = 1/.2 ) ) ) )
+   q0A <- ifelse( is_DE, q0 * 2^(  lfc/2 ), q0 )
+   q0B <- ifelse( is_DE, q0 * 2^( -lfc/2 ), q0 )
+   true_sf <- c( 1., 1.3, .7, .9, 1.6 )   
+   m <- t( sapply( 1:ngenes, function(i) 
+      sapply( true_sf, function( s )
+         rnbinom( 1, mu = s * q0A[i], size = 1/.2 ) ) ) )
    colnames(m) <- c( "A1", "A2", "A3", "B1", "B2" )
    rownames(m) <- paste( "gene", 1:ngenes, 
       ifelse( is_DE, "T", "F" ), sep="_" )

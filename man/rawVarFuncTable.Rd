@@ -27,11 +27,14 @@ rawVarFuncTable(cds)
    use it to look up which raw variance function to use for which condition.
 }
 \author{
-   Simon Anders, EMBL Heidelberg, sanders@fs.tum.de
+   Simon Anders, sanders@fs.tum.de
 }
 \seealso{
 \code{\link{estimateSizeFactors}}
 }
 \examples{
-# See the vignette for an example.
+cds <- makeExampleCountDataSet()
+cds <- estimateSizeFactors( cds )
+cds <- estimateVarianceFunctions( cds )
+rawVarFuncTable( cds )
 }

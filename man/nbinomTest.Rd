@@ -49,8 +49,11 @@ to be a variance outlier and might be false.}
 \item{resVarB}{The same for condition B.}
 }
 \author{
-   Simon Anders, EMBL Heidelberg, sanders@fs.tum.de
+   Simon Anders, sanders@fs.tum.de
 }
 \examples{
-# See the vignette for an example.
+cds <- makeExampleCountDataSet()
+cds <- estimateSizeFactors( cds )
+cds <- estimateVarianceFunctions( cds )
+head( nbinomTest( cds, "A", "B" ) )
 }

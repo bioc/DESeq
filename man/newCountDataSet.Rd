@@ -50,8 +50,9 @@ newCountDataSet(countData, conditions, sizeFactors = NULL, phenoData = NULL, fea
    an object of class CountDataSet
 }
 \author{
-   Simon Anders, EMBL Heidelberg, sanders@fs.tum.de
+   Simon Anders, sanders@fs.tum.de
 }
 \examples{
-# See the vignette for an example.
+countsTable <- counts( makeExampleCountDataSet() )
+cds <- newCountDataSet( countsTable, c( "A", "A", "A", "B", "B" ) )
 }

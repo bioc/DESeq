@@ -34,11 +34,13 @@ estimateSizeFactors(cds)
 }
 
 \author{
-   Simon Anders, EMBL Heidelberg, sanders@fs.tum.de
+   Simon Anders, sanders@fs.tum.de
 }
 \seealso{
 \code{\link{estimateSizeFactorsForMatrix}}
 }
 \examples{
-# See the vignette for an example.
+cds <- makeExampleCountDataSet()
+cds <- estimateSizeFactors( cds )
+sizeFactors( cds )
 }

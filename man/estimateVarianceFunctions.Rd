@@ -51,8 +51,13 @@ estimateVarianceFunctions(cds, pool = FALSE, ...)
    \code{\link{scvPlot}} to visualize the result and \code{\link{varianceFitDiagnostics}} to check the fit
 }
 \author{
-   Simon Anders, EMBL Heidelberg, sanders@fs.tum.de
+   Simon Anders, sanders@fs.tum.de
 }
 \examples{
-# See the vignette for an example.
+cds <- makeExampleCountDataSet()
+cds <- estimateSizeFactors( cds )
+cds <- estimateVarianceFunctions( cds )
+vf <- rawVarFunc( cds, "A" )
+vf( head( counts(cds)[,1] / sizeFactors(cds)[1] ) )
+vf( reportSize=TRUE )
 }

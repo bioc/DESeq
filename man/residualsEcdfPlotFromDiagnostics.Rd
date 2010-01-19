@@ -34,3 +34,10 @@ None, but a plot is produced.
 \seealso{
 \code{\link{residualsEcdfPlot}}, \code{\link{varianceFitDiagnostics}}, \code{\link{varianceFitDiagnosticsForMatrix}}
 }
+\examples{
+cds <- makeExampleCountDataSet()
+cds <- estimateSizeFactors( cds )
+cds <- estimateVarianceFunctions( cds )
+vfd <- varianceFitDiagnostics( cds, "A" )
+residualsEcdfPlotFromDiagnostics( vfd )
+}

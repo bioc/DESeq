@@ -22,7 +22,8 @@ export(
    estimateSizeFactorsForMatrix,
    scvPlot,
    getVarianceStabilizedData,
-   makeExampleCountDataSet )
+   makeExampleCountDataSet,
+   adjustScvForBias )
   
 import( Biobase )
 importFrom( genefilter, rowVars )
