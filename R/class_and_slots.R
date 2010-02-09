@@ -59,8 +59,10 @@ setValidity( "CountDataSet", function( object ) {
    for( vmfName in ls(object@rawVarFuncs) ) {
       if( !is( object@rawVarFuncs[[vmfName]], "function" ) )
          return( sprintf( "rawVarFuncs contains a value, called '%s', which is not a function.", vmfName ) )
-      if( length( formals( object@rawVarFuncs[[vmfName]] ) ) != 1 )
-         return( sprintf( "rawVarFuncs contains a function, called '%s', which does not have exactly one argument.", vmfName ) )
+      if( length( formals( object@rawVarFuncs[[vmfName]] ) ) != 2 ) 
+         return( sprintf( "rawVarFuncs contains a function, called '%s', which does have the right argument list for a raw variance function.", vmfName ) )
+      if( any( names( formals( object@rawVarFuncs[[vmfName]] ) ) != c( "q", "reportSize" ) ) )
+         return( sprintf( "rawVarFuncs contains a function, called '%s', which does have the right argument list for a raw variance function.", vmfName ) )
       testres <- object@rawVarFuncs[[vmfName]]( 1.5 ) 
       if( ! is( testres, "numeric" ) )
          return( sprintf( "rawVarFuncs contains a function, called '%s', which does not return a numeric result.", vmfName ) )

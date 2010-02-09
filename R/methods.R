@@ -28,9 +28,9 @@ estimateVarianceFunctions <- function( cds, pool=FALSE, ... )
       for( cond in replicated )
          cds@rawVarFuncs[[cond]] <- estimateVarianceFunctionForMatrix( 
             counts(cds)[ , conditions(cds)==cond ], sizeFactors(cds)[ conditions(cds)==cond ], ... )
-      cds@rawVarFuncs[["_max"]] <- function( x, reportSize=FALSE )
+      cds@rawVarFuncs[["_max"]] <- function( q, reportSize=FALSE )
          apply( rbind( sapply( replicated, function(cond) 
-	    cds@rawVarFuncs[[cond]]( x, reportSize ) ) ), 1, max )
+            cds@rawVarFuncs[[cond]]( q, reportSize ) ) ), 1, max )
          
       rawVarFuncTable(cds) <- 
          sapply( levels(conditions(cds)), function( cond )

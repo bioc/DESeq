@@ -55,7 +55,8 @@ variance estimation and overly optimistic $p$ values
 
 Let's say you have the counts in a matrix or data frame \texttt{countTable}, and you
 further have a factor \texttt{conds} with as many element as there are
-columns in \texttt{countTable} that indicates treatment groups.
+columns in \texttt{countTable} that indicates treatment groups, i.e., data in the following
+form:
 
 <<countsTable,echo=FALSE,results=hide>>=
 library("DESeq")
@@ -78,7 +79,7 @@ res <- nbinomTest( cds, "T", "N")
 @
 The last command tests for differential expression between the conditions labelled \texttt{"T"}
 and \texttt{"N"}. It returns a data frame with $p$ values (raw and adjusted), mean values,
-fold changes, and other useful information.
+fold changes, and other useful information, which looks as follows:
 <<res>>=
 head(res)
 @ 

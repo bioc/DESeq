@@ -169,5 +169,5 @@ adjustScvForBias <- function( scv, nsamples )
    if( nsamples - 1 > length( scvBiasCorrectionFits ) )
       scv
    else
-      safepredict( scvBiasCorrectionFits[[ nsamples-1 ]], scv )
+      pmax( safepredict( scvBiasCorrectionFits[[ nsamples-1 ]], scv ), 1e-8 * scv )
 }      
