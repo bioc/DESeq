@@ -28,13 +28,14 @@
 \begin{abstract}
 In RNA-Seq and related assay types (including comparative ChIP-Seq etc.), one 
 works with tables of count data, which report, for each sample, the number of
-reads that have been assigned to a gene (or other kind of class).\\
+reads that have been assigned to a gene (or other types of entities).
 The package ``DESeq'' provides a powerful tool to estimate the variance in such
-data and test for differential expression.\footnote{Other Bioconductor packages for this use case (but employing different methods) are \Rpackage{edgeR} and \Rpackage{baySeq}.} \\
+data and test for differential expression.\footnote{Other Bioconductor packages 
+  for this use case (but employing different methods) are \Rpackage{edgeR} and \Rpackage{baySeq}.} 
 The present vignette explains the use of the package; for an exposition of 
 the statistical method employed, see our paper.\footnote{The companion paper for DESeq is: 
 S.\ Anders, W.\ Huber: ``Differential expression analysis for sequence count data''. 
-This paper is currently under review. If you would like to get a pre-print, please contact me.}\\ 
+This paper is currently under review. If you would like to get a pre-print, please contact me.}
 \end{abstract}
 
 \section{Quick start}
@@ -52,39 +53,44 @@ from one experiment over several ``lanes'' of the sequencer in order to get bett
 sum up the counts from the lanes to get a single column. Failing to do so will result in incorrect
 variance estimation and overly optimistic $p$ values
 
-Let's say you have the counts in a matrix \texttt{countTable}, and you further have a factor \texttt{conds}
-with as many element as there are columns in \texttt{countTable} that indicates treatment groups.
+Let's say you have the counts in a matrix or data frame \texttt{countTable}, and you
+further have a factor \texttt{conds} with as many element as there are
+columns in \texttt{countTable} that indicates treatment groups.
 
-<<echo=FALSE,results=hide>>=
-library( DESeq )
-countsTable <- read.delim( system.file( "extra/TagSeqExample.tab", package="DESeq" ), header=TRUE, stringsAsFactors=TRUE )
-conds <- c( "T", "T", "T", "T2", "N", "N" )
+<<countsTable,echo=FALSE,results=hide>>=
+library("DESeq")
+countsTable <- read.delim(system.file("extra/TagSeqExample.tab", package="DESeq"), 
+                          header=TRUE, stringsAsFactors=TRUE, row.names="gene")
+conds <- factor(c("T", "T", "T", "T2", "N", "N"))
 @
 
-<<>>=
+<<countsTable>>=
 head(countsTable)
 conds
 @
 
 Then, the minimal set of commands to run a full analysis is:
-<<eval=FALSE>>=
-library( DESeq )
+<<demo1>>=
 cds <- newCountDataSet( countsTable, conds )
 cds <- estimateSizeFactors( cds )
 cds <- estimateVarianceFunctions( cds )
-res <- nbinomTest( cds, "condA", "condB" )
+res <- nbinomTest( cds, "T", "N")
 @
-The last command tests for differential expression between the conditions labelled \texttt{"condA"}
-and \texttt{"condB"}. It returns a data frame with $p$ values (raw and adjusted), mean values,
+The last command tests for differential expression between the conditions labelled \texttt{"T"}
+and \texttt{"N"}. It returns a data frame with $p$ values (raw and adjusted), mean values,
 fold changes, and other useful information.
+<<res>>=
+head(res)
+@ 
+
 
 \section{Preparations} \label{sec:prep}
 
 As example data, we use Tag-Seq data from an experiment studying certain
-human tissue culture samples, which P.\ Bertone kindly permitted us to use. As this
-data is not yet published, we have obscured annotation data and will, for now, stay some
-vague concerning its properties. We will amend this once Bertone and coworkers have published
-their paper.
+human tissue culture samples, which P.\ Bertone kindly permitted us to use. As these
+data are not yet published, we have obscured annotation data and will, for now, remain 
+vague concerning their biological properties. 
+We will amend this once Bertone and coworkers have published their paper.
 
 They extracted mRNA from the cultures and sequenced only the 3' end of the transcripts (Tag-Seq) with
 an Illumina GenomeAnalyzer, one lane per sample. They got from 6.8 to 13.6 mio reads from each lane,
