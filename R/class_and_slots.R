@@ -11,6 +11,9 @@ newCountDataSet <- function( countData, conditions, sizeFactors=NULL,
       phenoData = NULL, featureData = NULL )
 {
    countData <- as.matrix( countData )
+   if( any( round( countData ) != countData ) )
+      stop( "The countData is not integer." )
+   mode( countData ) <- "integer"   
    conditions <- factor( conditions )
    stopifnot( ncol( countData ) == length( conditions ) )
 
@@ -69,6 +72,10 @@ setValidity( "CountDataSet", function( object ) {
       if( length(testres) != 1 )
          return( sprintf( "rawVarFuncs contains a function, called '%s', which does not return a single number as result.", vmfName ) )
    }
+   if( !is.integer( counts(object) ) )
+      return( "the count data is not in integer mode" )
+   if( any( counts(object) < 0 ) )
+      return( "the count data contains negative values" )
    TRUE
 } )
 
