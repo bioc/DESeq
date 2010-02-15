@@ -67,10 +67,12 @@ SEXP add_from_middle_for_R( SEXP kS, SEXP pobs, SEXP muA, SEXP vA,
    SEXP muB, SEXP vB, SEXP upwards, SEXP eps ) 
 {
    SEXP res = Rf_allocVector( REALSXP, 2 );
+   PROTECT( res );
    add_from_middle( INTEGER(kS)[0], REAL(pobs)[0], REAL(muA)[0], 
       REAL(vA)[0], REAL(muB)[0], REAL(vB)[0], LOGICAL(upwards)[0], 
       REAL(eps)[0], REAL(res), REAL(res) + 1 );
-  return res;
+   UNPROTECT( 1 );
+   return res;
 }   
 
 R_CallMethodDef callMethods[] = {
