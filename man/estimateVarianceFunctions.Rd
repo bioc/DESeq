@@ -10,7 +10,8 @@
     to estimate the raw variance function for this condition.     
 }
 \usage{
-estimateVarianceFunctions(cds, pool = FALSE, ...)
+estimateVarianceFunctions(cds, pool = FALSE, 
+   locfit_extra_args = list(), lp_extra_args = list())
 }
 \arguments{
   \item{cds}{
@@ -21,12 +22,15 @@ estimateVarianceFunctions(cds, pool = FALSE, ...)
       function. Use this option if you have no replicates but be sure to read the
       caveats in the vignette.
 }
-  \item{\dots}{
-      Options to be passed to the \code{lp} function of the locfit package. Use this
-      to adjust the local fitting. For example, you may pass a value for \code{nn}
-      different from the default (0.7) if the fit seems too smooth or too rough. See
-      the documentation of the locfit package for details. Usually, you will not
-      need to adjuste the fitting, as the defaults seem to work quite fine.
+  \item{locfit_extra_args, lp_extra_args}{
+      Options to be passed to the \code{locfit} and to the \code{lp} function of the 
+      locfit package. Use this  to adjust the local fitting. For example, you may pass 
+      a value for \code{nn} different from the default (0.7) if the fit seems too smooth 
+      or too rough by setting \code{lp_extra_agrs=list(nn=0.9)} or you can set
+      \code{locfit_extra_args=list(maxk=200)} if you get the error that locfit ran
+      out of nodes. See the documentation of the locfit package for details. Usually, 
+      you will not need to adjuste the fitting parameters, as the defaults seem to 
+      work quite fine.
 }
 }
 \details{

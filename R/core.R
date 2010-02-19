@@ -16,7 +16,8 @@ getBaseMeansAndVariances <- function( counts, sizeFactors ) {
       baseVar = rowVars( t( t(counts) / sizeFactors ) ) )
 }   
 
-estimateVarianceFunctionForMatrix <- function( counts, sizeFactors, ... ) {
+estimateVarianceFunctionForMatrix <- function( counts, sizeFactors, 
+         locfit_extra_args=list(), lp_extra_args=list() ) {
 
    # This function should be called with a matrix of counts adjusted for
    # library size ratios, whose columns are replicates of an experimental
@@ -26,7 +27,14 @@ estimateVarianceFunctionForMatrix <- function( counts, sizeFactors, ... ) {
    stopifnot( ncol( counts ) == length( sizeFactors ) )
    counts <- counts[ rowSums(counts) > 0, ]
    bmv <- getBaseMeansAndVariances( counts, sizeFactors ) 
-   fit <- locfit( baseVar ~ lp( log(baseMean), ...), data = bmv, family="gamma" )
+   
+   fit <- do.call( "locfit", c( 
+      list( 
+         baseVar ~ do.call( "lp", c( list( log(baseMean) ), lp_extra_args ) ),
+	 data = bmv, 
+	 family = "gamma" ), 
+      locfit_extra_args ) )
+   
    xim <- sum( 1/sizeFactors ) / length( sizeFactors )
    rm( counts )
    rm( bmv )

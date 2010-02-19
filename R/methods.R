@@ -5,7 +5,8 @@ estimateSizeFactors <- function( cds )
    cds
 }
 
-estimateVarianceFunctions <- function( cds, pool=FALSE, ... )
+estimateVarianceFunctions <- function( cds, pool=FALSE, 
+   locfit_extra_args=list(), lp_extra_args=list() )
 {
    stopifnot( is( cds, "CountDataSet" ) )   
    if( any( is.na( sizeFactors(cds) ) ) )
@@ -16,7 +17,8 @@ estimateVarianceFunctions <- function( cds, pool=FALSE, ... )
    if( pool ) {
 
       cds@rawVarFuncs[["_pooled"]] <-
-         estimateVarianceFunctionForMatrix( counts(cds), sizeFactors(cds), ... )
+         estimateVarianceFunctionForMatrix( counts(cds), 
+	    sizeFactors(cds), locfit_extra_args, lp_extra_args )
       rawVarFuncTable(cds) <- rep( "_pooled", length( levels( conditions(cds) ) ) )
 
    } else {
@@ -27,7 +29,8 @@ estimateVarianceFunctions <- function( cds, pool=FALSE, ... )
       nonreplicated <- names( which( tapply( conditions(cds), conditions(cds), length ) == 1 ) )
       for( cond in replicated )
          cds@rawVarFuncs[[cond]] <- estimateVarianceFunctionForMatrix( 
-            counts(cds)[ , conditions(cds)==cond ], sizeFactors(cds)[ conditions(cds)==cond ], ... )
+            counts(cds)[ , conditions(cds)==cond ], sizeFactors(cds)[ conditions(cds)==cond ], 
+	       locfit_extra_args, lp_extra_args )
       cds@rawVarFuncs[["_max"]] <- function( q, reportSize=FALSE )
          apply( rbind( sapply( replicated, function(cond) 
             cds@rawVarFuncs[[cond]]( q, reportSize ) ) ), 1, max )
