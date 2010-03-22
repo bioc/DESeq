@@ -138,7 +138,7 @@ scvPlot <- function( cds, xlim=NULL, ylim=NULL ) {
 
    for( j in 1:ncol( bcv ) )
       lines( xg, bcv[,j], lty="dotted", 
-         col=cols[ conditions(cds)[j] ] )
+	     col=cols[ as.character(conditions(cds))[j] ] )
 
    for( j in nonmax ) 
       lines( xg, rcv[[j]], col=cols[j], lty="solid" )
