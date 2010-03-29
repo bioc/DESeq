@@ -6,7 +6,8 @@
 }
 \description{
    This function calculates a variance stabilising transformations (VST) from the
-   raw variance functions and then transforms the count data, yielding a matrix
+   raw variance functions and then transforms the count data (after normalization
+   by division by the size factor), yielding a matrix
    of values which are now approximately homoskedastic. This is useful as input 
    to statistical analyses requiring homoskedasticity. 
 }
@@ -22,7 +23,9 @@ getVarianceStabilizedData(cds)
 \details{
    For each sample (i.e., column of \code{counts(cds)}), the full variance function
    is calculated from the raw variance (by scaling according to the size factor and adding 
-   the shot noise). The reciprocal of the square root of the full variance is then numerically
+   the shot noise). The function always uses a pooled estimate of the variance function, i.e.,
+   one ignoring conditions. The reciprocal of the square root of the base variance (i.e., the full variance
+   divided by the size factor) is then numerically
    integrated up, and the integral (approximated by a spline function) evaluated for each
    count value in the column, yielding a transformed value.
 }

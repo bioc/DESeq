@@ -35,7 +35,8 @@ data and test for differential expression.\footnote{Other Bioconductor packages
 The present vignette explains the use of the package; for an exposition of 
 the statistical method employed, see our paper.\footnote{The companion paper for DESeq is: 
 S.\ Anders, W.\ Huber: ``Differential expression analysis for sequence count data''. 
-This paper is currently under review. If you would like to get a pre-print, please contact me.}
+This paper is currently under review. A preprint can be obtained from Nature Preceedings: 
+\url{http://dx.doi.org/10.1038/npre.2010.4282.1}}
 \end{abstract}
 
 \section{Quick start}

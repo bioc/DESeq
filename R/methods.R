@@ -158,21 +158,20 @@ scvPlot <- function( cds, xlim=NULL, ylim=NULL ) {
 
 getVarianceStabilizedData <- function( cds ) {
    stopifnot( is( cds, "CountDataSet" ) )
-   ensureHasVarFuncs( cds )
-   tc <- sapply( colnames(counts(cds)), function(clm) {   
+   rvf <- estimateVarianceFunctionForMatrix( counts(cds), sizeFactors(cds) )
+   tc <- sapply( colnames(counts(cds)), function(clm) {
       countcol <- counts(cds)[,clm]
       sf <- sizeFactors(cds)[clm]
       xg <- sinh( seq( asinh(0), asinh(max(countcol)), length.out=1000 ) )
       xim <- sum( 1/sizeFactors(cds) ) / ncol( counts(cds) )
-      fullVarsAtGrid <- pmax( xg,
-         xg + sf^2*( rawVarFunc( cds, as.character(conditions(cds)[clm]) )( xg/sf ) ) )
-      integrand <- 1 / sqrt( fullVarsAtGrid )
-      splf <- splinefun( asinh(xg[-1]), cumsum( (xg[-1]-xg[-length(xg)]) * integrand[-1] ) )
-      splf( asinh(countcol) )
-   } )  
+      fullVarsAtGrid <- pmax( xg, xg + sf^2*( rvf( xg/sf ) ) )
+      integrand <- 1 / ( sqrt( fullVarsAtGrid ) / sf )
+      splf <- splinefun( asinh(xg[-1]/sf), cumsum( (xg[-1]-xg[-length(xg)])/sf * integrand[-1] ) )
+      splf( asinh(countcol/sf) )
+   } )
    rownames( tc ) <- rownames( counts(cds) )
    tc
-}   
+}
 
 makeExampleCountDataSet <- function( ) 
 {
