@@ -28,6 +28,10 @@ getVarianceStabilizedData(cds)
    divided by the size factor) is then numerically
    integrated up, and the integral (approximated by a spline function) evaluated for each
    count value in the column, yielding a transformed value.
+   
+   Note: This function calls internally \code{\link{estimateVarianceFunctions}} with \code{pooled=TRUE}
+   and bases its calculations on the result. Any condition labels or variance adjustment factors
+   are hence ignored.
 }
 \value{
    A matrix of the same dimension as the count data, containing the transformed data.

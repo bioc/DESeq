@@ -37,7 +37,8 @@ estimateVarianceFunctionForMatrix(counts, sizeFactors,
    a raw variance function. This is a function that, given a base mean (i.e., the mean of counts 
    divided by size factors), returns a raw variance estimate (which needs to be multiplied with 
    the square of a size factor to get the biological variance on the count scale; to get the full
-   variance, add the shot noise as well).
+   variance, add the shot noise as well). For compatibility with \code{\link{rawVarFunc}}, the 
+   function comes with an attribute, named \code{varAdjFactor}, which is always 1.
 }
 \author{
    Simon Anders, sanders@fs.tum.de
@@ -47,5 +48,5 @@ cds <- makeExampleCountDataSet()
 cds <- estimateSizeFactors( cds )
 vf <- estimateVarianceFunctionForMatrix( counts(cds), sizeFactors(cds) )
 vf( head( counts(cds)[,1] / sizeFactors(cds)[1] ) )
-vf( reportSize=TRUE )
+attr( vf, "varAdjFactor" )
 }

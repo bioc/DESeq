@@ -23,7 +23,9 @@ export(
    scvPlot,
    getVarianceStabilizedData,
    makeExampleCountDataSet,
-   adjustScvForBias )
+   adjustScvForBias,
+   varAdjFactors,
+   "varAdjFactors<-" )
   
 import( Biobase )
 importFrom( genefilter, rowVars )

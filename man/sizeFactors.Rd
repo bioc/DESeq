@@ -6,7 +6,7 @@
     Accessor functions for the sizeFactors information in a CountDataSet
 }
 \description{
-    The sizeFactors vector is a factor that assigns to each column of the count data
+    The sizeFactors vector assigns to each column of the count data
     a value, the size factor, such that count values in the columns can be brought to
     a common scale by dividing by the corresponding size factor.
 }

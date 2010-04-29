@@ -1,0 +1,16 @@
+2010-04-29: version 1.1.1
+
+- added "variance adjustment factors" in order to allow for manual scaling
+  of the raw variance estimate in case that the residual ECDF plots indicate
+  a bad fit
+  
+- fixed a bug which caused the resVarB column of the data frame returned
+  by nbinomTest to be wrong
+  
+- changed the scvPlot function to now show conditions rather than raw variance
+  functions
+  
+- changed the way how 'rawVarFunc' interpretes its second argument
+
+- updated the vignette
+  

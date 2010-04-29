@@ -10,7 +10,7 @@
    CountDataSet).
 }
 \usage{
-rawVarFunc(cds, condOrName)
+rawVarFunc(cds, condOrName, byName=FALSE)
 }
 \arguments{
   \item{cds}{
@@ -18,17 +18,25 @@ rawVarFunc(cds, condOrName)
      been called)
 }
   \item{condOrName}{
-     The name of a condition or of a raw variance function. The name is first interpreted as a name 
-     in the rawVarFuncs environment. If it is not present there, it is interpreted as the name of a  
-     condition and translated into a name of a raw variance function by looking up in in the 
-     \code{\link{rawVarFuncTable}}. See \code{\link{estimateVarianceFunctions}} for details.
+     For \code{byName==FALSE}, this argument is taken to be the name of a condition. \code{rawVarFunc}
+     then looks up in \code{rawVarFuncTable(cds)} which raw variance function should be used for
+     the given condition and returns this function.  For \code{byName==TRUE}, the look-up is skipped, i.e.,
+     the argument is taken directly as the name under which the raw variance function is stored in
+     the \code{cds}'s \code{rawVarFuncs} environment.
 }
+   \item{byName}{
+     how to interpret the \code{condByName} argument, see above
+}   
 }
 \value{
    a raw variance function. This is a function that, given a base mean (i.e., the mean of counts 
    divided by size factors), returns a raw variance estimate. To get the full variance, the raw variance
    needs to be scales up by multiplying it with the square of the size factor, and the shot noise
-   has to be added.
+   has to be added. The function comes with an attribute, named \code{varAdjFactor}, which contains 
+   (for \code{byName==FALSE}) the  variance adjustment factor (see \code{\link{varAdjFactors}}) set for 
+   this condition. For \code{byName==TRUE}, the variance adjustment factor is always given as 1. Note
+   that the raw variance fucntion does not multiply its result with this factor; you have to do this
+   yourself if needed.
 }
 
 \author{

@@ -18,7 +18,7 @@
 
 \title{\textsf{\textbf{Analysing RNA-Seq data with the ``DESeq'' package}}}
 
-\date{2010-01-19}
+\date{last change: 2010-04-29}
 
 \begin{document}
 
@@ -63,7 +63,7 @@ form:
 library("DESeq")
 countsTable <- read.delim(system.file("extra/TagSeqExample.tab", package="DESeq"), 
                           header=TRUE, stringsAsFactors=TRUE, row.names="gene")
-conds <- factor(c("T", "T", "T", "T2", "N", "N"))
+conds <- factor(c("T", "T", "T", "Tb", "N", "N"))
 @
 
 <<countsTable>>=
@@ -97,7 +97,9 @@ We will amend this once Bertone and coworkers have published their paper.
 They extracted mRNA from the cultures and sequenced only the 3' end of the transcripts (Tag-Seq) with
 an Illumina GenomeAnalyzer, one lane per sample. They got from 6.8 to 13.6 mio reads from each lane,
 which they assigned to genes. They were able to assign 30\% to 50\% of the tags unambiguously to
-annotated genes and produced a table that gives these counts. A version of this table is distributed with the \Rpackage{DESeq} package as example data in a file called
+annotated genes and produced a table that gives these counts.\footnote{An easy way to produce such a table
+from the output of the aligner is to use the \texttt{htseq-count} script distributed with the \emph{HTSeq}
+package. (Even though HTSeq is a Python package, you do not need to know any Python to use \texttt{htseq-count}.) See \url{http://www-huber.embl.de/users/anders/HTSeq/doc/count.html}.} A version of this table is distributed with the \Rpackage{DESeq} package as example data in a file called
 ``TagSeqExample.tab''. The
 \Rfunction{system.file} function allows to see where R has stored the file when the package was
 installed:
@@ -128,12 +130,12 @@ We are now left with six columns, referring to the six samples. The first four (
 
 We code this information in the following vector, which assigns each sample a ``condition'':
 <<>>=
-conds <- c( "T", "T", "T", "T2", "N", "N" )
+conds <- c( "T", "T", "T", "Tb", "N", "N" )
 @
 where ``T'' stands for a sample derived from a certain tumour type and ``N'' for a sample 
 derived from non-pathological tissue. The first three samples
 had a very similar histopathological phenotype, while the fourth sample was atypical, and
-hence, we assign it another condition (``T2'').
+hence, we assign it another condition (``Tb'').
 
 
 We can now instantiate a \Rclass{CountDataSet}, which is the central data structure in the
@@ -235,7 +237,7 @@ verify the variance function estimates.
 
 The function 'scvPlot' shows all the base variance functions in one plot:
 <<figSCV,fig=TRUE,width=5,height=5>>=
-scvPlot( cds )
+scvPlot( cds, ylim=c(0,2) )
 @
 In the produced plot (Fig.\ \ref{figSCV}), the x axis is the base mean, the y 
 axis the squared coefficient of variation (SCV),
@@ -255,6 +257,15 @@ shot noise.
 The solid black line is a density estimate of the base means: Only were
 there is an appreciable number of base mean values, the variance estimates can be
 expected to be accurate. 
+
+For the condition ``Tb'', we cannot estimate a variance function  as we have no replicates. When a variance estimate is needed for ``Tb'', the package will use the
+maximum of the variances estimated for all the other conditions. To see the assignment of conditions to 
+variance functions, use the \Rfunction{rawVarFuncTable} accessor function:
+<<>>=
+rawVarFuncTable( cds )
+@
+The first column shows the assignment. The second column (variance adjustment factors)
+is explained below.
 
 It is instructive to observe at which count level the biological 
 noise starts to dominate the shot noise. At low counts, where shot noise dominates, higher
@@ -321,11 +332,40 @@ Fig.~\ref{figECDF} shows the output. In both cases, the ECDF curves follow the d
 i.e., the fit is good. Only for very low counts (below 10), the deviations become stronger, but as at these levels,
 shot noise dominates, this is no reason for concern. 
 
-For the condition ``T2'', we cannot estimate a variance function  as we have no replicates. When a variance estimate is needed for ``T2'', the package will use the
-maximum of the variances estimated for all the other conditions. To see the assignment of conditions to 
-variance functions, use the \Rfunction{rawVarFuncTable} accessor function:
+If in your data the residuals ECDF plot indicates problems with the fit, you should
+manually adjsut the variance estimates. If the ECDF curves are above the green line, variance is 
+underestimated, and if you test for differential expression (see next section) you 
+will get  too low p values (and hence, too many false positives). 
+If the ECDF curves are below the green line, variance is overestimated, which leads to 
+too high p values (and hence, an overestimation of the false discovery rate). 
+
+You may set variance adjustment factors to adjust the estimates. By default, these factors
+are all 1:
 <<>>=
-rawVarFuncTable( cds )
+varAdjFactors( cds )
+@
+
+\begin{figure}
+\centering
+\includegraphics[width=.5\textwidth]{DESeq-figVarRed}
+\caption{Effect of setting the variance adjustmnet factor for condition ``T'' to 0.4.}
+\label{figVarRed}
+\end{figure}
+
+If you want to reduce the variance factors, set them to a value below 1.
+<<>>=
+varAdjFactors( cds ) <- c( N=.4, T=1, Tb=1 )
+@
+
+Now, the variance estimates are reduced and the ECDF lines are shifted downwards 
+(Fig. \ref{figVarRed}).
+<<figVarRed,fig=TRUE,width=7,height=7>>=
+residualsEcdfPlot( cds, "N" )
+@ % $
+
+Let's switch back to the default value before continueing:
+<<>>=
+varAdjFactors( cds ) <- c( N=1, T=1, Tb=1 )
 @
 
 \section{Calling differential expression} \label{sec:DE}
@@ -346,7 +386,8 @@ $p$ value for the statistical significance of this change. The \texttt{padj} col
 $p$ values, adjusted for multiple testing with the Benjamini-Hochberg procedure (see the standard R function
 \Rfunction{p.adjust}), which controls false discovery 
 rate (FDR). The last two columns show the ratio of the single gene estimates for the base
-variance to the fitted value. This may help to notice false hits due to ``variance outliers''.
+variance to the fitted value. This may help to notice false hits due to ``variance outliers''. Any hit
+that has a very large value in one these two columns should be checked carefully.
 
 \begin{figure}
 \centering
@@ -390,31 +431,31 @@ head( resSig[ order( -resSig$foldChange, -resSig$baseMean ), ] )
 If you have replicates for one condition but not for the other, you can still proceed as
 before. As already stated above, the testing function will simply take the maximum of all 
 estimated variance function for conditions without replicates. If we consider this acceptable,
-we can contrast the single ``T2'' sample against the two ``N'' samples.
+we can contrast the single ``Tb'' sample against the two ``N'' samples.
 
 \begin{figure}
 \centering
-\includegraphics[width=.6\textwidth]{DESeq-figDE_T2}
-\caption{MvA plot for the contrast ``T2'' vs.\ ``N''.}
-\label{figDE_T2}
+\includegraphics[width=.6\textwidth]{DESeq-figDE_Tb}
+\caption{MvA plot for the contrast ``Tb'' vs.\ ``N''.}
+\label{figDE_Tb}
 \end{figure}
 
 
 <<>>=
-resT2vsN <- nbinomTest( cds, "N", "T2" )
+resTbvsN <- nbinomTest( cds, "N", "Tb" )
 @
 We produce the same plot as before, again with
-<<figDE_T2,fig=TRUE>>=
+<<figDE_Tb,fig=TRUE>>=
 plot( 
-   resT2vsN$baseMean, 
-   resT2vsN$log2FoldChange, 
+   resTbvsN$baseMean, 
+   resTbvsN$log2FoldChange, 
    log="x", pch=20, cex=.1, 
-   col = ifelse( resT2vsN$padj < .1, "red", "black" ) )
+   col = ifelse( resTbvsN$padj < .1, "red", "black" ) )
 @
-The result (Fig.~\ref{figDE_T2}) shows the same symmetry in up- and down-regulation
+The result (Fig.~\ref{figDE_Tb}) shows the same symmetry in up- and down-regulation
 as in Fig.~\ref{figDE} but a striking asymmetry in the boundary line for significance. This
 has an easy explanation: low counts suffer from proportionally stronger shot noise than high counts, and this
-is more pronounced in the ``T2'' data than in the ``N'' data due to the lack of replicates. Hence
+is more pronounced in the ``Tb'' data than in the ``N'' data due to the lack of replicates. Hence
 a stronger signal is required to call a down-regulation significant than for an up-regulation.
 
 
@@ -497,8 +538,8 @@ pvals2b <- nbinomTestForMatrices(
    counts(cds)[ ,colsT ],
    sizeFactors(cds)[ colsN ],
    sizeFactors(cds)[ colsT ],
-   rawVarFunc( cds2, "_pooled" )( baseMeansNT ),
-   rawVarFunc( cds2, "_pooled" )( baseMeansNT ) )
+   rawVarFunc( cds2, "_pooled", TRUE )( baseMeansNT ),
+   rawVarFunc( cds2, "_pooled", TRUE )( baseMeansNT ) )
 @
 
 We adjust the $p$ values and then compare the hits with those found originally:
@@ -575,7 +616,8 @@ Furthermore, there is a slot \texttt{rawVarFuncs} of type environment that holds
 Each of these functions has a name to access it in the environment, which is either the name of a condition, or
 \texttt{"\_max"} for conditions without replicates in normal mode, or \texttt{"\_pooled"} for the single
 pooled estimate that \Rfunction{estimateVarianceFunction} produces when called with \texttt{pool=TRUE}.
-Finally, the slot \texttt{rawVarFuncTable} contains a named character vector that serves as a look-up table.
+Finally, the slot \texttt{rawVarFuncTable} contains a data frame whose \texttt{fundName} column serves as a look-up table. Its other column, \texttt{varAdjFactor} stores the adjustemtn factor which which the
+variance estimate from the \texttt{rawVarFuncs} should be scaled.
 The names are the conditions and the values are the function names, i.e., the hash keys for the \texttt{rawVarFuncs} environment.
 
 All these properties are checked by the validity method.

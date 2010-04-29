@@ -19,7 +19,11 @@ estimateVarianceFunctions <- function( cds, pool=FALSE,
       cds@rawVarFuncs[["_pooled"]] <-
          estimateVarianceFunctionForMatrix( counts(cds), 
 	    sizeFactors(cds), locfit_extra_args, lp_extra_args )
-      rawVarFuncTable(cds) <- rep( "_pooled", length( levels( conditions(cds) ) ) )
+      rawVarFuncTable(cds) <- data.frame(
+         row.names = levels(conditions(cds)),
+         funcName = rep( "_pooled", length( levels( conditions(cds) ) ) ),
+         varAdjFactor = rep( 1, length( levels( conditions(cds) ) ) ),
+         stringsAsFactors = FALSE )
 
    } else {
          
@@ -31,35 +35,43 @@ estimateVarianceFunctions <- function( cds, pool=FALSE,
          cds@rawVarFuncs[[cond]] <- estimateVarianceFunctionForMatrix( 
             counts(cds)[ , conditions(cds)==cond ], sizeFactors(cds)[ conditions(cds)==cond ], 
 	       locfit_extra_args, lp_extra_args )
-      cds@rawVarFuncs[["_max"]] <- function( q, reportSize=FALSE )
-         apply( rbind( sapply( replicated, function(cond) 
-            cds@rawVarFuncs[[cond]]( q, reportSize ) ) ), 1, max )
+      cds@rawVarFuncs[["_max"]] <- function( q ) {
+         a <- lapply( replicated, function(cond) cds@rawVarFuncs[[cond]]( q ) )
+         ans <- apply( array( unlist( a, recursive=FALSE ), dim = c( length(q), length(a) ) ), 1, max )
+         rownames(ans) <- rownames(q)
+         attr( ans, "size" ) <- min( sapply( a, attr, "size" ) )
+         ans
+      }
          
-      rawVarFuncTable(cds) <- 
-         sapply( levels(conditions(cds)), function( cond )
-            ifelse( cond %in% replicated, cond, "_max" ) )
+      rawVarFuncTable(cds) <- data.frame(
+         funcName = sapply( levels(conditions(cds)), function( cond )
+            ifelse( cond %in% replicated, cond, "_max" ) ),
+         varAdjFactor = rep( 1, length( levels(conditions(cds)) ) ),
+         stringsAsFactors = FALSE )
    }
         
+   validObject( cds )
    cds
 }
 
-varianceFitDiagnostics <- function( cds, cond )
+varianceFitDiagnostics <- function( cds, cond, ignoreVarAdjFactor=FALSE )
 {
    stopifnot( is( cds, "CountDataSet" ) )
    stopifnot(cond %in% levels(conditions(cds)) )  
    ensureHasVarFuncs( cds )
-      
+   
+   rvf <-rawVarFunc( cds, cond ) 
    varianceFitDiagnosticsForMatrix(
       counts(cds)[,conditions(cds)==cond], 
       sizeFactors(cds)[conditions(cds)==cond],
-      rawVarFunc( cds, cond ) )
+      if( ignoreVarAdjFactor ) rvf else function(q) rvf(q) * attr(rvf,"varAdjFactor") )
 }
 
-residualsEcdfPlot <- function( cds, condition, ncuts=7 )
+residualsEcdfPlot <- function( cds, condition, ncuts=7, ignoreVarAdjFactor=FALSE )
 {
    stopifnot( is( cds, "CountDataSet" ) )   
    ensureHasVarFuncs( cds )
-   fitdiag <- varianceFitDiagnostics( cds, condition )
+   fitdiag <- varianceFitDiagnostics( cds, condition,ignoreVarAdjFactor )
    residualsEcdfPlotFromDiagnostics( fitdiag, ncuts,
       sprintf( "Residuals ECDF plot for condition '%s'", condition ) )
 }  
@@ -77,11 +89,14 @@ nbinomTest <- function( cds, condA, condB, pvals_only=FALSE )
    bmv <- getBaseMeansAndVariances( counts(cds)[,colA|colB], 
       sizeFactors(cds)[colA|colB] )
 
-   rawScvA <- rawVarFunc( cds, condA )( bmv$baseMean ) / bmv$baseMean^2
-   rawScvB <- rawVarFunc( cds, condB )( bmv$baseMean ) / bmv$baseMean^2
+   rvfA <- rawVarFunc( cds, condA )
+   rvfB <- rawVarFunc( cds, condB )
    
-   rawScvA <- adjustScvForBias( rawScvA, rawVarFunc( cds, condA )( reportSize=TRUE ) )
-   rawScvB <- adjustScvForBias( rawScvB, rawVarFunc( cds, condB )( reportSize=TRUE ) )
+   rawScvA <- rvfA( bmv$baseMean ) * attr( rvfA, "varAdjFactor" ) / bmv$baseMean^2
+   rawScvB <- rvfB( bmv$baseMean ) * attr( rvfB, "varAdjFactor" ) / bmv$baseMean^2
+   
+   rawScvA <- adjustScvForBias( rawScvA, attr( rawScvA, "size" ) )
+   rawScvB <- adjustScvForBias( rawScvB, attr( rawScvB, "size" ) )
 
    pval <- nbinomTestForMatrices( 
       counts(cds)[,colA], 
@@ -106,45 +121,41 @@ nbinomTest <- function( cds, condA, condB, pvals_only=FALSE )
          pval = pval,
          padj = p.adjust( pval, method="BH" ), 
          resVarA = bmvA$baseVar / ( bmvA$baseMean + rawVarFunc( cds, condA )( bmv$baseMean ) ),
-         resVarB = bmvB$baseVar / rawVarFunc( cds, condB )( bmv$baseMean ),
+         resVarB = bmvB$baseVar / ( bmvA$baseMean + rawVarFunc( cds, condB )( bmv$baseMean ) ),
          stringsAsFactors = FALSE ) }
 }
 
-scvPlot <- function( cds, xlim=NULL, ylim=NULL ) {
+scvPlot <- function( cds, xlim=NULL, ylim=c(0,.8), ignoreVarAdjFactors = FALSE ) {
    stopifnot( is( cds, "CountDataSet" ) )
    ensureHasVarFuncs( cds )
    
    baseMeans <- getBaseMeansAndVariances( counts(cds), sizeFactors(cds) )$baseMean
    xg <- exp( seq( log( max( min(baseMeans), 2/sum(sizeFactors(cds)) ) ), 
       log( max(baseMeans) ), length.out = 1000 ) )
-   rcv <- eapply( cds@rawVarFuncs, function( rvf ) rvf( xg ) / xg^2 )
-   bcv <- sapply( 1:ncol(counts(cds)), function(j)
-      1 / ( sizeFactors(cds)[[j]] * xg ) + rawVarFunc( cds, conditions(cds)[j] )( xg ) / xg^2 )
-   colnames( bcv ) <- colnames( counts( cds ) )
+   rscv <- sapply( levels(conditions(cds)), function(n) rawVarFunc( cds, n )( xg ) / xg^2 )
+   if( !ignoreVarAdjFactors )
+      rscv <- sapply( levels(conditions(cds)), function(n) 
+         rscv[,n] * attr( rawVarFunc( cds, n ), "varAdjFactor" ) )
+      
+   bscv <- sapply( 1:ncol(counts(cds)), function(j)
+      1 / ( sizeFactors(cds)[[j]] * xg ) + rscv[ , as.character(conditions(cds))[j] ] )
+   colnames( bscv ) <- colnames( counts( cds ) )
 
    if( is.null( xlim ) )
       xlim <- range( xg )
-   if( is.null( ylim ) )
-      ylim <- c( 0, max( sapply( bcv, max ) ) )
    plot( NULL, xlim = xlim, ylim = ylim, yaxs="i",
-      xlab = "base mean", ylab = "squared coefficient of variation", log="x" )
-      
+      xlab = "base mean", ylab = "squared coefficient of variation", log="x" )      
 
-   nonmax <- names(rcv)[ names(rcv) != "_max" ]   
-   cols <- 1 + (1:length(nonmax))
-   names(cols) <- names(rcv[nonmax])
-   if( "_max" %in% names(rcv) )
-      cols <- c( cols, `_max`=1 )
+   cols <- 1 + ( 1 : length(unique(rawVarFuncTable(cds)$funcName)) )
+   names(cols) <- unique(rawVarFuncTable(cds)$funcName)
 
-   for( j in 1:ncol( bcv ) )
-      lines( xg, bcv[,j], lty="dotted", 
-	     col=cols[ as.character(conditions(cds))[j] ] )
+   for( j in 1:ncol( bscv ) )
+      lines( xg, bscv[,j], lty="dashed", 
+	     col=cols[ rawVarFuncTable(cds)[ as.character(conditions(cds))[j], "funcName" ] ] )
 
-   for( j in nonmax ) 
-      lines( xg, rcv[[j]], col=cols[j], lty="solid" )
-      
-   if( "_max" %in% names(rcv) )
-      lines( xg, rcv[["_max"]], col=1, lty="dashed" )
+   for( n in levels(conditions(cds)) )
+      lines( xg, rscv[,n], col=cols[ rawVarFuncTable(cds)[ n, "funcName" ] ], 
+         lty = ifelse( rawVarFuncTable(cds)[ n, "funcName" ] != "_max", "solid", "dotted" ) )
    
    dens <- density( log(baseMeans) )
    lines( exp(dens$x), .7 * ylim[2] / max(dens$y) * dens$y, col=1, lty="solid" )
@@ -152,7 +163,7 @@ scvPlot <- function( cds, xlim=NULL, ylim=NULL ) {
    legend( "topright", 
       legend = c( names(cols), "base mean density" ),
       col    = c( cols, 1 ),
-      lty    = ifelse( c( names(cols), "" ) != "_max", "solid", "dashed" ) )
+      lty    = ifelse( c( names(cols), "" ) != "_max", "solid", "dotted" ) )
    invisible( NULL )
 }
 

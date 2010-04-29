@@ -43,9 +43,9 @@ the name \code{counts}.
 
 The fits calculated by \code{\link{estimateVarianceFunctions}} are stored as closures in
 an environment, which is part of the object as slot \code{rawVarFuncs}. The assignment of the
-closures' names in the environment to the condition names is stored in a named character
-vector, which forms the slot \code{rawVarFuncTable}. For further details on these two slots, see
-\code{\link{estimateVarianceFunctions}}.
+closures' names in the environment to the condition names is stored in as the first column (named "funcName") of the data freame in the slot \code{rawVarFuncTable}. The second column ("varAdjFactor") contains the
+variance adjustment factors. For further details on these two slots, see \code{\link{estimateVarianceFunctions}}
+and \code{\link{varAdjFactors}}.
 
 }
 

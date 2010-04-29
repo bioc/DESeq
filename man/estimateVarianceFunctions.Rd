@@ -41,18 +41,25 @@ estimateVarianceFunctions(cds, pool = FALSE,
    
    Then, the \code{\link{rawVarFuncTable}} (q.v.) is filled to assign to each replicated
    condition the raw variance function estimated for it, and to each condition without
-   replicates, the "_max" function.
+   replicates, the "_max" function. 
    
    Behaviour for pooled=TRUE: A single raw variance function is estimated from all the
    count data, ignoring the condition labels. It is stored in the rawVarFuncs slot
    under the name "_pooled". In the rawVarFuncTable, "_pooled" is assigned to all
    conditions.
+   
+   In either case, all the variance adjustment factors (see 
+   \code{\link{varAdjFactors}}) are set to 1.
+   
+   It is advisable to always call \code{\link{residualsEcdfPlot}} afterwards to verify
+   the fit.
 }
 \value{
    The CountDataSet cds, with the slots rawVarFuncs and rawVarFuncTable updated.
 }
 \seealso{
-   \code{\link{scvPlot}} to visualize the result and \code{\link{varianceFitDiagnostics}} to check the fit
+   \code{\link{scvPlot}} to visualize the result and \code{\link{varianceFitDiagnostics}} and 
+   \code{\link{residualsEcdfPlot}} to check the fit.
 }
 \author{
    Simon Anders, sanders@fs.tum.de
@@ -63,5 +70,5 @@ cds <- estimateSizeFactors( cds )
 cds <- estimateVarianceFunctions( cds )
 vf <- rawVarFunc( cds, "A" )
 vf( head( counts(cds)[,1] / sizeFactors(cds)[1] ) )
-vf( reportSize=TRUE )
+attr( vf, "size" )
 }

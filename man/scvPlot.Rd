@@ -17,7 +17,7 @@
    density of counts is present can a good estimate be expected.
 }
 \usage{
-scvPlot(cds, xlim = NULL, ylim = NULL)
+scvPlot( cds, xlim = NULL, ylim = c(0, 0.8), ignoreVarAdjFactors = FALSE )
 }
 \arguments{
   \item{cds}{
@@ -25,6 +25,9 @@ scvPlot(cds, xlim = NULL, ylim = NULL)
 }
   \item{xlim, ylim}{
      the plot limits
+}
+  \item{ignoreVarAdjFactors}{
+     if set to true, the variance adjustment factors are ignored, i.e., taken to be 1.
 }
 }
 \value{
@@ -41,5 +44,5 @@ fail to match correctly. Furthermore, the displayed SCV values are not bias corr
 cds <- makeExampleCountDataSet()
 cds <- estimateSizeFactors( cds )
 cds <- estimateVarianceFunctions( cds )
-scvPlot( cds, ylim = c(0, 2) )
+scvPlot( cds )
 }
