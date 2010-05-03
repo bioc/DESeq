@@ -91,7 +91,7 @@ nbinomTestForMatricesRaw <- function( kA, kB, muA, vA, muB, vB, eps=0 )
 
 
 nbinomTestForMatrices <- function( countsA, countsB, sizeFactorsA, sizeFactorsB, 
-   rawScvA, rawScvB, eps=3e-3 )
+   rawScvA, rawScvB, eps=1e-4 )
 {
    kAs <- rowSums( cbind(countsA) )
    kBs <- rowSums( cbind(countsB) )
