@@ -31,4 +31,4 @@ import( Biobase )
 importFrom( genefilter, rowVars )
 importFrom( geneplotter, multiecdf )
 
-useDynLib( DESeq, add_from_middle_for_R )
+useDynLib( DESeq, calc_pvals )

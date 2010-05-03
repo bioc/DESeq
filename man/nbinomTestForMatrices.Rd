@@ -9,7 +9,7 @@
    if the S4 interface is unsuitable for your task.
 }
 \usage{
-nbinomTestForMatrices(countsA, countsB, sizeFactorsA, sizeFactorsB, rawScvA, rawScvB, eps = 0.003)
+nbinomTestForMatrices(countsA, countsB, sizeFactorsA, sizeFactorsB, rawScvA, rawScvB, eps = 0.0001)
 }
 \arguments{
   \item{countsA}{ 

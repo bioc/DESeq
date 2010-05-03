@@ -82,15 +82,13 @@ nbinomTestForMatricesRaw <- function( kA, kB, muA, vA, muB, vB, eps=0 )
    pobs <- pobs * ( 1 + 1e-7 )
    # This is to avoid rounding errors in checking for p <= pobs
 
-   totals <- 
-      .Call( "add_from_middle_for_R", as.integer(kA+kB), pobs, muA, vA, muB, vB, FALSE, eps ) + 
-      .Call( "add_from_middle_for_R", as.integer(kA+kB), pobs, muA, vA, muB, vB, TRUE, eps )
+   totals <- .Call( "calc_pvals", as.integer(kA+kB), pobs, muA, vA, muB, vB, eps )
    unname( totals[2] / totals[1] )
 }
 
 
 nbinomTestForMatrices <- function( countsA, countsB, sizeFactorsA, sizeFactorsB, 
-   rawScvA, rawScvB, eps=3e-3 )
+   rawScvA, rawScvB, eps=1e-4 )
 {
    kAs <- rowSums( cbind(countsA) )
    kBs <- rowSums( cbind(countsB) )

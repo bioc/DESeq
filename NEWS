@@ -1,3 +1,17 @@
+2010-05-03: version 1.1.2
+
+- replaced the C function to calculate the p values. The new version is now
+  a bit more conservative with its approximation, trying to ensure that p values
+  are always rather approximated as too high. Furthermore, it considers the
+  values 0 and kS as critical points, too, which makes a difference at very 
+  high overdispersion.
+  
+- changed the default value for the accuracy guidence 'eps' from 3e-3 to 1e-4, as
+  the former seemed to have been a bit too high. (The approximation broke down
+  in rare cases.)
+  
+- The 'eps' parameter is now exposed in 'nbinomTest' as well.    
+
 2010-04-29: version 1.1.1
 
 - added "variance adjustment factors" in order to allow for manual scaling

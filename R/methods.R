@@ -76,7 +76,7 @@ residualsEcdfPlot <- function( cds, condition, ncuts=7, ignoreVarAdjFactor=FALSE
       sprintf( "Residuals ECDF plot for condition '%s'", condition ) )
 }  
 
-nbinomTest <- function( cds, condA, condB, pvals_only=FALSE )
+nbinomTest <- function( cds, condA, condB, pvals_only=FALSE, eps=1e-4 )
 {
    stopifnot( is( cds, "CountDataSet" ) )   
    ensureHasVarFuncs( cds )
@@ -104,7 +104,8 @@ nbinomTest <- function( cds, condA, condB, pvals_only=FALSE )
       sizeFactors(cds)[colA], 
       sizeFactors(cds)[colB], 
       rawScvA, 
-      rawScvB )
+      rawScvB,
+      eps )
       
    if( pvals_only )
       pval
