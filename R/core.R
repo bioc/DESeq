@@ -42,7 +42,7 @@ estimateVarianceFunctionForMatrix <- function( counts, sizeFactors,
    function( q, reportSize=FALSE ) 
       if( reportSize )
          length( sizeFactors )
-      else
+      else         
          pmax( safepredict( fit, log(q) ) - xim * q, 1e-8 * q )
    # Note: The 'pmax' construct above serves to limit the overdispersion to a minimum
    # of 10^-8, which should be indistinguishable from 0 but ensures numerical stability.
@@ -102,8 +102,8 @@ nbinomTestForMatrices <- function( countsA, countsB, sizeFactorsA, sizeFactorsB,
    muAs <- baseMeans * sum( sizeFactorsA )
    muBs <- baseMeans * sum( sizeFactorsB )
 
-   fullVarA <- muAs + rawScvA * baseMeans^2 * sum(sizeFactorsA^2)
-   fullVarB <- muBs + rawScvB * baseMeans^2 * sum(sizeFactorsB^2)
+   fullVarA <- pmax( muAs + rawScvA * baseMeans^2 * sum(sizeFactorsA^2), muAs * (1+1e-8) )
+   fullVarB <- pmax( muBs + rawScvB * baseMeans^2 * sum(sizeFactorsB^2), muBs * (1+1e-8) )
    
    sapply( 1:nrow(cbind(countsA)), function(i) {
       nbinomTestForMatricesRaw( kAs[i], kBs[i], muAs[i], fullVarA[i], muBs[i], fullVarB[i], eps )
