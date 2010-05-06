@@ -1,0 +1,14 @@
+citEntry(entry="techreport",
+         title = "Differential expression analysis for sequence count data",
+         author = personList( as.person("Simon Anders"), 
+                              as.person("Wolfgang Huber")),
+         year = 2010,
+         note = "Submitted; Preprint available from Nature Precedings",
+         url  = "http://hdl.handle.net/10101/npre.2010.4282.2",
+         
+         textVersion = 
+         paste("Simon Anders and Wolfgang Huber (2010):", 
+               "Differential expression analysis for sequence count data.",
+               "Submitted; Preprint available from Nature Precedings,",
+                "http://hdl.handle.net/10101/npre.2010.4282.2" ) )
+
