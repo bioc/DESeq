@@ -332,14 +332,21 @@ Fig.~\ref{figECDF} shows the output. In both cases, the ECDF curves follow the d
 i.e., the fit is good. Only for very low counts (below 10), the deviations become stronger, but as at these levels,
 shot noise dominates, this is no reason for concern. 
 
-If in your data the residuals ECDF plot indicates problems with the fit, you should
-manually adjsut the variance estimates. If the ECDF curves are above the green line, variance is 
+If in your data the residuals ECDF plot indicates problems with the fit, you may want to
+manually adjust the variance estimates. If the ECDF curves are below the green line, variance is 
 underestimated, and if you test for differential expression (see next section) you 
 will get  too low p values (and hence, too many false positives). 
-If the ECDF curves are below the green line, variance is overestimated, which leads to 
+If the ECDF curves are above the green line, variance is overestimated, which leads to 
 too high p values (and hence, an overestimation of the false discovery rate). 
 
-You may set variance adjustment factors to adjust the estimates. By default, these factors
+The first case (curves below the green line) may indicate a serious problem that might compromise
+your results. However, this seems to rarely happen (and I'd appreciate if you could sent me
+a mail if you observe it with real data so I can investigate). The second case (curves above
+the green line) is usually nothing to worry about; just leaving it as it is might be the prudent
+thing to do as it cause DESeq to be conservative with the tests.
+
+Even though this should normally not be necessary, DESeq offers the possibility to
+set variance adjustment factors to adjust the variance estimates. By default, these factors
 are all 1:
 <<>>=
 varAdjFactors( cds )
@@ -348,22 +355,23 @@ varAdjFactors( cds )
 \begin{figure}
 \centering
 \includegraphics[width=.5\textwidth]{DESeq-figVarRed}
-\caption{Effect of setting the variance adjustmnet factor for condition ``T'' to 0.4.}
+\caption{Effect of setting the variance adjustmnet factor for condition ``T'' to 2.3.}
 \label{figVarRed}
 \end{figure}
 
-If you want to reduce the variance factors, set them to a value below 1.
+If you want to inflate the variance estimates to cause DESeq to become more conservative, 
+set them to a value above 1.
 <<>>=
-varAdjFactors( cds ) <- c( N=.4, T=1, Tb=1 )
+varAdjFactors( cds ) <- c( N=2.3, T=1, Tb=1 )
 @
 
-Now, the variance estimates are reduced and the ECDF lines are shifted downwards 
+Now, the variance estimates are increased and the ECDF lines are shifted upwards 
 (Fig. \ref{figVarRed}).
 <<figVarRed,fig=TRUE,width=7,height=7>>=
 residualsEcdfPlot( cds, "N" )
 @ % $
 
-Let's switch back to the default value before continueing:
+Let's switch back to the default value before continuing:
 <<>>=
 varAdjFactors( cds ) <- c( N=1, T=1, Tb=1 )
 @

@@ -126,18 +126,25 @@ nbinomTest <- function( cds, condA, condB, pvals_only=FALSE, eps=1e-4 )
          stringsAsFactors = FALSE ) }
 }
 
-scvPlot <- function( cds, xlim=NULL, ylim=c(0,.8), ignoreVarAdjFactors = FALSE ) {
+scvPlot <- function( cds, xlim=NULL, ylim=c(0,.8), ignoreVarAdjFactors = FALSE,
+      skipBiasCorrection = FALSE ) {
    stopifnot( is( cds, "CountDataSet" ) )
    ensureHasVarFuncs( cds )
    
    baseMeans <- getBaseMeansAndVariances( counts(cds), sizeFactors(cds) )$baseMean
    xg <- exp( seq( log( max( min(baseMeans), 2/sum(sizeFactors(cds)) ) ), 
       log( max(baseMeans) ), length.out = 1000 ) )
-   rscv <- sapply( levels(conditions(cds)), function(n) rawVarFunc( cds, n )( xg ) / xg^2 )
+
+   rscv <- sapply( levels(conditions(cds)), function(n) {
+      rawScv <- rawVarFunc( cds, n )( xg ) / xg^2
+      if( !ignoreVarAdjFactors )
+         rawScv <- adjustScvForBias( rawScv, attr( rawScv, "size" ) )
+      rawScv } )
+      
    if( !ignoreVarAdjFactors )
       rscv <- sapply( levels(conditions(cds)), function(n) 
          rscv[,n] * attr( rawVarFunc( cds, n ), "varAdjFactor" ) )
-      
+           
    bscv <- sapply( 1:ncol(counts(cds)), function(j)
       1 / ( sizeFactors(cds)[[j]] * xg ) + rscv[ , as.character(conditions(cds))[j] ] )
    colnames( bscv ) <- colnames( counts( cds ) )

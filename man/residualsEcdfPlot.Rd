@@ -34,10 +34,10 @@ residualsEcdfPlot(cds, condition, ncuts = 7, ignoreVarAdjFactor = FALSE)
    If the ECDF curves deviate too strongly from the green line, your replicates are
    most likly heterogeneous (i.e., their some are more similar than others), and the
    variance estimation procedure gets mislead.
-   If the ECDF curves are above the green line, variance is underestimated, which leads
-   to to low p values (and hence, too many false positives). If the ECDF curves are below the green
-   line, variance is overestimated, which leads to too high p values (and hence, an overestimation
-   of the false discovery rate). 
+   If the ECDF curves are below the green line, variance is underestimated, which leads
+   to too low p values (and hence, too many false positives). If the ECDF curves are above the green
+   line, variance is overestimated, which leads to too high p values (and hence, DESeq might
+   be more conservative in its test when necessary). 
    You can adjust this by setting variance adjustment factors with \code{\link{varAdjFactors}}.
 }
 \value{
