@@ -18,7 +18,7 @@
 
 \title{\textsf{\textbf{Analysing RNA-Seq data with the ``DESeq'' package}}}
 
-\date{last change: 2010-04-29}
+\date{last change: 2010-06-11}
 
 \begin{document}
 
