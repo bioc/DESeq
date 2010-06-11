@@ -41,7 +41,7 @@ This paper is currently under review. A preprint can be obtained from Nature Pre
 
 \section{Quick start}
 
-This first section just shows the commands necessary for an analysis at a glance. For a more gentle introduction, start reading at Section \ref{sec:prep}.
+This first section just shows the commands necessary for an analysis at a glance. For a more gentle introduction, skip this section on first reading and start reading at Section \ref{sec:prep}.
 
 The \Rpackage{DESeq} package expects count data, as obtained, e.g., from an RNA-Seq or other 
 high-throughput sequencing (HTS) experiment, in form of a matrix of integer values. Each column
@@ -407,15 +407,19 @@ that has a very large value in one these two columns should be checked carefully
 Let us first plot the $\log_2$ fold changes against the base means, colouring in red those genes
 that are significant at 10\% FDR.
 <<figDE,fig=TRUE>>=
-plot( 
-   res$baseMean, 
-   res$log2FoldChange, 
-   log="x", pch=20, cex=.1, 
-   col = ifelse( res$padj < .1, "red", "black" ) )
-@
-See Fig.~\ref{figDE} for the plot.
+plotDE <- function( res )
+   plot( 
+      res$baseMean, 
+      res$log2FoldChange, 
+      log="x", pch=20, cex=.1, 
+      col = ifelse( res$padj < .1, "red", "black" ) )
 
-Finally, we may filter for the significant genes,
+plotDE( res )
+@
+See Fig.~\ref{figDE} for the plot. As we will use this plot more often, we have
+stored its code in a function.
+
+We can filter for the significant genes, 
 <<>>=
 resSig <- res[ res$padj < .1, ]
 @
@@ -433,6 +437,99 @@ or at the most strongly up-regulated ones:
 <<>>=
 head( resSig[ order( -resSig$foldChange, -resSig$baseMean ), ] )
 @
+
+The test is based on the assumption that the fitted variance, i.e., the variance 
+as deduced from the mean vie the raw variance functions, is a good estimate for a
+gene's true variance. We have tested the appropriateness of this approach above
+with the plot produced by \Rfunction{residualsEcdfPlot} and concluded that it seems 
+to hold well for most genes. The \texttt{res} object gives us two columns to have
+a closer look at this, namely \texttt{resVarA} and \texttt{resVarB}. These contain the
+residual variance quotients, i.e. the ratio of the variance as calculated 
+only from the counts for the gene under consideration to the fitted variance.
+
+\begin{figure}
+\centering
+\includegraphics[width=.6\textwidth]{DESeq-figResVarDens}
+\caption{Density of residual variance ratios.}
+\label{figResVarDens}
+\end{figure}
+
+ 
+We can plot the density of these ratios (Fig.\ \ref{figResVarDens}):
+<<figResVarDens,fig=TRUE>>=
+plot( density( res$resVarA, na.rm=TRUE, from=0, to=20 ), col="red" )
+lines( density( res$resVarB, na.rm=TRUE, from=0, to=20 ), col="blue" )
+xg <- seq( 0, 20, length.out=1000 ); lines( xg, dchisq( xg, df=1 ), col="grey" )
+@
+
+The first two lines estimate the density of the quotients for conditions A and B 
+and plot them in red and blue. If the model holds, these should agree with a
+$\chi^2$ distribution with 1 degree of freedom (we have two replicates for each condition,
+and the number of degrees of freedom is one less than the number of replicates). The third
+line adds the theoretical density function in grey. The fact that the curves agree well is
+not surprising; we have seen this already in the residual ECDF plots (which show the same information,
+but in a way that makes it easier to see deviations).
+
+We can also see that hardly any genes have a ratio exceeding, say, 20. In 
+fact, there are, however, a few such genes, but we cannot see them in a density plot:
+
+<<>>=
+table( res$resVarA > 15 | res$resVarB > 15)
+@
+
+From the $chi^2$ distribution, we expect such high ratios to only occur for maybe two genes:
+<<>>=
+( 1 - pchisq( 15, df=1) ) * nrow(counts(cds))
+@
+
+Hence, these genes seem to be ``variance outliers'', and it may be prudent to
+exclude them from the list of significant hits. (Of course, the threshold of 15 was chosen
+ad hoc here and other thresholds of the same order of magnitude would be defensible as well.)
+
+%\section{Power considerations}
+%
+%How does detection power depend on sequencing depth and on the number of replicates?
+%
+%Our example data is a bit atypical as it has extremely strong biological noise (because
+%its sample was from a different subject, with different genotype). The function
+%\Rfunction{makeExampleCountDataSet} creates a data set with simulated data with a 
+%more moderate amount of noise. However, the steps shown in the following can be done with real data, too.
+%
+%<<>>=
+%cds.simu <- makeExampleCountDataSet( rawSCV = .05)
+%cds.simu <- estimateSizeFactors( cds.simu )
+%cds.simu <- estimateVarianceFunctions( cds.simu )
+%res.simu <- nbinomTest( cds.simu, "A", "B" )
+%@
+%
+%To see the effect of sequencing depth, we can artificially quadruple all counts and see how the
+%results change:
+%
+%<<>>=
+%cds.deeper <- newCountDataSet( 4 * counts(cds.simu), conditions(cds.simu) )
+%cds.deeper <- estimateSizeFactors( cds.deeper )
+%cds.deeper <- estimateVarianceFunctions( cds.deeper )
+%res.deeper <- nbinomTest( cds.deeper, "A", "B" )
+%@
+%
+%The effect of having four times as many replicates would be that the biological (raw) 
+%variance is reduced by a factor of the square root of 4. Using the variance adjustment 
+%factors, we can simulate this situation:
+%
+%<<>>=
+%cds.morerepl <- cds.simu
+%varAdjFactors( cds.morerepl ) <- c( 1/sqrt(4), 1/sqrt(4) )
+%res.morerepl <- nbinomTest( cds.morerepl, "A", "B" )
+%@
+%
+%We can make plots as above for all three cases:
+%
+%<<>>=
+%par( mfrow=c(1,3) )
+%plotDE( res.simu )
+%plotDE( res.deeper )
+%plotDE( res.morerepl )
+%@
 
 \section{Working partially without replicates}
 
@@ -513,7 +610,7 @@ res2 <- nbinomTest( cds2, "N", "T" )
 \label{figDE2}
 \end{figure}
 
-Unsurprisingly, we find much fewer hits, as can be seen from the plot (Fig.\ ref{figDE2})
+Unsurprisingly, we find much fewer hits, as can be seen from the plot (Fig.\ \ref{figDE2})
 <<figDE2,fig=TRUE>>=
 plot( 
    res2$baseMean,
@@ -523,9 +620,9 @@ plot(
 @
 and from this table, tallying the number of significant hits in our previous and our new, restricted analysis:
 <<>>=
-table( res_sig = res$padj < .1, res2_sig = res2$padj < .1 )
+addmargins( table( res_sig = res$padj < .1, res2_sig = res2$padj < .1 ) )
 @
-As can be seen, we have still found about 1/4 of the hits, and only a reassuringly small number of 
+As can be seen, we have still found about 1/5 of the hits, and only a reassuringly small number of 
 new (and potentially false) hits.
 
 One may finally ask whether the reduction of discoveries to a quarter is due to the higher variance
@@ -553,10 +650,16 @@ pvals2b <- nbinomTestForMatrices(
 We adjust the $p$ values and then compare the hits with those found originally:
 <<>>=   
 padj2b <- p.adjust( pvals2b, method="BH" )
-table( res_sig = res$padj < .1, res2b_sig = padj2b < .1 )
+notNAinRes2 <- !is.na( res2$padj )
+addmargins( table( 
+   res_sig = res$padj[notNAinRes2] < .1, 
+   res2b_sig = padj2b[notNAinRes2] < .1 ) )
 @ %$
-In conclusion, the worse variance estimates costs very roughly half of the hits, and the
-reduces sample size then another half, leaving us with a quarter of the original hits.
+(There are a few genes with NA as p value in \texttt{res2} because all counts in the restricted
+data set were zero. We have excluded these to make the tables comparable.)
+
+In conclusion, the worse variance estimates costs less in power than the reduction
+in sample size. For another data set, this may well be quite different.
 
 \section{Sample clustering}
 

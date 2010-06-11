@@ -121,8 +121,10 @@ nbinomTest <- function( cds, condA, condB, pvals_only=FALSE, eps=1e-4 )
          log2FoldChange = log2( bmvB$baseMean / bmvA$baseMean ), 
          pval = pval,
          padj = p.adjust( pval, method="BH" ), 
-         resVarA = bmvA$baseVar / ( bmvA$baseMean + rawVarFunc( cds, condA )( bmv$baseMean ) ),
-         resVarB = bmvB$baseVar / ( bmvA$baseMean + rawVarFunc( cds, condB )( bmv$baseMean ) ),
+         resVarA = bmvA$baseVar / ( bmvA$baseMean * sum( 1/sizeFactors(cds)[colA] ) / length(condA) +
+            rawVarFunc( cds, condA )( bmv$baseMean ) ),
+         resVarB = bmvA$baseVar / ( bmvA$baseMean * sum( 1/sizeFactors(cds)[colB] ) / length(condB) +
+            rawVarFunc( cds, condB )( bmv$baseMean ) ),
          stringsAsFactors = FALSE ) }
 }
 
