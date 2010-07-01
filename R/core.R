@@ -83,7 +83,9 @@ nbinomTestForMatricesRaw <- function( kA, kB, muA, vA, muB, vB, eps=0 )
    # This is to avoid rounding errors in checking for p <= pobs
 
    totals <- .Call( "calc_pvals", as.integer(kA+kB), pobs, muA, vA, muB, vB, eps )
-   unname( totals[2] / totals[1] )
+   min( unname( totals[2] / totals[1] ), 1 )
+   # The 'min' is to avoid p values slightly exceeding 1 due to
+   # approximation errors
 }
 
 

@@ -1,3 +1,8 @@
+2010-06-01: version 1.1.5
+
+- fixed a small bug that caused p values to sometimes slighly exceed 1.0
+  due to rounding errors
+
 2010-05-15: version 1.1.4
 
 - corrected a serious documentation bug: the effect of the variance
