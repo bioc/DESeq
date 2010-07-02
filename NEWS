@@ -1,3 +1,9 @@
+2010-06-02: version 1.1.6
+
+- changed arguments for estimateVarianceFunctionsin preparation for a planned new
+  feature; instead of pool=FALSE or pool=TRUE, use method="normal" or 
+  method="blind".
+
 2010-06-01: version 1.1.5
 
 - fixed a small bug that caused p values to sometimes slighly exceed 1.0

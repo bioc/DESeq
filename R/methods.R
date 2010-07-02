@@ -5,31 +5,42 @@ estimateSizeFactors <- function( cds )
    cds
 }
 
-estimateVarianceFunctions <- function( cds, pool=FALSE, 
-   locfit_extra_args=list(), lp_extra_args=list() )
+estimateVarianceFunctions <- function( cds, pool=NULL, 
+   method = c( "normal", "blind", "pooled" ), locfit_extra_args=list(), lp_extra_args=list() )
 {
    stopifnot( is( cds, "CountDataSet" ) )   
    if( any( is.na( sizeFactors(cds) ) ) )
       stop( "NAs found in size factors. Have you called already 'estimateSizeFactors'?" )
    
+   if( length(method) != 3 & !is.null( pool ) )
+      stop( "Do not specify both the 'pool' and the 'method' argument." )      
+   if( !is.null( pool ) ) {
+      if( pool == FALSE )
+         method <- "normal"
+      else if( pool == TRUE )
+         method <- "blind"
+      else
+         stop( "Argument 'pool' used incorrectly." )
+      warning( "The 'pool' argument to 'estimatevarianceFunction' is deprecated. Use the 'method' argument instead." )
+   } else
+      method <- match.arg( method )
+   
    cds@rawVarFuncs <- new.env( hash=TRUE )
    
-   if( pool ) {
-
-      cds@rawVarFuncs[["_pooled"]] <-
+   if( method == "blind" ) {
+      cds@rawVarFuncs[["_blind"]] <-
          estimateVarianceFunctionForMatrix( counts(cds), 
 	    sizeFactors(cds), locfit_extra_args, lp_extra_args )
       rawVarFuncTable(cds) <- data.frame(
          row.names = levels(conditions(cds)),
-         funcName = rep( "_pooled", length( levels( conditions(cds) ) ) ),
+         funcName = rep( "_blind", length( levels( conditions(cds) ) ) ),
          varAdjFactor = rep( 1, length( levels( conditions(cds) ) ) ),
-         stringsAsFactors = FALSE )
+         stringsAsFactors = FALSE ) }
 
-   } else {
-         
+   else if( method == "normal" ) {
       replicated <- names( which( tapply( conditions(cds), conditions(cds), length ) > 1 ) )
       if( length( replicated ) < 1 )
-         stop( "None of your conditions is replicated. Use pool=TRUE to pool across conditions." )
+         stop( "None of your conditions is replicated. Use method='blind' to estimate across conditions." )
       nonreplicated <- names( which( tapply( conditions(cds), conditions(cds), length ) == 1 ) )
       for( cond in replicated )
          cds@rawVarFuncs[[cond]] <- estimateVarianceFunctionForMatrix( 
@@ -47,8 +58,10 @@ estimateVarianceFunctions <- function( cds, pool=FALSE,
          funcName = sapply( levels(conditions(cds)), function( cond )
             ifelse( cond %in% replicated, cond, "_max" ) ),
          varAdjFactor = rep( 1, length( levels(conditions(cds)) ) ),
-         stringsAsFactors = FALSE )
-   }
+         stringsAsFactors = FALSE ) }
+
+   else if( method == "pooled" ) {
+      stop( "Method 'pooled' is not yet implemented." ) }
         
    validObject( cds )
    cds

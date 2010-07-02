@@ -593,9 +593,10 @@ cds2 <- cds[ ,c( "T1b", "N1" ) ]
 @
 
 Now, without any replicates at all, the \Rfunction{estimateVarianceFunctions} function will refuse to proceed unless we 
-instruct it to ignore the condition labels and estimate the variance pooled over all samples:
+instruct it to ignore the condition labels and estimate the variance by treating all
+samples as if they were replicates of the same condition:
 <<>>=
-cds2 <- estimateVarianceFunctions( cds2, pool=TRUE )
+cds2 <- estimateVarianceFunctions( cds2, method="blind" )
 @
 
 Now, we can attempt to find differential expression:
@@ -643,8 +644,8 @@ pvals2b <- nbinomTestForMatrices(
    counts(cds)[ ,colsT ],
    sizeFactors(cds)[ colsN ],
    sizeFactors(cds)[ colsT ],
-   rawVarFunc( cds2, "_pooled", TRUE )( baseMeansNT ),
-   rawVarFunc( cds2, "_pooled", TRUE )( baseMeansNT ) )
+   rawVarFunc( cds2, "_blind", TRUE )( baseMeansNT ),
+   rawVarFunc( cds2, "_blind", TRUE )( baseMeansNT ) )
 @
 
 We adjust the $p$ values and then compare the hits with those found originally:
@@ -725,8 +726,8 @@ further columns for annotation.
 
 Furthermore, there is a slot \texttt{rawVarFuncs} of type environment that holds the raw variance functions.
 Each of these functions has a name to access it in the environment, which is either the name of a condition, or
-\texttt{"\_max"} for conditions without replicates in normal mode, or \texttt{"\_pooled"} for the single
-pooled estimate that \Rfunction{estimateVarianceFunction} produces when called with \texttt{pool=TRUE}.
+\texttt{"\_max"} for conditions without replicates in normal mode, or \texttt{"\_blind"} or \texttt{"\_pooled"} for the single estimate that \Rfunction{estimateVarianceFunction} produces when called with \texttt{method="blind"}
+or or \texttt{method="pooled"}.
 Finally, the slot \texttt{rawVarFuncTable} contains a data frame whose \texttt{fundName} column serves as a look-up table. Its other column, \texttt{varAdjFactor} stores the adjustemtn factor which which the
 variance estimate from the \texttt{rawVarFuncs} should be scaled.
 The names are the conditions and the values are the function names, i.e., the hash keys for the \texttt{rawVarFuncs} environment.

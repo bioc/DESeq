@@ -1,6 +1,6 @@
 Package: DESeq
 Version: 1.1.6
-Date: 2010-07-01
+Date: 2010-07-02
 Title: Digital gene expresion analysis based on the negative binomial distribution
 Author: Simon Anders, EMBL Heidelberg <sanders@fs.tum.de>
 Maintainer: Simon Anders <sanders@fs.tum.de>

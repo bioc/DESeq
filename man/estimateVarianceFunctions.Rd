@@ -10,18 +10,41 @@
     to estimate the raw variance function for this condition.     
 }
 \usage{
-estimateVarianceFunctions(cds, pool = FALSE, 
+estimateVarianceFunctions(cds, 
+   pool = NULL, method = c( "normal", "blind", "pooled" ),
    locfit_extra_args = list(), lp_extra_args = list())
 }
 \arguments{
   \item{cds}{
       a CountDataSet with size factors
 }
-  \item{pool}{
-      Ignore the conditions and pool all data to estimate a single raw variance
-      function. Use this option if you have no replicates but be sure to read the
-      caveats in the vignette.
-}
+  \item{method}{
+     There are three ways how the variance functions can be estimated:
+     
+     \itemize{     
+     \item{normal}{For each condition with replicates, estimate a variance function
+        by considering the data from samples for this condition. Then, construct
+        a variance function '_max' that takes the maximum over all other variance
+        functions and assign this one to all samples of unreplicated conditions.}
+     
+     \item{blind}{Ignore the sample labels and pretend that all samples are 
+        replicates of a single condition. This allows to get a variance estimate
+        even if one does not have any biological replicates. However, this can 
+        leed to drastic loss of power; see the vignette for details. The single
+        estimated variance condition is the called "_blind" and assigned to all
+        samples.}
+     
+     \item{pooled}{Use the samples from all conditions with replicates to estimate
+        a single pooled variance function, to be called "_pool" and assign it to all
+        samples.} }
+}  
+  \item{pool}{This argument is deprecated; do not use it. It is (for now) 
+        retained for compatibility with code written for DESeq versions 1.1.6 or
+        eralier. Setting 'pool=FALSE' is the same as 'method="normal"' and setting
+        'pool=TRUE' is the same as 'method="blind"' (not 'method="pool"). Note that
+        the deprecation also resolved the issue that calling the 'blind' estimation
+        a 'pooled' was incorrect use of terminology.}
+      
   \item{locfit_extra_args, lp_extra_args}{
       Options to be passed to the \code{locfit} and to the \code{lp} function of the 
       locfit package. Use this  to adjust the local fitting. For example, you may pass 
@@ -30,8 +53,8 @@ estimateVarianceFunctions(cds, pool = FALSE,
       \code{locfit_extra_args=list(maxk=200)} if you get the error that locfit ran
       out of nodes. See the documentation of the locfit package for details. Usually, 
       you will not need to adjuste the fitting parameters, as the defaults seem to 
-      work quite fine.
-}
+      work quite fine. }
+      
 }
 \details{
    Behaviour for pooled=FALSE: The estimated raw variance functions are placed in the
