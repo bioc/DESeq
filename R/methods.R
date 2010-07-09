@@ -6,7 +6,8 @@ estimateSizeFactors <- function( cds )
 }
 
 estimateVarianceFunctions <- function( cds, pool=NULL, 
-   method = c( "normal", "blind", "pooled" ), locfit_extra_args=list(), lp_extra_args=list() )
+   method = c( "normal", "blind", "pooled" ), 
+   locfit_extra_args=list(), lp_extra_args=list(), modelFrame = NULL )
 {
    stopifnot( is( cds, "CountDataSet" ) )   
    if( any( is.na( sizeFactors(cds) ) ) )
@@ -24,6 +25,9 @@ estimateVarianceFunctions <- function( cds, pool=NULL,
       warning( "The 'pool' argument to 'estimatevarianceFunction' is deprecated. Use the 'method' argument instead." )
    } else
       method <- match.arg( method )
+   
+   if( cds@multivariateConditions && method != "pooled" )
+      stop( "You have specified multivariate conditions (i.e., passed a data frame with conditions). In this case, only the variance estimation is supported only with method='pooled'." )
    
    cds@rawVarFuncs <- new.env( hash=TRUE )
    
@@ -61,7 +65,30 @@ estimateVarianceFunctions <- function( cds, pool=NULL,
          stringsAsFactors = FALSE ) }
 
    else if( method == "pooled" ) {
-      stop( "Method 'pooled' is not yet implemented." ) }
+   
+      if( cds@multivariateConditions ) {
+         if( is.null( modelFrame ) )
+            modelFrame <- pData(cds)[ , colnames(pData(cds)) != "sizeFactor" ]
+         conds <- modelMatrixToConditionFactor( modelFrame ) }
+      else
+         conds <- conditions(cds)
+
+      cds@rawVarFuncs[["_pooled"]] <- estimatePooledVarianceFunctionForMatrix( 
+         counts(cds), sizeFactors(cds), conds,
+         locfit_extra_args, lp_extra_args )
+         
+      if( ! cds@multivariateConditions )
+         rawVarFuncTable(cds) <- data.frame(
+            funcName = sapply( levels(conditions(cds)), function( cond )
+               "_pooled" ),
+            varAdjFactor = rep( 1, length( levels(conditions(cds)) ) ),
+            stringsAsFactors = FALSE ) }
+      else {
+         rawVarFuncTable(cds) <- data.frame( 
+            row.names = "_pooled",
+            funcName = "_pooled", 
+            varAdjFactor = 1,
+            stringsAsFactors = FALSE ) }
         
    validObject( cds )
    cds
@@ -93,8 +120,10 @@ nbinomTest <- function( cds, condA, condB, pvals_only=FALSE, eps=1e-4 )
 {
    stopifnot( is( cds, "CountDataSet" ) )   
    ensureHasVarFuncs( cds )
+   if( cds@multivariateConditions )
+      stop( "For CountDataSets with multivariate conditions, only the GLM-based test can be used." )
    stopifnot( condA %in% levels(conditions(cds)) )  
-   stopifnot( condB %in% levels(conditions(cds)) )  
+   stopifnot( condB %in% levels(conditions(cds)) )     
    
    colA <- conditions(cds)==condA
    colB <- conditions(cds)==condB
@@ -150,18 +179,26 @@ scvPlot <- function( cds, xlim=NULL, ylim=c(0,.8), ignoreVarAdjFactors = FALSE,
    xg <- exp( seq( log( max( min(baseMeans), 2/sum(sizeFactors(cds)) ) ), 
       log( max(baseMeans) ), length.out = 1000 ) )
 
-   rscv <- sapply( levels(conditions(cds)), function(n) {
-      rawScv <- rawVarFunc( cds, n )( xg ) / xg^2
+   if( ! cds@multivariateConditions )
+      conds <- conditions(cds)
+   else
+      conds <- factor( rep( "_pooled", ncol(counts(cds)) ) )
+   
+   rscv <- sapply( levels(conds), function(n) {
+      if( !cds@multivariateConditions )
+         rawScv <- rawVarFunc( cds, n )( xg ) / xg^2
+      else
+         rawScv <- rawVarFunc( cds )( xg ) / xg^2
       if( !ignoreVarAdjFactors )
          rawScv <- adjustScvForBias( rawScv, attr( rawScv, "size" ) )
       rawScv } )
       
-   if( !ignoreVarAdjFactors )
-      rscv <- sapply( levels(conditions(cds)), function(n) 
+   if( !ignoreVarAdjFactors & !cds@multivariateConditions )
+      rscv <- sapply( levels(conds), function(n) 
          rscv[,n] * attr( rawVarFunc( cds, n ), "varAdjFactor" ) )
            
    bscv <- sapply( 1:ncol(counts(cds)), function(j)
-      1 / ( sizeFactors(cds)[[j]] * xg ) + rscv[ , as.character(conditions(cds))[j] ] )
+      1 / ( sizeFactors(cds)[[j]] * xg ) + rscv[ , as.character(conds)[j] ] )
    colnames( bscv ) <- colnames( counts( cds ) )
 
    if( is.null( xlim ) )
@@ -169,16 +206,22 @@ scvPlot <- function( cds, xlim=NULL, ylim=c(0,.8), ignoreVarAdjFactors = FALSE,
    plot( NULL, xlim = xlim, ylim = ylim, yaxs="i",
       xlab = "base mean", ylab = "squared coefficient of variation", log="x" )      
 
-   cols <- 1 + ( 1 : length(unique(rawVarFuncTable(cds)$funcName)) )
-   names(cols) <- unique(rawVarFuncTable(cds)$funcName)
+
+   if( !cds@multivariateConditions )
+      rvft <- rawVarFuncTable(cds)
+   else
+      rvft <- data.frame( row.names = "_pooled", funcName="_pooled", varAdjFactor=1 )
+
+   cols <- 1 + ( 1 : length(unique(rvft$funcName)) )
+   names(cols) <- unique(rvft$funcName)
 
    for( j in 1:ncol( bscv ) )
       lines( xg, bscv[,j], lty="dashed", 
-	     col=cols[ rawVarFuncTable(cds)[ as.character(conditions(cds))[j], "funcName" ] ] )
+	     col=cols[ rvft[ as.character(conds)[j], "funcName" ] ] )
 
-   for( n in levels(conditions(cds)) )
-      lines( xg, rscv[,n], col=cols[ rawVarFuncTable(cds)[ n, "funcName" ] ], 
-         lty = ifelse( rawVarFuncTable(cds)[ n, "funcName" ] != "_max", "solid", "dotted" ) )
+   for( n in levels(conds) )
+      lines( xg, rscv[,n], col=cols[ rvft[ n, "funcName" ] ], 
+         lty = ifelse( rvft[ n, "funcName" ] != "_max", "solid", "dotted" ) )
    
    dens <- density( log(baseMeans) )
    lines( exp(dens$x), .7 * ylim[2] / max(dens$y) * dens$y, col=1, lty="solid" )
@@ -226,4 +269,23 @@ makeExampleCountDataSet <- function( )
       ifelse( is_DE, "T", "F" ), sep="_" )
    newCountDataSet( m, conds )
 }
+
+nbinomFitGLM <- function( cds, modelFormula )
+{
+   stopifnot( is( cds, "CountDataSet" ) )
+   ensureHasVarFuncs( cds )
+   if( is.null( cds@rawVarFuncs[["_pooled"]] ) )
+      stop( "No pooled variance function found. Have you called 'estimateVarianceFunctions' with 'method=\"pooled\"'?" )
+      
+   baseMeans <- colMeans(t(counts(cds))/sizeFactors(cds))
+   rawVars <- rawVarFunc( cds, "_pooled", TRUE )( baseMeans )
+   rawScv <- adjustScvForBias( rawVars/baseMeans^2, attr( rawVars, "size" ) )
+
+   nbinomGLMsForMatrix( counts(cds), sizeFactors(cds), rawScv, 
+      modelFormula, pData(cds) )
+}
+
+nbinomGLMTest <- function( resFull, resReduced )
+   1 - pchisq( resReduced$deviance - resFull$deviance, 
+   attr( resReduced, "df.residual" ) - attr( resFull, "df.residual" ) )
 

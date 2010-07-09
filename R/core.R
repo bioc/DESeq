@@ -19,26 +19,62 @@ getBaseMeansAndVariances <- function( counts, sizeFactors ) {
 estimateVarianceFunctionForMatrix <- function( counts, sizeFactors, 
          locfit_extra_args=list(), lp_extra_args=list() ) {
 
-   # This function should be called with a matrix of counts adjusted for
-   # library size ratios, whose columns are replicates of an experimental
-   # condition. It returns a function that, given a adjusted count value, 
-   # returns an estimate for the variance at this count level.
-
    stopifnot( ncol( counts ) == length( sizeFactors ) )
-   counts <- counts[ rowSums(counts) > 0, ]
    bmv <- getBaseMeansAndVariances( counts, sizeFactors ) 
+   estimateVarianceFunctionFromBaseMeansAndVariances( bmv$baseMean,
+      bmv$baseVar, sizeFactors, locfit_extra_args, lp_extra_args )
+}      
+   
+modelMatrixToConditionFactor <- function( modelMatrix ) {
+
+   mmconds <- 1:nrow(modelMatrix)
+   for( i in 2:nrow(modelMatrix) )
+      for( j in 1:(i-1) )
+         if( all( modelMatrix[i,] == modelMatrix[j,] ) ) {
+            mmconds[i] = mmconds[j]
+            break }
+   factor( as.integer( factor( mmconds ) ) )
+}
+
+   
+estimatePooledVarianceFunctionForMatrix <- function( counts, sizeFactors, 
+      conditions, locfit_extra_args=list(), lp_extra_args=list() ) {
+      
+   basecounts <- t( t(counts) / sizeFactors )
+   replicated_sample <- conditions %in% names(which(table(conditions)>1))
+   df <- sum(replicated_sample) - length( unique( conditions[ replicated_sample ] ) ) 
+
+   varests <-
+   rowSums( 
+      sapply( 
+         tapply( 
+            ( 1:ncol(counts) )[ replicated_sample ], 
+            factor( conditions[ replicated_sample ] ), 
+            function(cols) 
+               rowSums( ( basecounts[,cols] - rowMeans(basecounts[,cols]) )^2 ) ), 
+         identity ) ) / df
+         
+   estimateVarianceFunctionFromBaseMeansAndVariances( rowMeans( basecounts ),
+      varests, sizeFactors, locfit_extra_args, lp_extra_args )
+}      
+   
+   
+estimateVarianceFunctionFromBaseMeansAndVariances <- function( means, 
+   variances, sizeFactors, locfit_extra_args=list(), lp_extra_args=list() ) {
+   
+   variances <- variances[ means > 0 ]
+   means <- means[ means > 0 ]
    
    fit <- do.call( "locfit", c( 
       list( 
-         baseVar ~ do.call( "lp", c( list( log(baseMean) ), lp_extra_args ) ),
-	 data = bmv, 
-	 family = "gamma" ), 
+         variances ~ do.call( "lp", c( list( log(means) ), lp_extra_args ) ),
+         family = "gamma" ), 
       locfit_extra_args ) )
    
+   rm( means )
+   rm( variances )
    xim <- sum( 1/sizeFactors ) / length( sizeFactors )
-   rm( counts )
-   rm( bmv )
-   
+      
    function( q ) {
       ans <- pmax( safepredict( fit, log(q) ) - xim * q, 1e-8 * q )
       attr( ans, "size" ) <- length( sizeFactors )
@@ -171,10 +207,84 @@ prepareScvBiasCorrectionFits <- function( maxnrepl=15, mu=100000, ngenes=10000,
 
 load( system.file ( "extra/scvBiasCorrectionFits.rda", package="DESeq" ) )
 
-adjustScvForBias <- function( scv, nsamples ) 
-{
+adjustScvForBias <- function( scv, nsamples ) {
+   stopifnot( nsamples > 1 )
    if( nsamples - 1 > length( scvBiasCorrectionFits ) )
       scv
    else
       pmax( safepredict( scvBiasCorrectionFits[[ nsamples-1 ]], scv ), 1e-8 * scv )
 }      
+
+nbkd.sf <- function( r, sf ) {
+   fam <- list(
+     
+      family = sprintf( "nbkd,r=%g", r ),
+      link = "log_sf",
+      linkfun = function( mu ) log( mu/sf ),
+      linkinv = function (eta) pmax(sf*exp(eta), .Machine$double.eps),
+      mu.eta = function (eta) pmax(sf*exp(eta), .Machine$double.eps),
+      variance = function(mu) mu + mu^2 / r,
+
+      dev.resids = function( y, mu, wt )
+          2 * wt * ( ifelse( y > 0, y * log( y / mu ), 0 ) + 
+            (r + y) * log( (r+mu)/(r+y) ) ), 
+      
+      aic = function (y, n, mu, wt, dev) NA,   # what for?
+      initialize = expression( {
+         n <- rep.int(1, nobs)         # What is n?
+         mustart <- y + 0.1
+      } ),
+      valid.mu <- function(mu) all( mu > 0 ),
+      valid.eta <- function(eta) TRUE,
+      simulate <- NA
+   )
+   
+   class(fam) <- "family"
+   fam }        
+
+nbinomGLMsForMatrix <- function( counts, sizeFactors, rawScv, modelFormula, 
+   modelFrame, quiet=FALSE, reportLog2=TRUE ) 
+{
+   stopifnot( length(sizeFactors) == ncol(counts) )
+   stopifnot( length(rawScv) == nrow(counts) )
+   stopifnot( nrow(modelFrame) == ncol(counts) )
+   
+   goodRows <- !is.na( rawScv ) & rowSums(counts) >= 0 
+   
+   res <- 
+   t( sapply( which(goodRows), function(i) {
+      if( !quiet & i %% 1000 == 0 )
+         cat( '.' ) 
+      nbfam <- nbkd.sf( 1 / rawScv[i], sizeFactors )      
+      fit <- glm( modelFormula, cbind( count=counts[i,], modelFrame ), family=nbfam )
+      c( 
+         coefficients(fit), 
+         deviance = deviance(fit), 
+         df.residual = fit$df.residual,
+         converged = fit$converged ) } ) )
+      
+   if( !quiet )
+      cat( "\n" ) 
+
+   df.residual <- res[ 1, "df.residual" ]
+   stopifnot( all( res[ , "df.residual" ] == df.residual ) )
+
+   # Put in the NAs
+   res2 <- data.frame(
+      row.names = row.names( counts ),
+      apply( res, 2, function( col ) {
+         a <- rep( NA_real_, nrow(counts) )
+         a[goodRows] <- col
+         a } ) )
+   colnames(res2) <- colnames(res)
+      
+   if( reportLog2 )
+      res2[ , 1:(ncol(res2)-3) ] <- res2[ , 1:(ncol(res2)-3) ] / log(2)
+
+   res2$converged <- as.logical( res2$converged )
+
+   res2 <- res2[ , colnames(res) != "df.residual" ]     
+   attr( res2, "df.residual" ) <- df.residual
+   res2
+}
+      

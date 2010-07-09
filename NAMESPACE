@@ -18,6 +18,7 @@ export(
    getBaseMeansAndVariances,
    nbinomTest,
    estimateVarianceFunctionForMatrix,
+   estimatePooledVarianceFunctionForMatrix,
    nbinomTestForMatrices,
    estimateSizeFactorsForMatrix,
    scvPlot,
@@ -25,7 +26,11 @@ export(
    makeExampleCountDataSet,
    adjustScvForBias,
    varAdjFactors,
-   "varAdjFactors<-" )
+   "varAdjFactors<-",
+   nbinomGLMsForMatrix,
+   nbinomFitGLM,
+   nbkd.sf,
+   nbinomGLMTest )
   
 import( Biobase )
 importFrom( genefilter, rowVars )
