@@ -242,12 +242,19 @@ nbkd.sf <- function( r, sf ) {
    class(fam) <- "family"
    fam }        
 
+
 nbinomGLMsForMatrix <- function( counts, sizeFactors, rawScv, modelFormula, 
    modelFrame, quiet=FALSE, reportLog2=TRUE ) 
 {
    stopifnot( length(sizeFactors) == ncol(counts) )
    stopifnot( length(rawScv) == nrow(counts) )
    stopifnot( nrow(modelFrame) == ncol(counts) )
+
+   stopifnot( is( modelFormula, "formula" ) )  
+   if( as.character( modelFormula[[1]] ) != "~" )  
+      stop( "Formula does not have a '~' as top-level operator." )
+   if( as.character( modelFormula[[2]] ) != "count" )  
+      stop( "Left-hand side of model formula must be 'count'." )
    
    goodRows <- !is.na( rawScv ) & rowSums(counts) >= 0 
    

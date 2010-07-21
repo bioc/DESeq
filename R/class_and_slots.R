@@ -27,6 +27,9 @@ newCountDataSet <- function( countData, conditions, sizeFactors=NULL,
    varMetadata( phenoData )[ "sizeFactor", "labelDescription" ] <-
       "size factor (relative estimate of sequencing depth)"
    
+   if( is( conditions, "matrix" ) )
+      conditions <- as.data.frame( conditions )
+   
    if( is( conditions, "data.frame" ) || is( conditions, "AnnotatedDataFrame" ) ) {
       stopifnot( nrow( conditions ) == ncol( countData ) )
       conditions <- as( conditions, "AnnotatedDataFrame" )
@@ -35,6 +38,7 @@ newCountDataSet <- function( countData, conditions, sizeFactors=NULL,
          # TODO: What if the rownames were set?
       phenoData <- combine( phenoData, conditions )
       multivariateConditions <- TRUE
+      rvft <- c( `_all` = NA_character_ )
    } else {
       conditions <- factor( conditions )
       stopifnot( length( conditions ) == ncol( countData ) )
@@ -42,6 +46,7 @@ newCountDataSet <- function( countData, conditions, sizeFactors=NULL,
       varMetadata( phenoData )[ "condition", "labelDescription" ] <-
          "experimental condition, treatment or phenotype"
       multivariateConditions <- FALSE
+      rvft <- rep( NA_character_, length(levels(conditions)) )
    }
    
    cds <- new( "CountDataSet",
@@ -50,7 +55,7 @@ newCountDataSet <- function( countData, conditions, sizeFactors=NULL,
       featureData = featureData,
       multivariateConditions = multivariateConditions,
       rawVarFuncs = new.env( hash=TRUE ),
-      rawVarFuncTable = rep( NA_character_, length(levels(conditions)) ) )
+      rawVarFuncTable = rvft )
             
    cds
 }
