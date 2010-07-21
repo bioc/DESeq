@@ -4,6 +4,7 @@ citEntry(entry="techreport",
                               as.person("Wolfgang Huber")),
          year = 2010,
          note = "Submitted; Preprint available from Nature Precedings",
+	 institution = "EMBL",
          url  = "http://hdl.handle.net/10101/npre.2010.4282.2",
          
          textVersion = 

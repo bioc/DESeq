@@ -258,14 +258,13 @@ The solid black line is a density estimate of the base means: Only were
 there is an appreciable number of base mean values, the variance estimates can be
 expected to be accurate. 
 
-For the condition ``Tb'', we cannot estimate a variance function  as we have no replicates. When a variance estimate is needed for ``Tb'', the package will use the
+For the condition ``Tb'', we cannot estimate a variance function  as we have no replicates. When a variance estimate 
+is needed for ``Tb'', the package will use the
 maximum of the variances estimated for all the other conditions. To see the assignment of conditions to 
 variance functions, use the \Rfunction{rawVarFuncTable} accessor function:
 <<>>=
 rawVarFuncTable( cds )
 @
-The first column shows the assignment. The second column (variance adjustment factors)
-is explained below.
 
 It is instructive to observe at which count level the biological 
 noise starts to dominate the shot noise. At low counts, where shot noise dominates, higher
@@ -342,39 +341,8 @@ too high p values (and hence, an overestimation of the false discovery rate).
 The first case (curves below the green line) may indicate a serious problem that might compromise
 your results. However, this seems to rarely happen (and I'd appreciate if you could sent me
 a mail if you observe it with real data so I can investigate). The second case (curves above
-the green line) is usually nothing to worry about; just leaving it as it is might be the prudent
-thing to do as it cause DESeq to be conservative with the tests.
+the green line) is usually nothing to worry about; it only causes DESeq to be conservative with the tests.
 
-Even though this should normally not be necessary, DESeq offers the possibility to
-set variance adjustment factors to adjust the variance estimates. By default, these factors
-are all 1:
-<<>>=
-varAdjFactors( cds )
-@
-
-\begin{figure}
-\centering
-\includegraphics[width=.5\textwidth]{DESeq-figVarRed}
-\caption{Effect of setting the variance adjustmnet factor for condition ``T'' to 2.3.}
-\label{figVarRed}
-\end{figure}
-
-If you want to inflate the variance estimates to cause DESeq to become more conservative, 
-set them to a value above 1.
-<<>>=
-varAdjFactors( cds ) <- c( N=2.3, T=1, Tb=1 )
-@
-
-Now, the variance estimates are increased and the ECDF lines are shifted upwards 
-(Fig. \ref{figVarRed}).
-<<figVarRed,fig=TRUE,width=7,height=7>>=
-residualsEcdfPlot( cds, "N" )
-@ % $
-
-Let's switch back to the default value before continuing:
-<<>>=
-varAdjFactors( cds ) <- c( N=1, T=1, Tb=1 )
-@
 
 \section{Calling differential expression} \label{sec:DE}
 
@@ -728,8 +696,7 @@ Furthermore, there is a slot \texttt{rawVarFuncs} of type environment that holds
 Each of these functions has a name to access it in the environment, which is either the name of a condition, or
 \texttt{"\_max"} for conditions without replicates in normal mode, or \texttt{"\_blind"} or \texttt{"\_pooled"} for the single estimate that \Rfunction{estimateVarianceFunction} produces when called with \texttt{method="blind"}
 or or \texttt{method="pooled"}.
-Finally, the slot \texttt{rawVarFuncTable} contains a data frame whose \texttt{fundName} column serves as a look-up table. Its other column, \texttt{varAdjFactor} stores the adjustemtn factor which which the
-variance estimate from the \texttt{rawVarFuncs} should be scaled.
+Finally, the slot \texttt{rawVarFuncTable} contains a charcter vector which serves as a look-up table. 
 The names are the conditions and the values are the function names, i.e., the hash keys for the \texttt{rawVarFuncs} environment.
 
 All these properties are checked by the validity method.

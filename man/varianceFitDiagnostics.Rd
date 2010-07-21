@@ -11,7 +11,7 @@
    produces a data frame with useful data for this purpose. 
 }
 \usage{
-varianceFitDiagnostics(cds, cond, ignoreVarAdjFactor = FALSE)
+varianceFitDiagnostics(cds, cond)
 }
 \arguments{
   \item{cds}{
@@ -19,9 +19,6 @@ varianceFitDiagnostics(cds, cond, ignoreVarAdjFactor = FALSE)
 }
   \item{cond}{
       the name of a condition
-}
- \item{ignoreVarAdjFactor}{
-     if set to true, the variance adjustment factors are ignored, i.e., taken to be 1.
 }
 }
 \value{

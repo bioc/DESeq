@@ -1,4 +1,13 @@
-2010-06-5: version 1.1.7
+2010-07-21: version 1.1.9
+
+- removed the variance adjustment factors introduced earlier; they caused
+  more trouble than they were worth.
+
+2010-07-09: version 1.1.8
+
+- GLM functionality added but not yet documented
+
+2010-06-05: version 1.1.7
 
 - no change, just bumped version number as the build server seemed to have
   gotten confused

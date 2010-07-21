@@ -10,7 +10,7 @@
    CountDataSet).
 }
 \usage{
-rawVarFunc(cds, condOrName, byName=FALSE)
+rawVarFunc(cds, condOrName=NULL, byName=FALSE)
 }
 \arguments{
   \item{cds}{
@@ -23,6 +23,10 @@ rawVarFunc(cds, condOrName, byName=FALSE)
      the given condition and returns this function.  For \code{byName==TRUE}, the look-up is skipped, i.e.,
      the argument is taken directly as the name under which the raw variance function is stored in
      the \code{cds}'s \code{rawVarFuncs} environment.
+     
+     If only one variance function exists (e.g., because \code{\link{estimateVarianceFunctions}} has
+     been caled with \code{method="pooled"} or \code{method="blind"}), the argument may be left at 
+     its default NULL, and the only variance function is returned.
 }
    \item{byName}{
      how to interpret the \code{condByName} argument, see above

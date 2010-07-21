@@ -8,6 +8,7 @@ export(
    conditions,
    rawVarFunc,
    rawVarFuncTable,
+   "rawVarFuncTable<-",
    estimateSizeFactors,
    estimateVarianceFunctions,
    varianceFitDiagnosticsForMatrix,

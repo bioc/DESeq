@@ -17,8 +17,7 @@
    density of counts is present can a good estimate be expected.
 }
 \usage{
-scvPlot( cds, xlim = NULL, ylim = c(0, 0.8), 
-   ignoreVarAdjFactors = FALSE, skipBiasCorrection = FALSE )
+scvPlot( cds, xlim = NULL, ylim = c(0, 0.8), skipBiasCorrection = FALSE )
 }
 \arguments{
   \item{cds}{
@@ -26,9 +25,6 @@ scvPlot( cds, xlim = NULL, ylim = c(0, 0.8),
 }
   \item{xlim, ylim}{
      the plot limits
-}
-  \item{ignoreVarAdjFactors}{
-     if set to true, the variance adjustment factors are ignored, i.e., taken to be 1.
 }
   \item{skipBiasCorrection}{
      if set to true, the plotted SCVs are calculated directly from the variance fit,

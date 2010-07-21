@@ -10,7 +10,7 @@ calls \code{\link{varianceFitDiagnostics}} to get the cumulative chi-squared
 probabilities of the residuals and plots their ECDFs, stratified by base means.
 }
 \usage{
-residualsEcdfPlot(cds, condition, ncuts = 7, ignoreVarAdjFactor = FALSE)
+residualsEcdfPlot(cds, condition, ncuts = 7)
 }
 \arguments{
   \item{cds}{
@@ -21,9 +21,6 @@ residualsEcdfPlot(cds, condition, ncuts = 7, ignoreVarAdjFactor = FALSE)
 }
   \item{ncuts}{
      the number of base mean strata (i.e, of curves)
-}
-  \item{ignoreVarAdjFactor}{
-     if set to true, the variance adjustment factors are ignored, i.e., taken to be 1.
 }
 }
 \details{

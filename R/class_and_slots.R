@@ -2,7 +2,7 @@ setClass( "CountDataSet",
    contains = "eSet",
    representation = representation( 
       rawVarFuncs = "environment",
-      rawVarFuncTable = "data.frame",
+      rawVarFuncTable = "character",
       multivariateConditions = "logical" ),
    prototype = prototype( new( "VersionedBiobase",
       versions = c( classVersion("eSet"), CountDataSet = "1.1.0" ) ) )
@@ -34,11 +34,6 @@ newCountDataSet <- function( countData, conditions, sizeFactors=NULL,
       rownames( pData(conditions) ) <- rownames( pData(phenoData) )
          # TODO: What if the rownames were set?
       phenoData <- combine( phenoData, conditions )
-      rvft <- data.frame( 
-         row.names = "_pooled",
-         funcName = NA_character_, 
-         varAdjFactor = NA_real_,
-         stringsAsFactors = FALSE )
       multivariateConditions <- TRUE
    } else {
       conditions <- factor( conditions )
@@ -46,20 +41,16 @@ newCountDataSet <- function( countData, conditions, sizeFactors=NULL,
       phenoData$`condition` <- factor( conditions )
       varMetadata( phenoData )[ "condition", "labelDescription" ] <-
          "experimental condition, treatment or phenotype"
-      rvft <- data.frame( 
-         row.names = levels(conditions),
-         funcName = rep( NA_character_, length(levels(conditions)) ),
-         varAdjFactor = rep( NA_real_, length(levels(conditions)) ),
-         stringsAsFactors = FALSE )
       multivariateConditions <- FALSE
    }
    
    cds <- new( "CountDataSet",
       assayData = assayDataNew( "environment", counts=countData ),
-      phenoData=phenoData, featureData=featureData,
+      phenoData = phenoData, 
+      featureData = featureData,
       multivariateConditions = multivariateConditions,
-      rawVarFuncs=new.env(hash=TRUE),
-      rawVarFuncTable=rvft )
+      rawVarFuncs = new.env( hash=TRUE ),
+      rawVarFuncTable = rep( NA_character_, length(levels(conditions)) ) )
             
    cds
 }
@@ -76,42 +67,32 @@ setValidity( "CountDataSet", function( object ) {
          return( "phenoData does not contain a 'condition' columns." )
       if( ! is( pData(object)$`condition`, "factor" ) )
          return( "The 'condition' column in phenoData is not a factor." )
-      if( nrow(object@rawVarFuncTable) != length(levels(conditions(object))) )
-         return( "The rawVarFuncTable does not contain one row per condition." )
-      if( any( rownames(object@rawVarFuncTable) != levels(conditions(object))) )
-         return( "The rownames of the character vector 'rawVarFuncTable' are not identical to the levels of the factor 'conditions'." )
-   } else {
-      if( any( dim(object@rawVarFuncTable) != c( 0, 0 ) ) )
-         return( "The rawVarFuncTable must be empty if mutivariate conditions are used." )
-   }
-   if( ncol(object@rawVarFuncTable) != 2 )
-      return( "The rawVarFuncTable does not contain two columns." )
-   if( all( colnames(object@rawVarFuncTable) != c( "funcName", "varAdjFactor" ) ) )
-      return( "The rawVarFuncTable' columns are not named 'funcName' and 'varAdjFactor'." )
-   if( ! is( object@rawVarFuncTable$funcName, "character" ) )
-      return( "The rawVarFuncTable' column 'funcName' is not of type character." )
-   if( ! is( object@rawVarFuncTable$varAdjFactor, "numeric" ) )
-      return( "The rawVarFuncTable' column 'varAdjFactor' is not of type numeric." )
-   for( cond in levels(conditions(object)) ) {
-      if( ! is.na( object@rawVarFuncTable$funcName[cond] ) ) {
-         bvfName <- object@rawVarFuncTable[cond]         
-         if( is.null( object@rawVarFuncs[[bvfName]] ) )
-            return( sprintf( "Condition '%s' has been assigned the rawVarFunction '%s' which is missing.",
-               cond, bvfName ) )
-      }
-   }
-   for( vmfName in ls(object@rawVarFuncs) ) {
-      if( !is( object@rawVarFuncs[[vmfName]], "function" ) )
-         return( sprintf( "rawVarFuncs contains a value, called '%s', which is not a function.", vmfName ) )
-      if( length( formals( object@rawVarFuncs[[vmfName]] ) ) != 1 ) 
-         return( sprintf( "rawVarFuncs contains a function, called '%s', which does have the right argument list for a raw variance function.", vmfName ) )
-      testres <- object@rawVarFuncs[[vmfName]]( 1.5 ) 
+      if( length(object@rawVarFuncTable) != length(levels(conditions(object))) )
+         return( "The rawVarFuncTable does not contain one element per condition." )
+      if( any( names(object@rawVarFuncTable) != levels(conditions(object))) )
+         return( "The names of the character vector 'rawVarFuncTable' are not identical to the levels of the factor 'conditions'." ) }
+   else {
+      if( length(object@rawVarFuncTable) != 1 )
+         return( "The rawVarFuncTable must be of length 1 if mutivariate conditions are used." )
+      if( names(object@rawVarFuncTable) != "_all" )
+         return( "The rawVarFuncTable must have one element named '_all' if mutivariate conditions are used." ) }
+   for( funcName in object@rawVarFuncTable )
+      if( ! is.na( funcName ) )
+         if( is.null( object@rawVarFuncs[[funcName]] ) )
+            return( sprintf( "rawVarFuncTable mentions a rawVarFunction '%s' which is missing.",
+               funcName ) )
+   for( rvfName in ls(object@rawVarFuncs) ) {
+      if( !is( object@rawVarFuncs[[rvfName]], "function" ) )
+         return( sprintf( "rawVarFuncs contains a value, called '%s', which is not a function.", rvfName ) )
+      if( length( formals( object@rawVarFuncs[[rvfName]] ) ) != 1 ) 
+         return( sprintf( "rawVarFuncs contains a function, called '%s', which does have the right argument list for a raw variance function.", rvfName ) )
+      testres <- object@rawVarFuncs[[rvfName]]( c( 1.5, 3.5, 7.3 ) ) 
       if( ! is( testres, "numeric" ) )
-         return( sprintf( "rawVarFuncs contains a function, called '%s', which does not return a numeric result.", vmfName ) )
-      if( length(testres) != 1 )
-         return( sprintf( "rawVarFuncs contains a function, called '%s', which does not return a single number as result.", vmfName ) )
+         return( sprintf( "rawVarFuncs contains a function, called '%s', which does not return a numeric result.", rvfName ) )
+      if( length(testres) != 3 )
+         return( sprintf( "rawVarFuncs contains a function, called '%s', which does not return a vector of proper length as result.", rvfName ) )
       if( ! is( attr(testres, "size" ), "numeric" ) )
-         return( sprintf( "rawVarFuncs contains a function, called '%s', which return a result with numeric 'size' attribute.", vmfName ) )
+         return( sprintf( "rawVarFuncs contains a function, called '%s', which return a result with numeric 'size' attribute.", rvfName ) )
    }
    if( !is.integer( counts(object) ) )
       return( "the count data is not in integer mode" )
@@ -170,12 +151,10 @@ rawVarFunc <- function( cds, condOrName=NULL, byName=FALSE ) {
       res <- cds@rawVarFuncs[[ as.character(condOrName) ]]
       if( is.null(res) )
          stop( sprintf( "No raw variance function found with name '%s'.", condOrName ) )
-      attr( res, "varAdjFactor" ) <- 1
    } else {      
-      res <- cds@rawVarFuncs[[ cds@rawVarFuncTable[ as.character(condOrName), "funcName" ] ]]
+      res <- cds@rawVarFuncs[[ cds@rawVarFuncTable[ as.character(condOrName) ] ]]
       if( is.null(res) )
          stop( sprintf( "No raw variance function found for condition '%s'.", condOrName ) )
-      attr( res, "varAdjFactor" ) <- cds@rawVarFuncTable[ as.character(condOrName), "varAdjFactor" ]
    }
    res
 }
@@ -187,8 +166,8 @@ rawVarFuncTable <- function( cds ) {
 
 `rawVarFuncTable<-` <- function( cds, value ) {
    stopifnot( is( cds, "CountDataSet" ) )
-   if( is.null( rownames(value) ) )
-      rownames( value ) <- levels( conditions(cds) )
+   if( is.null( names(value) ) )
+      names( value ) <- names( rawVarFuncTable(cds) )
    cds@rawVarFuncTable <- value
    validObject( cds )   
    cds
@@ -203,23 +182,10 @@ ensureHasVarFuncs <- function( cds ) {
 
 varAdjFactors <- function( cds ) {
    stopifnot( is( cds, "CountDataSet" ) )
-   if( cds@multivariateConditions )
-      stop( "CountDataSets with multivariate conditions do not support variance adjustment factors." )
-   ans <- cds@rawVarFuncTable$varAdjFactor
-   names(ans) <- rownames( cds@rawVarFuncTable )
-   ans
+   stop( "This function has been removed. Do not use it. See help page." )
 }
 
 `varAdjFactors<-` <- function( cds, value ) {
    stopifnot( is( cds, "CountDataSet" ) )
-   if( cds@multivariateConditions )
-      stop( "CountDataSets with multivariate conditions do not support variance adjustment factors." )
-   if( length( value ) != length( levels( conditions( cds ) ) ) )
-      stop( "'varAdjFactors' has to be a vector with one value per condition." )
-   if( !( is.null( names(value) ) || 
-         all( names(value) == rownames( rawVarFuncTable(cds) ) ) ) )
-      stop( "If 'varAdjFactors' is a named vector, the names being equal to the row names of rawVarFuncTable." )
-   cds@rawVarFuncTable$varAdjFactor <- value
-   validObject( cds )
-   cds
+   stop( "This function has been removed. Do not use it. See help page." )
 }
