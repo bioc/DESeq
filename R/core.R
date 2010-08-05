@@ -36,26 +36,32 @@ modelMatrixToConditionFactor <- function( modelMatrix ) {
    factor( as.integer( factor( mmconds ) ) )
 }
 
-   
-estimatePooledVarianceFunctionForMatrix <- function( counts, sizeFactors, 
-      conditions, locfit_extra_args=list(), lp_extra_args=list() ) {
-      
+
+getBaseMeansAndPooledVariances <- function( counts, sizeFactors, conditions ) {
+
    basecounts <- t( t(counts) / sizeFactors )
    replicated_sample <- conditions %in% names(which(table(conditions)>1))
    df <- sum(replicated_sample) - length( unique( conditions[ replicated_sample ] ) ) 
 
-   varests <-
-   rowSums( 
-      sapply( 
-         tapply( 
-            ( 1:ncol(counts) )[ replicated_sample ], 
-            factor( conditions[ replicated_sample ] ), 
-            function(cols) 
-               rowSums( ( basecounts[,cols] - rowMeans(basecounts[,cols]) )^2 ) ), 
-         identity ) ) / df
-         
-   estimateVarianceFunctionFromBaseMeansAndVariances( rowMeans( basecounts ),
-      varests, sizeFactors, locfit_extra_args, lp_extra_args )
+   data.frame(
+      baseMean = rowMeans( basecounts ),
+      baseVar =
+	 rowSums( 
+	    sapply( 
+               tapply( 
+        	  ( 1:ncol(counts) )[ replicated_sample ], 
+        	  factor( conditions[ replicated_sample ] ), 
+        	  function(cols) 
+        	     rowSums( ( basecounts[,cols] - rowMeans(basecounts[,cols]) )^2 ) ), 
+               identity ) ) / df )
+}
+   
+estimatePooledVarianceFunctionForMatrix <- function( counts, sizeFactors, 
+      conditions, locfit_extra_args=list(), lp_extra_args=list() ) {
+      
+   bmv <- getBaseMeansAndPooledVariances( counts, sizeFactors, conditions ) 
+   estimateVarianceFunctionFromBaseMeansAndVariances( bmv$baseMean,
+      bmv$baseVar, sizeFactors, locfit_extra_args, lp_extra_args )
 }      
    
    
@@ -146,9 +152,12 @@ nbinomTestForMatrices <- function( countsA, countsB, sizeFactorsA, sizeFactorsB,
 }
 
 
-varianceFitDiagnosticsForMatrix <- function( counts, sizeFactors, rawVarFunc )
+varianceFitDiagnosticsForMatrix <- function( counts, sizeFactors, rawVarFunc, poolingConditions=NULL )
 {
-   res <- getBaseMeansAndVariances( counts, sizeFactors )
+   if( is.null( poolingConditions ) )
+      res <- getBaseMeansAndVariances( counts, sizeFactors )
+   else
+      res <- getBaseMeansAndPooledVariances( counts, sizeFactors, poolingConditions )
    res$fittedRawVar <- rawVarFunc( res$baseMean )
    res$fittedBaseVar <- res$fittedRawVar + 
       res$baseMean * sum( 1/sizeFactors ) / length( sizeFactors )
@@ -156,6 +165,7 @@ varianceFitDiagnosticsForMatrix <- function( counts, sizeFactors, rawVarFunc )
    res$pchisq <- pchisq( df * res$baseVar / res$fittedBaseVar, df = df )
    res
 }
+
 
 multiecdfWithoutLegend <- function( x, ... )
 {

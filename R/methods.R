@@ -82,20 +82,44 @@ estimateVarianceFunctions <- function( cds,
    cds
 }
 
-varianceFitDiagnostics <- function( cds, cond )
+varianceFitDiagnostics <- function( cds, cond=NULL, modelFrame=NULL )
 {
    stopifnot( is( cds, "CountDataSet" ) )
-   stopifnot(cond %in% levels(conditions(cds)) )  
    ensureHasVarFuncs( cds )
    
-   rvf <-rawVarFunc( cds, cond ) 
-   varianceFitDiagnosticsForMatrix(
-      counts(cds)[,conditions(cds)==cond], 
-      sizeFactors(cds)[conditions(cds)==cond],
-      rvf )
+   if( is.null( cond ) ) {
+      if( length(cds@rawVarFuncs) != 1 )
+         stop( "There is more than one variance function. 'cond' may not be omitted." )
+      cond <- ls( cds@rawVarFuncs )[[1]]
+      rvf <- rawVarFunc( cds, cond, byName=TRUE ) 
+   } 
+   else
+      rvf <- rawVarFunc( cds, cond ) 
+   
+   if( cond == "_pooled" ) {
+      if( cds@multivariateConditions ) {
+         if( is.null( modelFrame ) )
+            modelFrame <- pData(cds)[ , colnames(pData(cds)) != "sizeFactor" ]
+         poolconds <- modelMatrixToConditionFactor( modelFrame ) }
+      else
+         poolconds <- conditions(cds)
+
+      varianceFitDiagnosticsForMatrix(
+         counts(cds), sizeFactors(cds), rvf, poolconds )
+   }
+   
+   else if( cond == "_blind" )
+      varianceFitDiagnosticsForMatrix(
+         counts(cds), sizeFactors(cds), rvf )
+   
+   else 
+      varianceFitDiagnosticsForMatrix(
+         counts(cds)[,conditions(cds)==cond], 
+         sizeFactors(cds)[conditions(cds)==cond],
+         rvf ) 
 }
 
-residualsEcdfPlot <- function( cds, condition, ncuts=7 )
+residualsEcdfPlot <- function( cds, condition=NULL, ncuts=7 )
 {
    stopifnot( is( cds, "CountDataSet" ) )   
    ensureHasVarFuncs( cds )
