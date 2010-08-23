@@ -32,6 +32,12 @@ getVarianceStabilizedData(cds)
    Note: This function calls internally \code{\link{estimateVarianceFunctions}} with \code{pooled=TRUE}
    and bases its calculations on the result. Any condition labels or variance adjustment factors
    are hence ignored.
+   
+   Limitations: In order to preserve normalization, the same transformation has to be used
+   for all samples. This results in the variance stabilizition to be only approximate. The
+   more the siza factors differ, the more residual dependence of the variance on the mean
+   you will find in the transformed data. (Compare the variance of the upper half of your
+   transformed data with the lower half to see whether this is a problem in your case.)
 }
 \value{
    A matrix of the same dimension as the count data, containing the transformed data.

@@ -1,3 +1,21 @@
+2010-08-17: version 1.1.11
+
+- fixed a bug in getVarianceStabilizedData; it failed to preserve 
+normalization. This is because the transformation function
+for each sample were different if the size factors differed. The
+function now uses an average size factor. However, the veriance 
+stabilizing transformation is still not perfect:
+the variance still increases slightly with the mean. 
+This needs a bit more work
+
+As an alternative to judge similarity of samples, I have added 
+two new functions, getRawScvForSamplePair and 
+getRawScvDistanceMatrix. See their help pages.
+
+2010-08-17: version 1.1.10
+
+- fixed bug in makeExampleCountDataSet: colnames were wrong
+
 2010-07-21: version 1.1.9
 
 - removed the variance adjustment factors introduced earlier; they caused

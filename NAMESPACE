@@ -31,7 +31,9 @@ export(
    nbinomGLMsForMatrix,
    nbinomFitGLM,
    nbkd.sf,
-   nbinomGLMTest )
+   nbinomGLMTest,
+   getRawScvForSamplePair,
+   getRawScvDistanceMatrix )
   
 import( Biobase )
 importFrom( genefilter, rowVars )

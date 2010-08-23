@@ -234,17 +234,21 @@ scvPlot <- function( cds, xlim=NULL, ylim=c(0,.8), skipBiasCorrection = FALSE ) 
 
 getVarianceStabilizedData <- function( cds ) {
    stopifnot( is( cds, "CountDataSet" ) )
+   if( any( is.na( sizeFactors(cds) ) ) )
+      stop( "NA found in size factors. Have you called 'estimateSizefactors' yet?" )
+   ncounts <- t( t(counts(cds)) / sizeFactors(cds) )
    rvf <- estimateVarianceFunctionForMatrix( counts(cds), sizeFactors(cds) )
-   tc <- sapply( colnames(counts(cds)), function(clm) {
-      countcol <- counts(cds)[,clm]
-      sf <- sizeFactors(cds)[clm]
-      xg <- sinh( seq( asinh(0), asinh(max(countcol)), length.out=1000 ) )
-      xim <- sum( 1/sizeFactors(cds) ) / ncol( counts(cds) )
-      fullVarsAtGrid <- pmax( xg, xg + sf^2*( rvf( xg/sf ) ) )
-      integrand <- 1 / ( sqrt( fullVarsAtGrid ) / sf )
-      splf <- splinefun( asinh(xg[-1]/sf), cumsum( (xg[-1]-xg[-length(xg)])/sf * integrand[-1] ) )
-      splf( asinh(countcol/sf) )
-   } )
+   xg <- sinh( seq( asinh(0), asinh(max(ncounts)), length.out=1000 ) )[-1]
+   xim <- mean( 1/sizeFactors(cds) )
+   baseVarsAtGrid <- xg * xim^2 + pmax( 0, rvf( xg ) )
+   integrand <- 1 / sqrt( baseVarsAtGrid )
+   splf <- splinefun( 
+      asinh( ( xg[-1] + xg[-length(xg)] )/2 ), 
+      cumsum( 
+         ( xg[-1] - xg[-length(xg)] ) * 
+         ( integrand[-1] + integrand[-length(integrand)] )/2 ) )
+   tc <- sapply( colnames(counts(cds)), function(clm)
+      splf( asinh( ncounts[,clm] ) ) )
    rownames( tc ) <- rownames( counts(cds) )
    tc
 }
@@ -288,3 +292,23 @@ nbinomGLMTest <- function( resFull, resReduced )
    1 - pchisq( resReduced$deviance - resFull$deviance, 
    attr( resReduced, "df.residual" ) - attr( resFull, "df.residual" ) )
 
+getRawScvForSamplePair <- function( cds, sample1, sample2 ) {
+   if( any( is.na( sizeFactors(cds) ) ) )
+      stop( "Call 'estimateSizeFactors' first." )
+   data <- counts(cds)[ ,c( sample1, sample2 ) ]
+   sf <- sizeFactors(cds)[ c( sample1, sample2 ) ]
+   vf <- estimateVarianceFunctionForMatrix( data, sf )
+   bm <- t( t(data) / sf )
+   mean( adjustScvForBias( vf( bm ) / bm^2, 2 ), na.rm=TRUE ) }
+
+getRawScvDistanceMatrix <- function( cds ) {
+   res <- matrix( nrow=ncol(cds), ncol=ncol(cds) )
+   for( i in 1:ncol(cds) )
+      res[ i, i ] <- 0
+   for( i in 1:(ncol(cds)-1) )
+      for( j in (i+1):ncol(cds) ) {
+         res[ i, j ] <- getRawScvForSamplePair( cds, i, j )
+         res[ j, i ] <- res[ i, j ] }
+   colnames( res ) <- colnames( counts(cds) )
+   rownames( res ) <- colnames( counts(cds) )
+   res }
