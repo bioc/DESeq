@@ -106,7 +106,7 @@ nbinomTest <- function( cds, condA, condB, pvals_only=FALSE )
          pval = pval,
          padj = p.adjust( pval, method="BH" ), 
          resVarA = bmvA$baseVar / ( bmvA$baseMean + rawVarFunc( cds, condA )( bmv$baseMean ) ),
-         resVarB = bmvB$baseVar / rawVarFunc( cds, condB )( bmv$baseMean ),
+         resVarB = bmvB$baseVar / ( bmvB$baseMean + rawVarFunc( cds, condB )( bmv$baseMean ) ),
          stringsAsFactors = FALSE ) }
 }
 
