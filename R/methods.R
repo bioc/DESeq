@@ -37,8 +37,10 @@ estimateVarianceFunctions <- function( cds,
 	    sizeFactors(cds), locfit_extra_args, lp_extra_args )
       if( cds@multivariateConditions )
          rawVarFuncTable(cds) <- c( "_all" = "_blind" )
-      else
-         rawVarFuncTable(cds) <- rep( "_blind", length( levels( conditions(cds) ) ) ) }	 
+      else {
+         a <- rep( "_blind", length( levels( conditions(cds) ) ) )
+	 names(a) <- levels( conditions(cds) )
+	 rawVarFuncTable(cds) <- a } }
 
    else if( method == "normal" ) {
       replicated <- names( which( tapply( conditions(cds), conditions(cds), length ) > 1 ) )
@@ -75,8 +77,10 @@ estimateVarianceFunctions <- function( cds,
          
       if( cds@multivariateConditions )
          rawVarFuncTable(cds) <- c( "_all" = "_pooled" )
-      else
-         rawVarFuncTable(cds) <- rep( "_pooled", length( levels( conditions(cds) ) ) ) }	 
+      else {
+         a <- rep( "_pooled", length( levels( conditions(cds) ) ) )
+	 names(a) <- levels( conditions(cds) )
+	 rawVarFuncTable(cds) <- a } }
         
    validObject( cds )
    cds

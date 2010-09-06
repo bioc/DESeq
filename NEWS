@@ -1,3 +1,7 @@
+2010-09-06: version 1.1.13
+
+- corrected the sometimes missing names attribute in rawVarFuncTable
+
 2010-09-06: version 1.1.12
 
 - fixed a bug in the 'resVarB' column of the result of 'nbinomTest'.
