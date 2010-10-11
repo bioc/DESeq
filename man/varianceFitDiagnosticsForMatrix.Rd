@@ -11,7 +11,7 @@ Usually, you call \code{\link{varianceFitDiagnostics}}, which in turn counts
 CountDataSet object, you may want to call this function directly.
 }
 \usage{
-varianceFitDiagnosticsForMatrix(counts, sizeFactors, rawVarFunc)
+varianceFitDiagnosticsForMatrix(counts, sizeFactors, rawVarFunc, poolingConditions = NULL )
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -23,6 +23,12 @@ varianceFitDiagnosticsForMatrix(counts, sizeFactors, rawVarFunc)
 }
   \item{rawVarFunc}{
      the raw variance function estimated from the counts data
+}
+  \item{poolingConditions}{
+     by default, all columns in 'counts' are considered as replicates. For a pooled
+     variance estimate (in the sense of e.g. the way variance is estimated in Student's
+     t test), pass a factor as 'poolingConditions' that indicates which
+     samples are replicates of each other.
 }
 }
 \details{

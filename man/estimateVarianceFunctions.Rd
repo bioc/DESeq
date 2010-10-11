@@ -11,7 +11,8 @@
 }
 \usage{
 estimateVarianceFunctions(cds, method = c( "normal", "blind", "pooled" ),
-   pool = NULL, locfit_extra_args = list(), lp_extra_args = list())
+   pool = NULL, locfit_extra_args = list(), lp_extra_args = list(),
+   modelFrame = NULL )
 }
 \arguments{
   \item{cds}{
@@ -53,6 +54,14 @@ estimateVarianceFunctions(cds, method = c( "normal", "blind", "pooled" ),
       out of nodes. See the documentation of the locfit package for details. Usually, 
       you will not need to adjuste the fitting parameters, as the defaults seem to 
       work quite fine. }
+      
+   \item{modelFrame}{
+      By default, the information in conditions(cds) or pData(cds) are used to 
+      determine, which samples are replicates (see \code{\link{newCountDataSet}}).
+      Alternatively (and only for method "pooled"), a data frame can be passed 
+      here, and all rows that are identical in this dat frame are considered
+      replicated.
+   }
       
 }
 \details{

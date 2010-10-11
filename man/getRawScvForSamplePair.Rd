@@ -18,7 +18,7 @@ getRawScvForSamplePair(cds, sample1, sample2)
   \item{sample2}{ Ditto. }
 }
 \details{
-This function calls \code{\link{estimateVarianceFunctionsForMatrix}} with the 
+This function calls \code{\link{estimateVarianceFunctionForMatrix}} with the 
 data for just the two specified columns and so obtains a raw variance function,
 which is the used to calculate the raw variance (i.e., the variance without
 shot noise) for each gene. This is converted by dividing by the square of the

@@ -11,15 +11,21 @@
    produces a data frame with useful data for this purpose. 
 }
 \usage{
-varianceFitDiagnostics(cds, cond)
+varianceFitDiagnostics(cds, cond = NULL, modelFrame = NULL)
 }
 \arguments{
   \item{cds}{
       a CountDataSet with base variance functions
 }
   \item{cond}{
-      the name of a condition
+      the name of a condition. If only one variance function was estimated for 'cds'
+      (e.g., if the modes "pooled" or "blind" were used in \code{\link{estimateVarianceFunctions}}),
+      leave this parameter as NULL.
 }
+   \item{modelFrame}{
+      If a model frame was specified in \code{\link{estimateVarianceFunctions}}, it should
+      be passed here again.
+}   
 }
 \value{
 A data frame with these columns:

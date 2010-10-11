@@ -24,6 +24,10 @@ newCountDataSet(countData, conditions, sizeFactors = NULL, phenoData = NULL, fea
       A factor of experimental conditions (or treatments, or tissue types, or phenotypes, or the like).
       The length of the factor has to be equal to the number of columns of the countData matrix,
       assigning a condition to each sample. If 'conditions' is not a factor, it will be converted to one.
+      
+      Alternatively, you may pass a data frame, that will be placed in pData(cds) as is and can then
+      be used with the modes "pooled" and "blind" in \code{\link{estimateVarianceFunctions}} and its
+      columns can be refered top in a model formula provided to \code{\link{nbinomFitGLM}}.
 }
   \item{sizeFactors}{
       The size factors (see \code{\link{sizeFactors}}). If you have estimated the size factors beforehand, 

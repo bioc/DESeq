@@ -1,8 +1,9 @@
 \name{estimateVarianceFunctionForMatrix}
 \Rdversion{1.1}
 \alias{estimateVarianceFunctionForMatrix}
+\alias{estimatePooledVarianceFunctionForMatrix}
 \title{
-   Lower-level function to estimate a raw variance function.
+   Lower-level functions to estimate a raw variance function.
 }
 \description{
    Usually, you should call \code{\link{estimateVarianceFunctions}} for a CountDataSet
@@ -12,6 +13,9 @@
 \usage{
 estimateVarianceFunctionForMatrix(counts, sizeFactors,
    locfit_extra_args = list(), lp_extra_args = list())
+   
+estimatePooledVarianceFunctionForMatrix(counts, sizeFactors, 
+   conditions, locfit_extra_args = list(), lp_extra_args = list())   
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -21,6 +25,13 @@ estimateVarianceFunctionForMatrix(counts, sizeFactors,
 }
   \item{sizeFactors}{
      the size factors of the columns, as estimated e.g. with \code{\link{estimateSizeFactorsForMatrix}}
+}
+  \item{conditions}{
+     \code{estimateVarianceFunctionForMatrix} assumes that all the columns of 'counts'
+     are replicates. If you wish to perform a pooled variance estimation ("pooled" in the
+     sense as, e.g., the variance estimation is done in Student's t test), use
+     \code{estimatePooledVarianceFunctionForMatrix} and pass it a factor 'conditions' indicating
+     which samples are replicates.
 }
   \item{locfit_extra_args, lp_extra_args}{
       Options to be passed to the \code{locfit} and to the \code{lp} function of the 
