@@ -9,7 +9,7 @@
   that the variance functions were estimated with method "pooled" or "blind".
 }
 \usage{
-nbinomFitGLM(cds, modelFormula)
+nbinomFitGLM( cds, modelFormula, glmControl=list() )
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -19,9 +19,10 @@ nbinomFitGLM(cds, modelFormula)
      is used as the model frame. If you have passed just a single factor to the
      'conditions' argument of \code{\link{newCountDataSet}}, it can be referred to as
      'condition' in the formula. If you have passed a data frame to 'conditions',
-     all columns of this data frame will be available.
+     all columns of this data frame will be available. }
+  \item{glmControl}{ list of additional parameters to be passed to \code{\link[stats]{glm.control}} }
 }
-}
+
 \value{
 A data frame with one row for each gene and columns as follows:
 \itemize{

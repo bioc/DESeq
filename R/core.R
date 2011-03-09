@@ -254,7 +254,7 @@ nbkd.sf <- function( r, sf ) {
 
 
 nbinomGLMsForMatrix <- function( counts, sizeFactors, rawScv, modelFormula, 
-   modelFrame, quiet=FALSE, reportLog2=TRUE ) 
+   modelFrame, quiet=FALSE, reportLog2=TRUE, glmControl=list() ) 
 {
    stopifnot( length(sizeFactors) == ncol(counts) )
    stopifnot( length(rawScv) == nrow(counts) )
@@ -273,7 +273,8 @@ nbinomGLMsForMatrix <- function( counts, sizeFactors, rawScv, modelFormula,
       if( !quiet & i %% 1000 == 0 )
          cat( '.' ) 
       nbfam <- nbkd.sf( 1 / rawScv[i], sizeFactors )      
-      fit <- glm( modelFormula, cbind( count=counts[i,], modelFrame ), family=nbfam )
+      fit <- glm( modelFormula, cbind( count=counts[i,], modelFrame ), 
+         family=nbfam, control = glmControl )
       c( 
          coefficients(fit), 
          deviance = deviance(fit), 

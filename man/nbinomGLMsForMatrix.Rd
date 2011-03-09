@@ -8,7 +8,8 @@ Fit negative binomial GLMs to a count matrix.
 This is a low-level function that is wrapped by \code{\link{nbinomGLMTest}}.
 }
 \usage{
-nbinomGLMsForMatrix(counts, sizeFactors, rawScv, modelFormula, modelFrame, quiet = FALSE, reportLog2 = TRUE)
+nbinomGLMsForMatrix(counts, sizeFactors, rawScv, modelFormula, 
+   modelFrame, quiet = FALSE, reportLog2 = TRUE, glmControl = list() )
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -32,6 +33,9 @@ nbinomGLMsForMatrix(counts, sizeFactors, rawScv, modelFormula, modelFrame, quiet
 }
   \item{reportLog2}{
      whether to convert reported coefficients from natural log to log2 scale
+}
+  \item{glmControl}{ 
+     list of additional parameters to be passed to \code{\link[stats]{glm.control}} 
 }
 }
 \value{

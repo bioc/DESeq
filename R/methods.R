@@ -277,7 +277,7 @@ makeExampleCountDataSet <- function( )
    newCountDataSet( m, conds )
 }
 
-nbinomFitGLM <- function( cds, modelFormula )
+nbinomFitGLM <- function( cds, modelFormula, glmControl=list() )
 {
    stopifnot( is( cds, "CountDataSet" ) )
    ensureHasVarFuncs( cds )
@@ -289,7 +289,7 @@ nbinomFitGLM <- function( cds, modelFormula )
    rawScv <- adjustScvForBias( rawVars/baseMeans^2, attr( rawVars, "size" ) )
 
    nbinomGLMsForMatrix( counts(cds), sizeFactors(cds), rawScv, 
-      modelFormula, pData(cds) )
+      modelFormula, pData(cds), glmControl=glmControl )
 }
 
 nbinomGLMTest <- function( resFull, resReduced )
