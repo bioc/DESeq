@@ -1,8 +1,8 @@
-estimateSizeFactorsForMatrix <- function( counts )
+estimateSizeFactorsForMatrix <- function( counts, locfunc = median )
 {
-   geomeans <- exp( rowMeans( log(counts) ) )
+   loggeomeans <- rowMeans( log(counts) ) 
    apply( counts, 2, function(cnts) 
-      median( ( cnts / geomeans )[ geomeans>0 ] ) )
+      exp( locfunc( ( log(cnts) - loggeomeans )[ is.finite(loggeomeans) ] ) ) )
 }
 
 

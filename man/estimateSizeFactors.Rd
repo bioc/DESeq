@@ -9,11 +9,15 @@
    Estimate the size factors for a CountDataSet
 }
 \usage{
-estimateSizeFactors(cds)
+estimateSizeFactors( cds, locfunc=median )
 }
 \arguments{
   \item{cds}{
      a CountDataSet
+}
+  \item{locfunc}{
+      a function to compute a location for a sample. By default, the median is used. However,
+      especially for low counts, the \code{\link[genefilter]{shorth}} may give better results.
 }
 }
 \details{

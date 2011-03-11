@@ -1,7 +1,7 @@
-estimateSizeFactors <- function( cds )
+estimateSizeFactors <- function( cds, locfunc=median )
 {
    stopifnot( is( cds, "CountDataSet" ) )
-   sizeFactors(cds) <- estimateSizeFactorsForMatrix( counts(cds) )
+   sizeFactors(cds) <- estimateSizeFactorsForMatrix( counts(cds), locfunc )
    cds
 }
 
