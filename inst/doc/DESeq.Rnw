@@ -18,11 +18,10 @@
 
 \title{\textsf{\textbf{Analysing RNA-Seq data with the ``DESeq'' package}}}
 
-\date{last change: 2010-06-11}
-
 \begin{document}
 
 \maketitle
+\tableofcontents
 
 
 \begin{abstract}
@@ -30,13 +29,12 @@ In RNA-Seq and related assay types (including comparative ChIP-Seq etc.), one
 works with tables of count data, which report, for each sample, the number of
 reads that have been assigned to a gene (or other types of entities).
 The package ``DESeq'' provides a powerful tool to estimate the variance in such
-data and test for differential expression.\footnote{Other Bioconductor packages 
-  for this use case (but employing different methods) are \Rpackage{edgeR} and \Rpackage{baySeq}.} 
+data and test for differential expression\footnote{Other Bioconductor packages 
+  for this use case (but employing different methods) are \Rpackage{edgeR} and \Rpackage{baySeq}.}. 
 The present vignette explains the use of the package; for an exposition of 
-the statistical method employed, see our paper.\footnote{The companion paper for DESeq is: 
-S.\ Anders, W.\ Huber: ``Differential expression analysis for sequence count data''. 
-This paper is currently under review. A preprint can be obtained from Nature Preceedings: 
-\url{http://dx.doi.org/10.1038/npre.2010.4282.1}}
+the statistical method employed, see our paper\footnote{The companion paper for DESeq is: 
+S.\ Anders, W.\ Huber: \emph{Differential expression analysis for sequence count data},
+Genome Biology, 11:R106, 2010.}.
 \end{abstract}
 
 \section{Quick start}
@@ -49,10 +47,11 @@ corresponds to a sample, i.e., typically one run on the sequencer. Each row corr
 for which you count hits, e.g., a gene, an exon, a binding region in ChIP-Seq, a window in CNV-Seq,
 or the like. 
 
-\emph{Important:} Each column must stem from an independent experiment or sample. If you spread sample material
-from one experiment over several ``lanes'' of the sequencer in order to get better coverage, you must
-sum up the counts from the lanes to get a single column. Failing to do so will result in incorrect
-variance estimation and overly optimistic $p$ values
+Each column must stem from an independent biological replicate. 
+For purely technical replicates (e.\,g. when the sample preparation was distributed over multiple
+lanes of the sequencer in order to increase coverage), please 
+sum up their counts to get a single column, corresponding to a unique biological replicate. 
+This is important in order to allow \Rpackage{DESEq} to estimate variability in the experiment correctly.
 
 Let's say you have the counts in a matrix or data frame \texttt{countTable}, and you
 further have a factor \texttt{conds} with as many element as there are
@@ -344,7 +343,7 @@ a mail if you observe it with real data so I can investigate). The second case (
 the green line) is usually nothing to worry about; it only causes DESeq to be conservative with the tests.
 
 
-\section{Calling differential expression} \label{sec:DE}
+\section{Inference: Calling differential expression} \label{sec:DE}
 
 Having estimated and verified the variance--mean dependence, it is now straight-forward to look for
 differentially expressed genes. To contrast two conditions, e.g., to see whether there is differential
@@ -499,7 +498,7 @@ ad hoc here and other thresholds of the same order of magnitude would be defensi
 %plotDE( res.morerepl )
 %@
 
-\section{Working partially without replicates}
+\subsection{Working partially without replicates}
 
 If you have replicates for one condition but not for the other, you can still proceed as
 before. As already stated above, the testing function will simply take the maximum of all 
@@ -532,7 +531,7 @@ is more pronounced in the ``Tb'' data than in the ``N'' data due to the lack of 
 a stronger signal is required to call a down-regulation significant than for an up-regulation.
 
 
-\section{Working without any replicates}
+\subsection{Working without any replicates}
 
 Proper replicates are essential to interpret a biological experiment. After all, if one compares two
 conditions and finds a difference, how else would one know that this difference is due to the different conditions
@@ -617,7 +616,7 @@ pvals2b <- nbinomTestForMatrices(
 @
 
 We adjust the $p$ values and then compare the hits with those found originally:
-<<>>=   
+<<padj>>=   
 padj2b <- p.adjust( pvals2b, method="BH" )
 notNAinRes2 <- !is.na( res2$padj )
 addmargins( table( 
@@ -630,51 +629,150 @@ data set were zero. We have excluded these to make the tables comparable.)
 In conclusion, the worse variance estimates costs less in power than the reduction
 in sample size. For another data set, this may well be quite different.
 
-\section{Sample clustering}
+\section{Moderated fold change estimates and applications to sample clustering and visualisation}
+In Section~\ref{sec:DE} we have seen how to use \Rpackage{DESeq} for calling differentially expressed
+genes. For each gene, \Rpackage{DESeq} reports a (log) fold--change estimate and a $p$-value, as shown for instance
+in the dataframe \Robject{res} shown in the beginning of that section. 
+When the involved counts are small, the value of the  (log) fold--change estimate can be highly variable,
+and can even be infinite.
 
-Another feature of the \Rpackage{DESeq} package is the variance stabilising transformation (VST).
-This is a monotonous function, which is calculated for each sample from the applicable
-variance function, that transforms the count data such that its variance becomes independent
-of the mean, i.e., it produces a homoscedastic version of the data.
+For some purposes, such as the clustering of samples (or genes)
+according to their overall profiles, or for the visualisation of the
+data in a heatmap, such highly variable numbers may not be useful. In
+fact, we would like to \emph{moderate} to some scale that is more
+amenable to plotting or clustering. Perhaps the most naive approach
+uses so-called pseudocounts: instead of the log-ratio $\log_2(n_A/n_B)$ between
+the counts $n_A$, $n_B$ in two conditions $A$ and $B$ consider
+$\log_2\left((n_A+c)/(n_B+c)\right)$, where $c$ is a small positive number,
+e.\,g.\ $c=0.5$ or $c=1$. This seems a bit ad hoc, and requires a
+largely arbitrary choice of a value for $c$.
 
-To demonstrate a potential use for this, we instantiate another CountDataSet and do not remove sample T1a this time:
-
-<<>>=
-cds3 <- newCountDataSet( countsTable, conds )
-cds3 <- estimateSizeFactors( cds3 )
-cds3 <- estimateVarianceFunctions( cds3 )
+Another, somewhat more rational approach is to look for a mathematical
+function of $n_A$ and $n_B$ that is like $\log_2(n_A/n_B)$ in those
+cases where $n_A$ and $n_B$ are large enough, but still behaves
+gracefully when they become small. If we interpret \emph{graceful} as
+having the same variance throughout, then we arrive at variance
+stabilising transformations (VST):
+%
+<<vsd>>=
+vsd <- getVarianceStabilizedData( cds )
 @
 
-Now, we call the function \Rfunction{getVarianceStabilizedData},
-<<>>=
-vsd <- getVarianceStabilizedData( cds3 )
-@
-which returns a matrix of non-integer data:
-<<>>=
-head( vsd )
-@
+The data are now on a logarithm like scale, and we can easily compute
+\emph{moderated log fold changes}.
+
+<<modlr>>=
+mod_lfc = (rowMeans( vsd[, conditions(cds)=="T"] ) - 
+           rowMeans( vsd[, conditions(cds)=="N"] ))
+@ 
+
+Now let us compare these to the \emph{naive (log) fold changes}. First we find that many of them
+are infinite (resulting from division of a finite value by 0) or \emph{not a number} (NaN,
+resulting from division of 0 by 0).
+% FIXME: Simon, please check this - if you could define 0/0 := 1 then the NaN can go away.
+
+<<dah>>=
+naive_lfc = res$log2FoldChange
+finite = is.finite(naive_lfc)
+table(as.character(naive_lfc[!finite]), useNA="always")
+@ 
+
+For plotting (Figure~\ref{figmodlr}), we replace the infinite values by an arbitrary fixed large number:
+<<repl>>=
+LargeNumber = 10
+naive_lfc = ifelse(finite, naive_lfc, sign(naive_lfc)*LargeNumber)
+@ 
+
+<<figscp1, eval=FALSE>>=
+plot( naive_lfc, mod_lfc, pch=16, 
+      col = ifelse(finite, "#80808040", "red"))
+abline(a=0, b=1, col="#40404040")
+@ 
+<<figscp2, eval=TRUE, echo=FALSE, results=hide>>=
+png(file="DESeq-figmodlr.png", width=800, height=800, pointsize=24)
+plot( naive_lfc, mod_lfc, pch=16, 
+      col = ifelse(finite, "#80808040", "red"))
+abline(a=0, b=1, col="#40404040")
+dev.off()
+@ 
 
 \begin{figure}
 \centering
-\includegraphics[width=.6\textwidth]{DESeq-figHeatmap}
-\caption{A heatmap showing the distances between the samples as calculated from the 
-variance-stabilising transformation of the count data.}
-\label{figHeatmap}
+\includegraphics[width=.7\textwidth]{DESeq-figmodlr.png}
+\caption{Scatterplot of \emph{naive} versus \emph{moderated} log-ratios.
+  The moderation criterion used is variance stabilisation.
+  The red points correspond to values that were infinite in \Robject{naive\_lfc}
+  and were abitrarily set to \Sexpr{LargeNumber} for the purpose of plotting.
+  These values vary in a finite range (as shown in the plot) in \Robject{moderated\_lfc}.}
+\label{figmodlr}
 \end{figure}
 
-This data is now approximately homoscedastic and hence suitable as input to various statistical procedures, e.g., a simple distance calculation:
-<<>>=
+\begin{figure}
+\centering
+\includegraphics[width=.49\textwidth]{DESeq-figHeatmap1}
+\caption{Heatmap showing the Euclidean distances between the samples
+  as calculated from the variance-stabilising transformation of the
+  count data.}
+\label{figHeatmap1}
+\end{figure}
+
+These data are now approximately homoscedastic and hence suitable as input to 
+a sample to sample distance calculation,
+%
+<<dists>>=
 dists <- dist( t( vsd ) )
 @
-
-We visualise the distance matrix as a heatmap:
-<<figHeatmap,fig=TRUE>>=
-heatmap( as.matrix( dists ), symm=TRUE )
+%
+which we can visualize as a heatmap in Figure~\ref{figHeatmap1}.
+<<figHeatmap1,fig=TRUE>>=
+heatmap(as.matrix( dists ), 
+        symm=TRUE,
+        scale="none",
+        col = colorRampPalette(c("darkblue","white"))(100))
 @
+% FIXME - Simon, I have sacrificed this nice observation to using the same 5 samples 
+% throughout, in order to keep the presentation simple and not confound people's minds... 
+%
+%From the output (Fig.~\ref{figHeatmap}), we can see, e.g., that the two samples T1a and T1b
+%that were derived from the same patient are indeed quite similar, and that the sample T3
+%with the atypical histopathological phenotype is not that different from sample T2.
 
-From the output (Fig.\ \ref{figHeatmap}), we can see, e.g., that the two samples T1a and T1b
-that were derived from the same patient are indeed quite similar, and that the sample T3
-with the atypical histopathological phenotype is not that different from sample T2.
+We can also visualise the expression data of, say, the top 100 differentially expressed genes.
+%
+<<figHeatmap2a,fig=TRUE>>=
+select = order(res$pval)[1:100]
+colors = colorRampPalette(c("white","darkblue"))(100)
+heatmap( vsd[select,], 
+         col = colors, scale = "none")
+@
+%
+For comparison, let us also try the same with the untransformed counts.
+%
+<<figHeatmap2b,fig=TRUE>>=
+heatmap( counts(cds)[select,], 
+         col = colors, scale = "none")
+@
+The result is shown in Figure~\ref{figHeatmap2}.
+
+\begin{figure}
+\centering
+\includegraphics[width=.49\textwidth]{DESeq-figHeatmap2a}
+\includegraphics[width=.49\textwidth]{DESeq-figHeatmap2b}
+\caption{Heatmaps showing the expression data of the top \Sexpr{length(select)}
+  differentially expressed genes. Left: on a colour scale proportional 
+  to the variance stabilisation transformed scale (\Robject{vsd}),
+  right: colour scale proportional to the original count scale (\Robject{counts{cds}}).
+  The right plot is dominated by a small number of data points with large values.}
+\label{figHeatmap2}
+\end{figure}
+
+
+We note that the \Rfunction{heatmap} function that we have used here is rather basic, and that better
+options exist, for instance the \Rfunction{heatmap.2} function from the package \Rpackage{gplots}
+or the manual page for \Rfunction{dendrogramGrob} in the package \Rpackage{latticeExtra}.
+
+
+
 
 \appendix
 
