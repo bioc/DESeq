@@ -629,36 +629,53 @@ data set were zero. We have excluded these to make the tables comparable.)
 In conclusion, the worse variance estimates costs less in power than the reduction
 in sample size. For another data set, this may well be quite different.
 
+%-------------------------------------------------------------------------------------------------
 \section{Moderated fold change estimates and applications to sample clustering and visualisation}
-In Section~\ref{sec:DE} we have seen how to use \Rpackage{DESeq} for calling differentially expressed
-genes. For each gene, \Rpackage{DESeq} reports a (log) fold--change estimate and a $p$-value, as shown for instance
-in the dataframe \Robject{res} shown in the beginning of that section. 
-When the involved counts are small, the value of the  (log) fold--change estimate can be highly variable,
-and can even be infinite.
+%-------------------------------------------------------------------------------------------------
+In Section~\ref{sec:DE} we have seen how to use \Rpackage{DESeq} for
+calling differentially expressed genes. For each gene,
+\Rpackage{DESeq} reports a (log) fold--change estimate and a
+$p$-value, as shown for instance in the dataframe \Robject{res} in the
+beginning of that section.  When the involved counts are small, the
+(log) fold--change estimate can be highly variable, and can even be
+infinite.
 
 For some purposes, such as the clustering of samples (or genes)
-according to their overall profiles, or for the visualisation of the
-data in a heatmap, such highly variable numbers may not be useful. In
-fact, we would like to \emph{moderate} to some scale that is more
-amenable to plotting or clustering. Perhaps the most naive approach
-uses so-called pseudocounts: instead of the log-ratio $\log_2(n_A/n_B)$ between
-the counts $n_A$, $n_B$ in two conditions $A$ and $B$ consider
-$\log_2\left((n_A+c)/(n_B+c)\right)$, where $c$ is a small positive number,
-e.\,g.\ $c=0.5$ or $c=1$. This seems a bit ad hoc, and requires a
-largely arbitrary choice of a value for $c$.
+according to their overall profiles, or for visualisation of the data,
+the (log) fold--changes may thus not be useful: the random variability
+associated with fold--changes computed from ratios between low counts
+might drown informative, systematic signal in other parts of the data.
+We would like to \emph{moderate} the fold--change estimates in some
+way, so that they are more amenable to plotting or clustering. One
+approach to do so uses so-called pseudocounts: instead of the
+log-ratio $\log_2(n_A/n_B)$ between the counts $n_A$, $n_B$ in two
+conditions $A$ and $B$ consider $\log_2\left((n_A+c)/(n_B+c)\right)$,
+where $c$ is a small positive number, e.\,g.\ $c=0.5$ or $c=1$.  For
+small values of either $n_A$ or $n_B$, or both, the value of this term
+is shifted towards 0 compared to the direct log-ratio
+$\log_2(n_A/n_B)$. When $n_A$ and $n_B$ are both large, the direct
+log-ratio and the log-ratio with pseudocounts (asymptotically) agree.
+This approach is simple and intuitive, but it requires making a choice
+for what value to use for $c$, and that may not be obvious.
 
-Another, somewhat more rational approach is to look for a mathematical
-function of $n_A$ and $n_B$ that is like $\log_2(n_A/n_B)$ in those
-cases where $n_A$ and $n_B$ are large enough, but still behaves
-gracefully when they become small. If we interpret \emph{graceful} as
-having the same variance throughout, then we arrive at variance
-stabilising transformations (VST):
+A variant of this approach is to look for a mathematical function of
+$n_A$ and $n_B$ that is like $\log_2(n_A/n_B)$ when $n_A$ and $n_B$
+are large enough, but still behaves gracefully when they become
+small. If we interpret \emph{graceful} as having the same variance
+throughout, then we arrive at variance stabilising transformations
+(VST)~\cite{Anders:2010:GB}. An advantage is that the parameters of
+this function are chosen automatically based on the between-replicate
+variability of the data, and no \emph{ad hoc} choice of $c$, as above,
+is necessary.
 %
 <<vsd>>=
 vsd <- getVarianceStabilizedData( cds )
 @
 
-The data are now on a logarithm like scale, and we can easily compute
+% FIXME: is it possible to provide an explicit expression for the VST 
+%  (like  glog(x) = log(x + sqrt(x*x+c))   for vsn)
+
+The data are now on a logarithm like scale, and we can compute
 \emph{moderated log fold changes}.
 
 <<modlr>>=
@@ -666,42 +683,44 @@ mod_lfc = (rowMeans( vsd[, conditions(cds)=="T"] ) -
            rowMeans( vsd[, conditions(cds)=="N"] ))
 @ 
 
-Now let us compare these to the \emph{naive (log) fold changes}. First we find that many of them
+Now let us compare these to the original (log) fold changes. First we find that many of the latter
 are infinite (resulting from division of a finite value by 0) or \emph{not a number} (NaN,
 resulting from division of 0 by 0).
-% FIXME: Simon, please check this - if you could define 0/0 := 1 then the NaN can go away.
+% FIXME: Simon, please check this - if you could please define 0/0 := 1 in the 
+% appropriate place in the code, then the NaN can go away.
 
 <<dah>>=
-naive_lfc = res$log2FoldChange
-finite = is.finite(naive_lfc)
-table(as.character(naive_lfc[!finite]), useNA="always")
+lfc = res$log2FoldChange
+finite = is.finite(lfc)
+table(as.character(lfc[!finite]), useNA="always")
 @ 
 
 For plotting (Figure~\ref{figmodlr}), we replace the infinite values by an arbitrary fixed large number:
 <<repl>>=
 LargeNumber = 10
-naive_lfc = ifelse(finite, naive_lfc, sign(naive_lfc)*LargeNumber)
+lfc = ifelse(finite, lfc, sign(lfc)*LargeNumber)
 @ 
 
 <<figscp1, eval=FALSE>>=
-plot( naive_lfc, mod_lfc, pch=16, 
+plot( lfc, mod_lfc, pch=16, 
       col = ifelse(finite, "#80808040", "red"))
 abline(a=0, b=1, col="#40404040")
 @ 
 <<figscp2, eval=TRUE, echo=FALSE, results=hide>>=
 png(file="DESeq-figmodlr.png", width=800, height=800, pointsize=24)
-plot( naive_lfc, mod_lfc, pch=16, 
+plot( lfc, mod_lfc, pch=16, 
       col = ifelse(finite, "#80808040", "red"))
 abline(a=0, b=1, col="#40404040")
 dev.off()
 @ 
+% FIXME: why does  abs(lfc)>abs(mod_lfc)   not hold ??
 
 \begin{figure}
 \centering
 \includegraphics[width=.7\textwidth]{DESeq-figmodlr.png}
-\caption{Scatterplot of \emph{naive} versus \emph{moderated} log-ratios.
+\caption{Scatterplot of direct (\Robject{lfc}) versus \emph{moderated} log-ratios (\Robject{moderated\_lfc}).
   The moderation criterion used is variance stabilisation.
-  The red points correspond to values that were infinite in \Robject{naive\_lfc}
+  The red points correspond to values that were infinite in \Robject{lfc}
   and were abitrarily set to \Sexpr{LargeNumber} for the purpose of plotting.
   These values vary in a finite range (as shown in the plot) in \Robject{moderated\_lfc}.}
 \label{figmodlr}
@@ -822,8 +841,12 @@ perform test & \Rfunction{nbinomTest} & \Rfunction{nbinomTestForMatrices}
 }
 
 \section{Session Info}
-<<>>=
+<<sessi>>=
 sessionInfo()
 @
+
+\bibliographystyle{unsrt} 
+\bibliography{DESeq}
+
 
 \end{document}
