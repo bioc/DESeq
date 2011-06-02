@@ -16,14 +16,14 @@ getBaseMeansAndVariances <- function( counts, sizeFactors ) {
       baseVar = rowVars( t( t(counts) / sizeFactors ) ) )
 }   
 
-estimateVarianceFunctionForMatrix <- function( counts, sizeFactors, 
-         locfit_extra_args=list(), lp_extra_args=list() ) {
+#estimateVarianceFunctionForMatrix <- function( counts, sizeFactors, 
+#         locfit_extra_args=list(), lp_extra_args=list() ) {
 
-   stopifnot( ncol( counts ) == length( sizeFactors ) )
-   bmv <- getBaseMeansAndVariances( counts, sizeFactors ) 
-   estimateVarianceFunctionFromBaseMeansAndVariances( bmv$baseMean,
-      bmv$baseVar, sizeFactors, locfit_extra_args, lp_extra_args )
-}      
+#   stopifnot( ncol( counts ) == length( sizeFactors ) )
+#   bmv <- getBaseMeansAndVariances( counts, sizeFactors ) 
+#   estimateVarianceFunctionFromBaseMeansAndVariances( bmv$baseMean,
+#      bmv$baseVar, sizeFactors, locfit_extra_args, lp_extra_args )
+#}      
    
 modelMatrixToConditionFactor <- function( modelMatrix ) {
 
@@ -56,17 +56,41 @@ getBaseMeansAndPooledVariances <- function( counts, sizeFactors, conditions ) {
                identity ) ) / df )
 }
    
-estimatePooledVarianceFunctionForMatrix <- function( counts, sizeFactors, 
-      conditions, locfit_extra_args=list(), lp_extra_args=list() ) {
-      
-   bmv <- getBaseMeansAndPooledVariances( counts, sizeFactors, conditions ) 
-   estimateVarianceFunctionFromBaseMeansAndVariances( bmv$baseMean,
-      bmv$baseVar, sizeFactors, locfit_extra_args, lp_extra_args )
-}      
+#estimatePooledVarianceFunctionForMatrix <- function( counts, sizeFactors, 
+#      conditions, locfit_extra_args=list(), lp_extra_args=list() ) {
+#      
+#   bmv <- getBaseMeansAndPooledVariances( counts, sizeFactors, conditions ) 
+#   estimateVarianceFunctionFromBaseMeansAndVariances( bmv$baseMean,
+#      bmv$baseVar, sizeFactors, locfit_extra_args, lp_extra_args )
+#}      
    
    
-estimateVarianceFunctionFromBaseMeansAndVariances <- function( means, 
-   variances, sizeFactors, locfit_extra_args=list(), lp_extra_args=list() ) {
+#estimateVarianceFunctionFromBaseMeansAndVariances <- function( means, 
+#   variances, sizeFactors, locfit_extra_args=list(), lp_extra_args=list() ) {
+#   
+#   variances <- variances[ means > 0 ]
+#   means <- means[ means > 0 ]
+#   
+#   fit <- do.call( "locfit", c( 
+#      list( 
+#         variances ~ do.call( "lp", c( list( log(means) ), lp_extra_args ) ),
+#         family = "gamma" ), 
+#      locfit_extra_args ) )
+#   
+#   rm( means )
+#   rm( variances )
+#   xim <- sum( 1/sizeFactors ) / length( sizeFactors )
+#      
+#   function( q ) {
+#      ans <- pmax( safepredict( fit, log(q) ) - xim * q, 1e-8 * q )
+#      attr( ans, "size" ) <- length( sizeFactors )
+#      ans }
+#   # Note: The 'pmax' construct above serves to limit the overdispersion to a minimum
+#   # of 10^-8, which should be indistinguishable from 0 but ensures numerical stability.
+#}   
+   
+estimateDispersionFunctionFromBaseMeansAndVariances <- function( means, 
+   variances, sizeFactors, locfit_extra_args=list(), lp_extra_args=list(), adjustForBias=TRUE ) {
    
    variances <- variances[ means > 0 ]
    means <- means[ means > 0 ]
@@ -79,15 +103,21 @@ estimateVarianceFunctionFromBaseMeansAndVariances <- function( means,
    
    rm( means )
    rm( variances )
-   xim <- sum( 1/sizeFactors ) / length( sizeFactors )
-      
-   function( q ) {
-      ans <- pmax( safepredict( fit, log(q) ) - xim * q, 1e-8 * q )
-      attr( ans, "size" ) <- length( sizeFactors )
-      ans }
+   xim <- mean( 1/sizeFactors )
+   
+   if( adjustForBias )
+      function( q )
+         adjustScvForBias( 
+            pmax( ( safepredict( fit, log(q) ) - xim * q ) / q^2, 1e-8 ),
+            length(sizeFactors) )
+   else
+      function( q )
+         pmax( ( safepredict( fit, log(q) ) - xim * q ) / q^2, 1e-8 )
+         
    # Note: The 'pmax' construct above serves to limit the overdispersion to a minimum
    # of 10^-8, which should be indistinguishable from 0 but ensures numerical stability.
 }   
+      
    
 safepredict <- function( fit, x )
 {
@@ -112,6 +142,9 @@ nbinomTestForMatricesRaw <- function( kA, kB, muA, vA, muB, vB, eps=0 )
    #        sum of fNB( k, muA, vA ) fNB( kA+kB-k, muA, vA ) for k=0,..,kA+kB
    #
    # 'eps' is a roughly followed guidance on the required presision
+   
+   if( kA == 0 & kB == 0 )
+      return( NA )
    
    if( !all( is.finite( c( kA, kB, muA, vA, muB, vB, eps ) ) ) )
       return( NA )
@@ -152,19 +185,19 @@ nbinomTestForMatrices <- function( countsA, countsB, sizeFactorsA, sizeFactorsB,
 }
 
 
-varianceFitDiagnosticsForMatrix <- function( counts, sizeFactors, rawVarFunc, poolingConditions=NULL )
-{
-   if( is.null( poolingConditions ) )
-      res <- getBaseMeansAndVariances( counts, sizeFactors )
-   else
-      res <- getBaseMeansAndPooledVariances( counts, sizeFactors, poolingConditions )
-   res$fittedRawVar <- rawVarFunc( res$baseMean )
-   res$fittedBaseVar <- res$fittedRawVar + 
-      res$baseMean * sum( 1/sizeFactors ) / length( sizeFactors )
-   df <- ncol( cbind(counts) ) - 1
-   res$pchisq <- pchisq( df * res$baseVar / res$fittedBaseVar, df = df )
-   res
-}
+#varianceFitDiagnosticsForMatrix <- function( counts, sizeFactors, rawVarFunc, poolingConditions=NULL )
+#{
+#   if( is.null( poolingConditions ) )
+#      res <- getBaseMeansAndVariances( counts, sizeFactors )
+#   else
+#      res <- getBaseMeansAndPooledVariances( counts, sizeFactors, poolingConditions )
+#   res$fittedRawVar <- rawVarFunc( res$baseMean )
+#   res$fittedBaseVar <- res$fittedRawVar + 
+#      res$baseMean * sum( 1/sizeFactors ) / length( sizeFactors )
+#   df <- ncol( cbind(counts) ) - 1
+#   res$pchisq <- pchisq( df * res$baseVar / res$fittedBaseVar, df = df )
+#   res
+#}
 
 
 multiecdfWithoutLegend <- function( x, ... )
@@ -176,29 +209,29 @@ multiecdfWithoutLegend <- function( x, ... )
       multiecdf( x, ... ) 
 }
 
-residualsEcdfPlotFromDiagnostics <- function( fitdiag, ncuts=7, 
-      plotTitle="Residuals ECDF plot" )
-{
-   ok <- !is.na(fitdiag$pchisq)
-   cols <- colorRampPalette( c("red","blue") )( ncuts )
-   cuts <- factor( cut( rank(fitdiag$baseMean[ok]), ncuts ) )
+#residualsEcdfPlotFromDiagnostics <- function( fitdiag, ncuts=7, 
+#      plotTitle="Residuals ECDF plot" )
+#{
+#   ok <- !is.na(fitdiag$pchisq)
+#   cols <- colorRampPalette( c("red","blue") )( ncuts )
+#   cuts <- factor( cut( rank(fitdiag$baseMean[ok]), ncuts ) )
 
-   multiecdfWithoutLegend( 
-      fitdiag$pchisq[ok] ~ cuts,
-      col = cols,
-      xlab = "chi-squared probability of residual",
-      ylab = "ECDF",
-      main = plotTitle
-   )
-      
-   segments( 0, 0, 1, 1, col="darkgreen" )
-   legend( 0, 1, 
-      c( sprintf( "%.1e .. %.1e", 
-            tapply( fitdiag$baseMean[ok], cuts, min ), 
-            tapply( fitdiag$baseMean[ok], cuts, max ) ), 
-         "expected" ),
-      col = c( cols, "darkgreen" ), lty="solid" )
-}  
+#   multiecdfWithoutLegend( 
+#      fitdiag$pchisq[ok] ~ cuts,
+#      col = cols,
+#      xlab = "chi-squared probability of residual",
+#      ylab = "ECDF",
+#      main = plotTitle
+#   )
+#      
+#   segments( 0, 0, 1, 1, col="darkgreen" )
+#   legend( 0, 1, 
+#      c( sprintf( "%.1e .. %.1e", 
+#            tapply( fitdiag$baseMean[ok], cuts, min ), 
+#            tapply( fitdiag$baseMean[ok], cuts, max ) ), 
+#         "expected" ),
+#      col = c( cols, "darkgreen" ), lty="solid" )
+#}  
 
 # Note: The following function is never called; it is here only for
 # documentation purposes, as it has been used to produce the data object

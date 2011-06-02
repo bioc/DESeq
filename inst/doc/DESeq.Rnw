@@ -37,6 +37,12 @@ S.\ Anders, W.\ Huber: \emph{Differential expression analysis for sequence count
 Genome Biology, 11:R106, 2010.}.
 \end{abstract}
 
+\fbox{\parbox{.7\textwidth}{
+\textbf{Imporant notice:} This is the vignette of the the development version of
+DESeq. The DESeq package is currently undergoing a major overhaul, and the development
+version is hence not supposed to be used. Until further notice, please work only
+with the release version.}}
+
 \section{Quick start}
 
 This first section just shows the commands necessary for an analysis at a glance. For a more gentle introduction, skip this section on first reading and start reading at Section \ref{sec:prep}.
@@ -74,7 +80,7 @@ Then, the minimal set of commands to run a full analysis is:
 <<demo1>>=
 cds <- newCountDataSet( countsTable, conds )
 cds <- estimateSizeFactors( cds )
-cds <- estimateVarianceFunctions( cds )
+cds <- estimateDispersions( cds )
 res <- nbinomTest( cds, "T", "N")
 @
 The last command tests for differential expression between the conditions labelled \texttt{"T"}
@@ -162,107 +168,199 @@ sample T1a.
 As first processing step, we have to estimate the effective library size. This information is called the ``size
 factors'' vector, as the package only needs to now the relative library sizes. So, if a
 non-differentially expressed gene produces twice as many counts in one sample than in another, the size
-factor for this sample should be twice as large as the one for the other sample. You could simply use
-the actual total numbers of reads and assign them to the \Robject{cds} object:
-<<>>=
-libsizes <- c( T1a=6843583, T1b=7604834, T2=13625570, T3=12291910,
-   N1=12872125, N2=10502656 )
-sizeFactors(cds) <- libsizes[-1]
-@
-
-However, one seems to get better results by estimating the size factors from the count data. The
-function \Rfunction{estimateSizeFactors} does that for you. (See the man page of \Rfunction{estimateSizeFactorsForMatrix} for technical details on the calculation.)
+factor for this sample should be twice as large as the one for the other sample. The
+function \Rfunction{estimateSizeFactors} estimates the size factors from the count data. (See the man page of \Rfunction{estimateSizeFactorsForMatrix} for technical details on the calculation.)
 <<>>=
 cds <- estimateSizeFactors( cds )
 sizeFactors( cds )
 @
 
+If we divide each column of the count table by the size factor for this column, the
+count values are brought to a common scale, making them comparable. When called
+with \texttt{normalized=TRUE}, the \texttt{counts} accessor function performs this
+calculation. This is useful, e.g., for visualization.
+
+<<>>=
+head( counts( cds, normalized=TRUE ) )
+@
+
 \section{Variance estimation}
 
 As explained in detail in the paper, the core assumption of this method it that the mean is a good
-predictor of the variance, i.e., that genes with a similar expression level also have similar
+predictor of the variance, i.e., that genes with a similar expression level tend to have similar
 variance across replicates. Hence, we need to estimate for each condition a function that allows
 to predict the variance from the mean. This estimation is done by calculating, for each gene, 
 the sample mean and variance within replicates and then fitting a curve to this data.
 
-This computation is performed by the following command.
+In RNA-Seq, the variance is the sum of two components, the technical and the biological variation.
+By biological variation, we mean the variation in the concentration of cDNA fragments from a given
+gene in different samples from the same experimental condition. Sequencing does not allow to
+measure the concentration with arbitrary precision; rather, if one sequences two aliquots of
+the same sample in two lanes, one sees variation in the count. From theoretical considerations,
+it can be seen (please see our paper and reference therein for detailled reasoning) that 
+in any kind of shotgun sequencing, this
+technical noise cannot be lower than what the assumption of a Poisson distribution predicts,
+namely that the variance is equal to the mean. As Nagalakshmi et al.\ and Marioni et al.\ 
+have shown, the technical noise is not much higher than this minimum either (at least if
+everything went well with sample preparation) and hence, we assume the tehncial noise to
+be equal to the mean and refer to it as the Poisson or shot noise. The difference between 
+observed variance and Poisson variance, i.e., the difference between variance and mean, is hence
+the biological variation. (Note that this ``biological'' variance also includes noise
+from technical steps prior to sequencing; however, the part due to biological differences
+in the samples and their responses to treatment usually dominates, hence we use the
+term ``biological variance'' for the whole difference of observed variance and mean.)
+
+It is helpful to present the biological variance as a coefficient of variation (CV),
+i.e., as the ratio of standard deviation to mean. For an observed variance $v$ and
+mean $\mu$, the biological variation is $v-\mu$ and the biological CV is hence 
+$\sqrt{v-\mu}/\mu$. If it takes a value of, say, 0.15, this means roughly that the  
+concentration of fragments from the gene typically changes by 15\% from a sample to
+its biological replicate sample. For mathematical reasons, \textit{DESeq}, instead
+uses the square of the biological variation, i.e., the quantity $(v-\mu)/\mu^2$, 
+which is called the dispersion or the raw squared coefficient of 
+variation (raw SCV)).
+
+To estimate the dispersion, use this command.
 <<>>=
-cds <- estimateVarianceFunctions( cds )
+cds <- estimateDispersions( cds )
 @
 
-{\footnotesize
-In order to use the package, you do not need to know what precisely these raw variance functions
-estimate. For the interested reader, a few extra details are given here:
+We could now directly jump to the test (Section \ref{sec:DE}), but it might be
+prudent ot check whether the dispersion estimates look sound.
 
-The point of the variance functions is to predict how much variance one should expect
-for counts at a certain level. For example, let us assume that we have found 123
-tags for a certain gene in the ``T1b'' sample.
-We may now calculate the expected ``raw variance'' as follows. First we get the
-``base level'', by which we mean this count value divided by the size factor.
-This makes the values from different columns comparable.
-Then, we insert this into the raw variance function to get the estimated ``raw
-variance'' which needs to be scaled up to the count level by multiplying with
-the size factor (squared, because this is a variance). Once we add the expected shot-
-noise variance (i.e., the variance due to the Poisson counting process), which is
-equal to the count value, we get the full variance. The square root of this full
-variance is then the estimated standard deviation for count values at the given level 
-(provided, of course, that our fundamental assumption is right that the mean allows to get a
-reasonable prediction for the variance).
+The function \Rfunction{estimateDispersions} performs two steps. First, it estimates,
+for each gene and each (replicated) condition, a dispersion value, then, it fits,
+for each condition, a curve through the estimates. To allow the user to inspect the
+intermediate steps, a ``fit info'' object is stored for each condition:
+
 <<>>=
-countValue <- 123
-baseLevel <- countValue / sizeFactors(cds)["T1b"]
-rawVarFuncForGB <- rawVarFunc( cds, "T" )
-rawVariance <- rawVarFuncForGB( baseLevel )
-fullVariance <- countValue + rawVariance * sizeFactors(cds)["T1b"]^2
-sqrt( fullVariance )
+ls( cds@fitInfo )
 @
 
-Of course, you do not have to do the calculation just outlined yourself, the package does
-this automatically.
-\bigskip
-}
+This fit info contains the estimates for each gene, the curve fitted through the
+dispersions, and the fitted values that then will be finally used in the test.
 
-If you are confident that the package did a good job in estimating the variance
-functions, you may now skip directly to the Section \ref{sec:DE}. If you, however, would like to check
-whether the fit was good, the rest of this sections explains how to inspect and 
-verify the variance function estimates.
+<<>>=
+str( cds@fitInfo[["N"]] )
+@
 
 \begin{figure}
 \centering
-\includegraphics[width=.7\textwidth]{DESeq-figSCV}
-\caption{Plot to show the estimated variances (as squared coefficients of variation (SCV), i.e., variance over squared mean), produced with the function \Rfunction{scvPlot}.}
-\label{figSCV}
+\includegraphics[width=.7\textwidth]{DESeq-figFitT}
+\caption{Estimated (black) and fitted (red) dispersion values for condition ``T'',
+plotted against mean expression strength.}
+\label{figFitT}
 \end{figure}
 
-The function 'scvPlot' shows all the base variance functions in one plot:
-<<figSCV,fig=TRUE,width=5,height=5>>=
-scvPlot( cds, ylim=c(0,2) )
+To visualize these, we plot the per-gene estimates against the normalized mean 
+expressions per gene, and the overlay the fitted values in red:
+
+<<figFitT,fig=TRUE>>=
+cond <- "T"
+means <- rowMeans( counts( cds, normalized=TRUE ) )
+plot( means, cds@fitInfo[[cond]]$perGeneDispEsts, log="xy", pch="." )
+points( means, cds@fitInfo[[cond]]$fittedDispEsts, pch=".", col="red" )
 @
-In the produced plot (Fig.\ \ref{figSCV}), the x axis is the base mean, the y 
-axis the squared coefficient of variation (SCV),
-i.e., the ratio of the variance at base level to the square of the base mean. 
-The solid lines are the SCV for the raw variances, i.e., the noise due to biological 
-replication. There is one coloured solid line per condition, and, in case there are
-non-replicated conditions, a dashed black line for the maximum of the raw variances, 
-which is used for these. 
 
-On top of the variance, there is shot noise, i.e., the Poissonean variance inherent 
-to the process of counting reads. The amount of shot noise depends on the size factor, and
-hence, for each sample, a dotted line in the colour of its condition is plotted above the
-solid line. The dotted line is the base variance, i.e., the full variance, scaled down to
-base level by the size factors. The vertical distance between solid and dotted lines is the
-shot noise.
+The plot (Fig.\ \ref{figFitT}) is doubly logarithmic; this may be helpful or
+misleading, and it is worth experimenting with other plotting styles.
 
-The solid black line is a density estimate of the base means: Only were
-there is an appreciable number of base mean values, the variance estimates can be
-expected to be accurate. 
+In any case, we could be worried by the genes at the upper end of the plot.
+Can we really assume hese to have the same variance as the other genes
+with similar expression? As we estimated the dispersion from
+only three samples we should expect the estimates to scatter with quite some
+sampling variance around their true values. To quantify this, we assume that
+dispersion estimates scatter around their true values according to a scaled
+$chi^2$ distribution with the appriate number of degrees of freedom (here: 1=2-1, as we
+have 2 samples and estimate one nuisance parameter, the mean). We redo the
+plot with lines indicating the 5- and 95-percentil of this distribution:
+
+\begin{figure}
+\centering
+\includegraphics[width=.7\textwidth]{DESeq-figFitTwithQuantiles}
+\caption{Estimated (black) dispersion values for condition ``T'', with
+regression curve and 5- and 95-percentiles of theoretical sampling
+distribution for dispersion estimates.}
+\label{figFitTwithQuantiles}
+\end{figure}
+
+
+<<figFitTwithQuantiles,fig=TRUE>>=
+plot( means, cds@fitInfo[[cond]]$perGeneDispEsts, log="xy", pch="." )
+xg <- 10^seq( min(log10(means[means>0])), max(log10(means)), length.out=1000 )
+lines( xg, cds@fitInfo[[cond]]$dispFunc( xg ), col="blue" )
+df <- sum( conditions(cds) == cond ) - 1
+lines( xg, cds@fitInfo[[cond]]$dispFunc( xg ), col="blue" )
+lines( xg, cds@fitInfo[[cond]]$dispFunc( xg ) * qchisq( .05, df )/df, col="blue", lty="dashed" )
+lines( xg, cds@fitInfo[[cond]]$dispFunc( xg ) * qchisq( .95, df )/df, col="blue", lty="dashed" )
+@ %$
+
+There are a substantial number of genes above the 95\% line, definitely more than
+5\% of the genes. Hence, it may be imprudent to use the fitted values (red dots
+in Fig.\ \ref{figFitT}) for these genes. Just using the estimated values and
+disregarding the fit would be improper as well as we the wide sampling distribution shows
+that we can underestimate a dispersion substantially, leading to false positives.
+A simple solution is to use whichever is the more conservative of the two numbers,
+i.e., to use the \textit{maximum} of the fitted values and the per-gene estimate.
+
+Hence, we redo the dispersion estimation, this time as follows:
+
+<<>>=
+cds <- estimateDispersions( cds, sharingMode="maximum" )
+@
+
+The argument \texttt{sharingMode} controls how information is shared across genes.
+It can take the values \texttt{fit-only} (the default; use only the fitted values),
+\texttt{maximum} (the compromise just described) and \texttt{gene-est-only} (ignore
+the fit, directly use the per-gene estimates; usually not appriate, see above).
+
+In any case, the dispersion values which finally should be used by the test are stored in
+the feature data slot of \texttt{cds}:
+
+<<>>=
+head( fData(cds) )
+@
+
+Now, \texttt{disp\_T} contains the maximum of the two value vectors we looked at before,
+namely 
+
+<<>>=
+str( cds@fitInfo[["N"]] )
+@
+
+Advanced users who may want to fiddle with the dispersion estimation can change the values
+in \texttt{fData(cds)} priot to calling the testing function.
+
+%The function 'scvPlot' shows all the base variance functions in one plot:
+%<<figSCV,fig=TRUE,width=5,height=5>>=
+%scvPlot( cds, ylim=c(0,2) )
+%@
+%In the produced plot (Fig.\ \ref{figSCV}), the x axis is the base mean, the y 
+%axis the squared coefficient of variation (SCV),
+%i.e., the ratio of the variance at base level to the square of the base mean. 
+%The solid lines are the SCV for the raw variances, i.e., the noise due to biological 
+%replication. There is one coloured solid line per condition, and, in case there are
+%non-replicated conditions, a dashed black line for the maximum of the raw variances, 
+%which is used for these. 
+
+%On top of the variance, there is shot noise, i.e., the Poissonean variance inherent 
+%to the process of counting reads. The amount of shot noise depends on the size factor, and
+%hence, for each sample, a dotted line in the colour of its condition is plotted above the
+%solid line. The dotted line is the base variance, i.e., the full variance, scaled down to
+%base level by the size factors. The vertical distance between solid and dotted lines is the
+%shot noise.
+
+%The solid black line is a density estimate of the base means: Only were
+%there is an appreciable number of base mean values, the variance estimates can be
+%expected to be accurate. 
 
 For the condition ``Tb'', we cannot estimate a variance function  as we have no replicates. When a variance estimate 
 is needed for ``Tb'', the package will use the
-maximum of the variances estimated for all the other conditions. To see the assignment of conditions to 
-variance functions, use the \Rfunction{rawVarFuncTable} accessor function:
+maximum of the variances estimated for all the other conditions (given in the column \texttt{disp\_max} above). 
+To see the assignment of conditions to 
+variance functions, use the \Rfunction{dispTable} accessor function:
 <<>>=
-rawVarFuncTable( cds )
+dispTable( cds )
 @
 
 It is instructive to observe at which count level the biological 
@@ -271,76 +369,76 @@ sequencing depth (larger library size) will improve the signal-to-noise ratio wh
 for high counts, where the biological noise dominates, only additional biological 
 replicates will help. 
 
-One should check whether the base variance functions seem to follow the
-empirical variance well. To this end, two diagnostic functions are provided.
-The function \Rfunction{varianceFitDiagnostics} returns, for a specified condition,
-a data frame with four columns: the mean base level for each gene, the base
-variance as estimated from the count values of this gene only, and the fitted
-base variance, i.e., the predicted value from the local fit through the
-base variance estimates from all genes. As one typically has few replicates,
-the single-gene estimate of the base variance can deviate wildly from the
-fitted value. To see whether this might be too wild, the cumulative probability
-for this ratio of single-gene estimate to fitted value is calculated from the
-$\chi^2$ distribution, as explained in the paper. These values are the fourth
-column.
-<<>>=
-diagForT <- varianceFitDiagnostics( cds, "T" )
-head( diagForT )
-@
+%One should check whether the base variance functions seem to follow the
+%empirical variance well. To this end, two diagnostic functions are provided.
+%The function \Rfunction{varianceFitDiagnostics} returns, for a specified condition,
+%a data frame with four columns: the mean base level for each gene, the base
+%variance as estimated from the count values of this gene only, and the fitted
+%base variance, i.e., the predicted value from the local fit through the
+%base variance estimates from all genes. As one typically has few replicates,
+%the single-gene estimate of the base variance can deviate wildly from the
+%fitted value. To see whether this might be too wild, the cumulative probability
+%for this ratio of single-gene estimate to fitted value is calculated from the
+%$\chi^2$ distribution, as explained in the paper. These values are the fourth
+%column.
+%<<>>=
+%diagForT <- varianceFitDiagnostics( cds, "T" )
+%head( diagForT )
+%@
 
-\begin{figure}
-\centering
-\includegraphics[width=.6\textwidth]{DESeq-figFit}
-\caption{Diagnostic plot to check the fit of the variance function.}
-\label{figFit}
-\end{figure}
+%\begin{figure}
+%\centering
+%\includegraphics[width=.6\textwidth]{DESeq-figFit}
+%\caption{Diagnostic plot to check the fit of the variance function.}
+%\label{figFit}
+%\end{figure}
 
-We may now plot the per-gene estimates of the base variance against the base
-levels and draw a line with the fit from the local regression:
-<<figFit,fig=TRUE>>=
-smoothScatter( log10(diagForT$baseMean), log10(diagForT$baseVar) )
-lines( log10(fittedBaseVar) ~ log10(baseMean), 
-   diagForT[ order(diagForT$baseMean), ], col="red" )
-@ % $
+%We may now plot the per-gene estimates of the base variance against the base
+%levels and draw a line with the fit from the local regression:
+%<<figFit,fig=TRUE>>=
+%smoothScatter( log10(diagForT$baseMean), log10(diagForT$baseVar) )
+%lines( log10(fittedBaseVar) ~ log10(baseMean), 
+%   diagForT[ order(diagForT$baseMean), ], col="red" )
+%@ % $
 
-As one can see (Fig.~\ref{figFit}), the fit (red line) follows the single-gene estimates well, even
-though the spread of the latter is considerable, as one should expect, given
-that each variance value is estimated from just three values.
+%As one can see (Fig.~\ref{figFit}), the fit (red line) follows the single-gene estimates well, even
+%though the spread of the latter is considerable, as one should expect, given
+%that each variance value is estimated from just three values.
 
-\begin{figure}
-\centering
-\includegraphics[width=\textwidth]{DESeq-figECDF}
-\caption{Another diagnostic plot to check the fit of the variance functions. This one is 
-produced with the function \Rfunction{residualsEcdfPlot}.}
-\label{figECDF}
-\end{figure}
+%\begin{figure}
+%\centering
+%\includegraphics[width=\textwidth]{DESeq-figECDF}
+%\caption{Another diagnostic plot to check the fit of the variance functions. This one is 
+%produced with the function \Rfunction{residualsEcdfPlot}.}
+%\label{figECDF}
+%\end{figure}
 
-Another way to study the diagnostic data is to check whether the probabilities in the fourth column of the diagnostics
-data frame are uniform, as they should be. One may simply look at the histogram of 
-\texttt{diagForGB\$pchisq} but a more convenient way is the function 
-\Rfunction{residualsEcdfPlot}, which show empirical cumulative density functions 
-(ECDF) stratified by base level. 
-We look at them for the conditions ``T'' and ``N'':
-<<figECDF,fig=TRUE,width=14,height=7>>=
-par( mfrow=c(1,2 ) )
-residualsEcdfPlot( cds, "T" )
-residualsEcdfPlot( cds, "N" )
-@
-Fig.~\ref{figECDF} shows the output. In both cases, the ECDF curves follow the diagonal well,
-i.e., the fit is good. Only for very low counts (below 10), the deviations become stronger, but as at these levels,
-shot noise dominates, this is no reason for concern. 
+%Another way to study the diagnostic data is to check whether the probabilities in the fourth column of the diagnostics
+%data frame are uniform, as they should be. One may simply look at the histogram of 
+%\texttt{diagForGB\$pchisq} but a more convenient way is the function 
+%\Rfunction{residualsEcdfPlot}, which show empirical cumulative density functions 
+%(ECDF) stratified by base level. 
+%We look at them for the conditions ``T'' and ``N'':
+%<<figECDF,fig=TRUE,width=14,height=7>>=
+%par( mfrow=c(1,2 ) )
+%residualsEcdfPlot( cds, "T" )
+%residualsEcdfPlot( cds, "N" )
+%@
+%Fig.~\ref{figECDF} shows the output. In both cases, the ECDF curves follow the diagonal well,
+%i.e., the fit is good. Only for very low counts (below 10), the deviations become stronger, but as at these levels,
+%shot noise dominates, this is no reason for concern. 
 
-If in your data the residuals ECDF plot indicates problems with the fit, you may want to
-manually adjust the variance estimates. If the ECDF curves are below the green line, variance is 
-underestimated, and if you test for differential expression (see next section) you 
-will get  too low p values (and hence, too many false positives). 
-If the ECDF curves are above the green line, variance is overestimated, which leads to 
-too high p values (and hence, an overestimation of the false discovery rate). 
+%If in your data the residuals ECDF plot indicates problems with the fit, you may want to
+%manually adjust the variance estimates. If the ECDF curves are below the green line, variance is 
+%underestimated, and if you test for differential expression (see next section) you 
+%will get  too low p values (and hence, too many false positives). 
+%If the ECDF curves are above the green line, variance is overestimated, which leads to 
+%too high p values (and hence, an overestimation of the false discovery rate). 
 
-The first case (curves below the green line) may indicate a serious problem that might compromise
-your results. However, this seems to rarely happen (and I'd appreciate if you could sent me
-a mail if you observe it with real data so I can investigate). The second case (curves above
-the green line) is usually nothing to worry about; it only causes DESeq to be conservative with the tests.
+%The first case (curves below the green line) may indicate a serious problem that might compromise
+%your results. However, this seems to rarely happen (and I'd appreciate if you could sent me
+%a mail if you observe it with real data so I can investigate). The second case (curves above
+%the green line) is usually nothing to worry about; it only causes DESeq to be conservative with the tests.
 
 
 \section{Inference: Calling differential expression} \label{sec:DE}
@@ -378,7 +476,7 @@ plotDE <- function( res )
    plot( 
       res$baseMean, 
       res$log2FoldChange, 
-      log="x", pch=20, cex=.1, 
+      log="x", pch=20, cex=.3, 
       col = ifelse( res$padj < .1, "red", "black" ) )
 
 plotDE( res )
@@ -405,53 +503,53 @@ or at the most strongly up-regulated ones:
 head( resSig[ order( -resSig$foldChange, -resSig$baseMean ), ] )
 @
 
-The test is based on the assumption that the fitted variance, i.e., the variance 
-as deduced from the mean vie the raw variance functions, is a good estimate for a
-gene's true variance. We have tested the appropriateness of this approach above
-with the plot produced by \Rfunction{residualsEcdfPlot} and concluded that it seems 
-to hold well for most genes. The \texttt{res} object gives us two columns to have
-a closer look at this, namely \texttt{resVarA} and \texttt{resVarB}. These contain the
-residual variance quotients, i.e. the ratio of the variance as calculated 
-only from the counts for the gene under consideration to the fitted variance.
+%The test is based on the assumption that the fitted variance, i.e., the variance 
+%as deduced from the mean vie the raw variance functions, is a good estimate for a
+%gene's true variance. We have tested the appropriateness of this approach above
+%with the plot produced by \Rfunction{residualsEcdfPlot} and concluded that it seems 
+%to hold well for most genes. The \texttt{res} object gives us two columns to have
+%a closer look at this, namely \texttt{resVarA} and \texttt{resVarB}. These contain the
+%residual variance quotients, i.e. the ratio of the variance as calculated 
+%only from the counts for the gene under consideration to the fitted variance.
 
-\begin{figure}
-\centering
-\includegraphics[width=.6\textwidth]{DESeq-figResVarDens}
-\caption{Density of residual variance ratios.}
-\label{figResVarDens}
-\end{figure}
+%\begin{figure}
+%\centering
+%\includegraphics[width=.6\textwidth]{DESeq-figResVarDens}
+%\caption{Density of residual variance ratios.}
+%\label{figResVarDens}
+%\end{figure}
 
- 
-We can plot the density of these ratios (Fig.\ \ref{figResVarDens}):
-<<figResVarDens,fig=TRUE>>=
-plot( density( res$resVarA, na.rm=TRUE, from=0, to=20 ), col="red" )
-lines( density( res$resVarB, na.rm=TRUE, from=0, to=20 ), col="blue" )
-xg <- seq( 0, 20, length.out=1000 ); lines( xg, dchisq( xg, df=1 ), col="grey" )
-@
+% 
+%We can plot the density of these ratios (Fig.\ \ref{figResVarDens}):
+%<<figResVarDens,fig=TRUE>>=
+%plot( density( res$resVarA, na.rm=TRUE, from=0, to=20 ), col="red" )
+%lines( density( res$resVarB, na.rm=TRUE, from=0, to=20 ), col="blue" )
+%xg <- seq( 0, 20, length.out=1000 ); lines( xg, dchisq( xg, df=1 ), col="grey" )
+%@
 
-The first two lines estimate the density of the quotients for conditions A and B 
-and plot them in red and blue. If the model holds, these should agree with a
-$\chi^2$ distribution with 1 degree of freedom (we have two replicates for each condition,
-and the number of degrees of freedom is one less than the number of replicates). The third
-line adds the theoretical density function in grey. The fact that the curves agree well is
-not surprising; we have seen this already in the residual ECDF plots (which show the same information,
-but in a way that makes it easier to see deviations).
+%The first two lines estimate the density of the quotients for conditions A and B 
+%and plot them in red and blue. If the model holds, these should agree with a
+%$\chi^2$ distribution with 1 degree of freedom (we have two replicates for each condition,
+%and the number of degrees of freedom is one less than the number of replicates). The third
+%line adds the theoretical density function in grey. The fact that the curves agree well is
+%not surprising; we have seen this already in the residual ECDF plots (which show the same information,
+%but in a way that makes it easier to see deviations).
 
-We can also see that hardly any genes have a ratio exceeding, say, 20. In 
-fact, there are, however, a few such genes, but we cannot see them in a density plot:
+%We can also see that hardly any genes have a ratio exceeding, say, 20. In 
+%fact, there are, however, a few such genes, but we cannot see them in a density plot:
 
-<<>>=
-table( res$resVarA > 15 | res$resVarB > 15)
-@
+%<<>>=
+%table( res$resVarA > 15 | res$resVarB > 15)
+%@
 
-From the $chi^2$ distribution, we expect such high ratios to only occur for maybe two genes:
-<<>>=
-( 1 - pchisq( 15, df=1) ) * nrow(counts(cds))
-@
+%From the $chi^2$ distribution, we expect such high ratios to only occur for maybe two genes:
+%<<>>=
+%( 1 - pchisq( 15, df=1) ) * nrow(counts(cds))
+%@
 
-Hence, these genes seem to be ``variance outliers'', and it may be prudent to
-exclude them from the list of significant hits. (Of course, the threshold of 15 was chosen
-ad hoc here and other thresholds of the same order of magnitude would be defensible as well.)
+%Hence, these genes seem to be ``variance outliers'', and it may be prudent to
+%exclude them from the list of significant hits. (Of course, the threshold of 15 was chosen
+%ad hoc here and other thresholds of the same order of magnitude would be defensible as well.)
 
 %\section{Power considerations}
 %
@@ -521,9 +619,9 @@ We produce the same plot as before, again with
 plot( 
    resTbvsN$baseMean, 
    resTbvsN$log2FoldChange, 
-   log="x", pch=20, cex=.1, 
+   log="x", pch=20, cex=.3, 
    col = ifelse( resTbvsN$padj < .1, "red", "black" ) )
-@
+@ %$
 The result (Fig.~\ref{figDE_Tb}) shows the same symmetry in up- and down-regulation
 as in Fig.~\ref{figDE} but a striking asymmetry in the boundary line for significance. This
 has an easy explanation: low counts suffer from proportionally stronger shot noise than high counts, and this
@@ -559,11 +657,11 @@ We reduce our count data set to just two columns, one ``T'' and one ``N'' sample
 cds2 <- cds[ ,c( "T1b", "N1" ) ]
 @
 
-Now, without any replicates at all, the \Rfunction{estimateVarianceFunctions} function will refuse to proceed unless we 
+Now, without any replicates at all, the \Rfunction{estimateDispersions} function will refuse to proceed unless we 
 instruct it to ignore the condition labels and estimate the variance by treating all
 samples as if they were replicates of the same condition:
 <<>>=
-cds2 <- estimateVarianceFunctions( cds2, method="blind" )
+cds2 <- estimateDispersions( cds2, method="blind" )
 @
 
 Now, we can attempt to find differential expression:
@@ -583,7 +681,7 @@ Unsurprisingly, we find much fewer hits, as can be seen from the plot (Fig.\ \re
 plot( 
    res2$baseMean,
    res2$log2FoldChange, 
-   log="x", pch=20, cex=.1, 
+   log="x", pch=20, cex=.3, 
    col = ifelse( res2$padj < .1, "red", "black" ) )
 @
 and from this table, tallying the number of significant hits in our previous and our new, restricted analysis:
@@ -596,38 +694,54 @@ new (and potentially false) hits.
 One may finally ask whether the reduction of discoveries to a quarter is due to the higher variance
 estimate, or due to the lower confidence in the base mean estimates, which is due to the reduced
 sample size. To see this, we run the original analysis again, but now using the new, worse variance function. 
-As this analysis is outside the standard work-flow, we have to use a lower-level function of the package,
-which does not recognise the \Rclass{CountDataSet} S4 object but instead expects all data to be 
-specified separately. (This is inconvenient normally but enables us here to substitute another variance function
-for the one that the \Rfunction{nbinomTest} function would use.)
+%As this analysis is outside the standard work-flow, we have to use a lower-level function of the package,
+%which does not recognise the \Rclass{CountDataSet} S4 object but instead expects all data to be 
+%specified separately. (This is inconvenient normally but enables us here to substitute another variance function
+%for the one that the \Rfunction{nbinomTest} function would use.)
+%<<>>=
+%colsN <- conditions(cds) == "N"
+%colsT <- conditions(cds) == "T"
+%baseMeansNT <- getBaseMeansAndVariances( 
+%   counts(cds)[ , colsN|colsT ], 
+%   sizeFactors(cds)[ colsN|colsT ] )$baseMean
+%pvals2b <- nbinomTestForMatrices(
+%   counts(cds)[ ,colsN ],
+%   counts(cds)[ ,colsT ],
+%   sizeFactors(cds)[ colsN ],
+%   sizeFactors(cds)[ colsT ],
+%   rawVarFunc( cds2, "_blind", TRUE )( baseMeansNT ),
+%   rawVarFunc( cds2, "_blind", TRUE )( baseMeansNT ) )
+%@
+
+%We adjust the $p$ values and then compare the hits with those found originally:
+%<<padj>>=   
+%padj2b <- p.adjust( pvals2b, method="BH" )
+%notNAinRes2 <- !is.na( res2$padj )
+%addmargins( table( 
+%   res_sig = res$padj[notNAinRes2] < .1, 
+%   res2b_sig = padj2b[notNAinRes2] < .1 ) )
+%@ %$
+%(There are a few genes with NA as p value in \texttt{res2} because all counts in the restricted
+%data set were zero. We have excluded these to make the tables comparable.)
+
+To do so, we just copy the dispersion values from the feature data of \texttt{cds2}
+to a copy of \texttt{cds}:
+
 <<>>=
-colsN <- conditions(cds) == "N"
-colsT <- conditions(cds) == "T"
-baseMeansNT <- getBaseMeansAndVariances( 
-   counts(cds)[ , colsN|colsT ], 
-   sizeFactors(cds)[ colsN|colsT ] )$baseMean
-pvals2b <- nbinomTestForMatrices(
-   counts(cds)[ ,colsN ],
-   counts(cds)[ ,colsT ],
-   sizeFactors(cds)[ colsN ],
-   sizeFactors(cds)[ colsT ],
-   rawVarFunc( cds2, "_blind", TRUE )( baseMeansNT ),
-   rawVarFunc( cds2, "_blind", TRUE )( baseMeansNT ) )
+cdsB <- cds
+fData(cdsB) <- fData(cds2)
+resB <- nbinomTest( cdsB, "N", "T" )
+
+addmargins( table( 
+   res_sig = res$padj < .1, 
+   resB_sig = resB$padj < .1 ) )
 @
 
-We adjust the $p$ values and then compare the hits with those found originally:
-<<padj>>=   
-padj2b <- p.adjust( pvals2b, method="BH" )
-notNAinRes2 <- !is.na( res2$padj )
-addmargins( table( 
-   res_sig = res$padj[notNAinRes2] < .1, 
-   res2b_sig = padj2b[notNAinRes2] < .1 ) )
-@ %$
-(There are a few genes with NA as p value in \texttt{res2} because all counts in the restricted
-data set were zero. We have excluded these to make the tables comparable.)
+%In conclusion, the worse variance estimates costs less in power than the reduction
+%in sample size. For another data set, this may well be quite different.
 
-In conclusion, the worse variance estimates costs less in power than the reduction
-in sample size. For another data set, this may well be quite different.
+\textsl{TODO: This is an incorrect comparison. We are comparing here
+a two tests with different sharingMode setting.}
 
 %-------------------------------------------------------------------------------------------------
 \section{Moderated fold change estimates and applications to sample clustering and visualisation}
@@ -664,16 +778,19 @@ are large enough, but still behaves gracefully when they become
 small. If we interpret \emph{graceful} as having the same variance
 throughout, then we arrive at variance stabilising transformations
 (VST)~\cite{Anders:2010:GB}. An advantage is that the parameters of
-this function are chosen automatically based on the between-replicate
+this function are chosen automatically based on the 
 variability of the data, and no \emph{ad hoc} choice of $c$, as above,
-is necessary.
+is necessary. 
 %
 <<vsd>>=
-vsd <- getVarianceStabilizedData( cds )
+cdsBlind <- estimateDispersions( cds, method="blind" )
+vsd <- getVarianceStabilizedData( cdsBlind )
 @
 
 % FIXME: is it possible to provide an explicit expression for the VST 
 %  (like  glog(x) = log(x + sqrt(x*x+c))   for vsn)
+% No, it is a numerical integration
+
 
 The data are now on a logarithm like scale, and we can compute
 \emph{moderated log fold changes}.
