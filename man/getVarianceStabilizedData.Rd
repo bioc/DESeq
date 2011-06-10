@@ -47,10 +47,10 @@ getVarianceStabilizedData(cds)
 }
 
 \examples{
-cds <- makeExampleCountDataSet()
-cds <- estimateSizeFactors( cds )
-cds <- estimateVarianceFunctions( cds )
-vsd <- getVarianceStabilizedData( cds )
-colsA <- conditions(cds) == "A"
-plot( rank( rowMeans( vsd[,colsA] ) ), genefilter::rowVars( vsd[,colsA] ) )
+#cds <- makeExampleCountDataSet()
+#cds <- estimateSizeFactors( cds )
+#cds <- estimateVarianceFunctions( cds )
+#vsd <- getVarianceStabilizedData( cds )
+#colsA <- conditions(cds) == "A"
+#plot( rank( rowMeans( vsd[,colsA] ) ), genefilter::rowVars( vsd[,colsA] ) )
 }

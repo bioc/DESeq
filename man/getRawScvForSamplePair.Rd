@@ -49,7 +49,7 @@ Simon Anders
 \code{\link{getRawScvDistanceMatrix}}
 }
 \examples{
-cds <- makeExampleCountDataSet()
-cds <- estimateSizeFactors( cds )
-getRawScvForSamplePair( cds, "A1", "A2" )
+#cds <- makeExampleCountDataSet()
+#cds <- estimateSizeFactors( cds )
+#getRawScvForSamplePair( cds, "A1", "A2" )
 }

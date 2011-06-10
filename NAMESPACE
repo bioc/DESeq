@@ -23,7 +23,7 @@ export(
    makeExampleCountDataSet,
    adjustScvForBias,
    nbinomGLMsForMatrix,
-   nbinomFitGLM,
+   #nbinomFitGLM,
    nbkd.sf,
    nbinomGLMTest,
    #getRawScvForSamplePair,

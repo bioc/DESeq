@@ -13,7 +13,7 @@ of samples and returns the a symmetric distance matrix.
 getRawScvDistanceMatrix(cds)
 }
 \arguments{
-  \item{cds}{ a CountDataSet with estimates size factors}
+  \item{cds}{ a CountDataSet with estimated size factors}
 }
 \details{
 See \code{\link{getRawScvForSamplePair}} for details on the metric.
@@ -28,8 +28,8 @@ Simon Anders
 \code{\link{getRawScvForSamplePair}}
 }
 \examples{
-cds <- makeExampleCountDataSet()
-cds <- estimateSizeFactors( cds )
-dm <- getRawScvDistanceMatrix( cds )
-heatmap( dm, symm=TRUE )
+#cds <- makeExampleCountDataSet()
+#cds <- estimateSizeFactors( cds )
+#dm <- getRawScvDistanceMatrix( cds )
+#heatmap( dm, symm=TRUE )
 }

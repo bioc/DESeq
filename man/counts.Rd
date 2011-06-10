@@ -10,12 +10,12 @@
    one column for each sample.
 }
 \usage{
-counts(cds)
+counts(cds, normalized=FALSE)
 }
 \arguments{
-  \item{cds}{
-     a CountDataSet object
-}
+  \item{cds}{a CountDataSet object.}
+  \item{normalized}{logical indicating whether or not to divide the
+    counts by the size factors before returning.}
 }
 \author{
    Simon Anders, sanders@fs.tum.de

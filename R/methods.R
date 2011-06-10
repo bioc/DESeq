@@ -15,14 +15,15 @@ estimateDispersions <- function( cds, method = c( "normal", "blind", "pooled" ),
    method <- match.arg( method )
    sharingMode <- match.arg( sharingMode )
    if( cds@multivariateConditions && ! method %in% c( "blind", "pooled" ) )
-      stop( "You have specified multivariate conditions (i.e., passed a data frame with conditions). In this case, you need to specify ethod 'pooled' or 'blind'." )
+      stop( "You have specified multivariate conditions (i.e., passed a data frame with conditions). In this case, you need to specify method 'pooled' or 'blind'." )
    if( sharingMode == "gene-est-only" )
-      warning( "sharingMode=='gene_est_only' will cause inflated numbers of false positives unless you have many replicates." )
+      warning( "sharingMode=='gene-est-only' will cause inflated numbers of false positives unless you have many replicates." )
+   ## FIXME this warning should only be emitted when the number of replicates is indeed small.
    
    cds@fitInfo = new.env( hash=TRUE )
    
-   
-   if( method == "blind" ) {
+   switch( method,
+     "blind" = {
 
       bmv <- getBaseMeansAndVariances( counts(cds), sizeFactors(cds) )
       dispFunc <- estimateDispersionFunctionFromBaseMeansAndVariances( bmv$baseMean,
@@ -40,7 +41,8 @@ estimateDispersions <- function( cds, method = c( "normal", "blind", "pooled" ),
          names(a) <- levels( conditions(cds) )
          cds@dispTable <- a }
       
-   } else if( method == "normal" ) {
+   },
+   "normal" = {
    
       replicated <- names( which( tapply( conditions(cds), conditions(cds), length ) > 1 ) )
       if( length( replicated ) < 1 )
@@ -62,7 +64,8 @@ estimateDispersions <- function( cds, method = c( "normal", "blind", "pooled" ),
       cds@dispTable <- sapply( levels(conditions(cds)), function( cond )
             ifelse( cond %in% replicated, cond, "max" ) ) 
                         
-   } else if( method == "pooled" ) {
+   },
+   "pooled"  = {
    
       if( cds@multivariateConditions ) {
          if( is.null( modelFrame ) )
@@ -86,15 +89,18 @@ estimateDispersions <- function( cds, method = c( "normal", "blind", "pooled" ),
          a <- rep( "pooled", length( levels( conditions(cds) ) ) )
          names(a) <- levels( conditions(cds) )
          cds@dispTable <- a }
-   }
-   
+   },
+   stop(sprintf("Invalid method '%s'.", method))
+   ) ## switch
    
    for( n in ls(cds@fitInfo) )
       fData(cds)[[ paste( "disp", n, sep="_" ) ]] <- 
          switch( sharingMode, 
             `fit-only`      = cds@fitInfo[[ n ]]$fittedDispEsts,
             `gene-est-only` = cds@fitInfo[[ n ]]$perGeneDispEsts,
-            `maximum`       = pmax( cds@fitInfo[[ n ]]$fittedDispEsts, cds@fitInfo[[ n ]]$perGeneDispEsts, na.rm=TRUE ) )
+            `maximum`       = pmax( cds@fitInfo[[ n ]]$fittedDispEsts, cds@fitInfo[[ n ]]$perGeneDispEsts, na.rm=TRUE ),
+            stop(sprintf("Invalid sharingMode '%s'.", sharingMode))
+         ) ## switch
         
    if( "max" %in% cds@dispTable )
       fData(cds)[["disp_max"]] <- do.call( pmax, 
@@ -287,20 +293,20 @@ makeExampleCountDataSet <- function( )
    newCountDataSet( m, conds )
 }
 
-nbinomFitGLM <- function( cds, modelFormula, glmControl=list() )
-{
-   stopifnot( is( cds, "CountDataSet" ) )
-   ensureHasVarFuncs( cds )
-   if( is.null( cds@rawVarFuncs[["_pooled"]] ) )
-      stop( "No pooled variance function found. Have you called 'estimateVarianceFunctions' with 'method=\"pooled\"'?" )
+#nbinomFitGLM <- function( cds, modelFormula, glmControl=list() )
+#{
+#   stopifnot( is( cds, "CountDataSet" ) )
+#   ensureHasVarFuncs( cds )
+#   if( is.null( cds@rawVarFuncs[["_pooled"]] ) )
+#      stop( "No pooled variance function found. Have you called 'estimateVarianceFunctions' with 'method=\"pooled\"'?" )
       
-   baseMeans <- colMeans(t(counts(cds))/sizeFactors(cds))
-   rawVars <- rawVarFunc( cds, "_pooled", TRUE )( baseMeans )
-   rawScv <- adjustScvForBias( rawVars/baseMeans^2, attr( rawVars, "size" ) )
+#   baseMeans <- colMeans(t(counts(cds))/sizeFactors(cds))
+#   rawVars <- rawVarFunc( cds, "_pooled", TRUE )( baseMeans )
+#   rawScv <- adjustScvForBias( rawVars/baseMeans^2, attr( rawVars, "size" ) )
 
-   nbinomGLMsForMatrix( counts(cds), sizeFactors(cds), rawScv, 
-      modelFormula, pData(cds), glmControl=glmControl )
-}
+#   nbinomGLMsForMatrix( counts(cds), sizeFactors(cds), rawScv, 
+#      modelFormula, pData(cds), glmControl=glmControl )
+#}
 
 nbinomGLMTest <- function( resFull, resReduced )
    1 - pchisq( resReduced$deviance - resFull$deviance, 

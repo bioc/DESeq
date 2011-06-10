@@ -10,13 +10,13 @@
    instead of calling this function directly. However, if you do not have your data
    in the form of a CountDataSet object, you may want to call this function directly.
 }
-\usage{
-estimateVarianceFunctionForMatrix(counts, sizeFactors,
-   locfit_extra_args = list(), lp_extra_args = list())
+%\usage{
+%estimateVarianceFunctionForMatrix(counts, sizeFactors,
+%   locfit_extra_args = list(), lp_extra_args = list())
    
-estimatePooledVarianceFunctionForMatrix(counts, sizeFactors, 
-   conditions, locfit_extra_args = list(), lp_extra_args = list())   
-}
+%estimatePooledVarianceFunctionForMatrix(counts, sizeFactors, 
+%   conditions, locfit_extra_args = list(), lp_extra_args = list())   
+%}
 %- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{counts}{
@@ -55,9 +55,9 @@ estimatePooledVarianceFunctionForMatrix(counts, sizeFactors,
    Simon Anders, sanders@fs.tum.de
 }
 \examples{
-cds <- makeExampleCountDataSet()
-cds <- estimateSizeFactors( cds )
-vf <- estimateVarianceFunctionForMatrix( counts(cds), sizeFactors(cds) )
-vf( head( counts(cds)[,1] / sizeFactors(cds)[1] ) )
-attr( vf, "varAdjFactor" )
+#cds <- makeExampleCountDataSet()
+#cds <- estimateSizeFactors( cds )
+#vf <- estimateVarianceFunctionForMatrix( counts(cds), sizeFactors(cds) )
+#vf( head( counts(cds)[,1] / sizeFactors(cds)[1] ) )
+#attr( vf, "varAdjFactor" )
 }

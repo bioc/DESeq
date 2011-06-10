@@ -117,45 +117,58 @@ setValidity( "CountDataSet", function( object ) {
    TRUE
 } )
 
-counts <- function( cds, normalized=FALSE ) {
-   stopifnot( is( cds, "CountDataSet" ) )
-   if( ! normalized )
+setMethod("counts", signature(cds="CountDataSet"),
+  function(cds, normalized=FALSE ) {
+    if(!normalized) {
       assayData(cds)[["counts"]]
-   else
+    } else {
       t( t( assayData(cds)[["counts"]] ) / sizeFactors(cds) )
-}   
+    }
+  })   
    
-sizeFactors <- function( cds ) {
-   stopifnot( is( cds, "CountDataSet" ) )
-   sf <- pData(cds)$`sizeFactor`
+setMethod("sizeFactors", signature(cds="CountDataSet"),
+  function(cds) {
+   sf <- pData(cds)$sizeFactor
    names( sf ) <- colnames( counts(cds) )
    sf
-}   
-   
-`sizeFactors<-` <- function( cds, value ) {
-   stopifnot( is( cds, "CountDataSet" ) )
-   pData(cds)$`sizeFactor` <- value
+ })   
+
+setMethod("sizeFactors<-", signature(cds="CountDataSet"),
+  function( cds, value ) {
+   pData(cds)$sizeFactor <- value
    validObject( cds )
    cds
-}   
+})   
 
-conditions <- function( cds ) {
-   stopifnot( is( cds, "CountDataSet" ) )
+setMethod("conditions", signature(cds="CountDataSet"),
+  function( cds ) {
    if( cds@multivariateConditions )
-      stop( "The 'conditions' accessor is only for simple single-factor conditions, but your have specified multivariate conditions. Access them via 'pData'." )
+      stop( "The 'conditions' accessor is only for simple single-factor conditions, but you have specified multivariate conditions. Access them via 'pData'." )
    conds <- pData(cds)$`condition`
    names( conds ) <- colnames( counts(cds) )
    conds
-}   
+})   
    
-`conditions<-` <- function( cds, value ) {
-   stopifnot( is( cds, "CountDataSet" ) )
+setMethod("conditions<-", signature(cds="CountDataSet"),
+  function( cds, value ) {
    if( cds@multivariateConditions )
-      stop( "The 'conditions' accessor is only for simple single-factor conditions, but your have specified multivariate conditions. Access them via 'pData'." )
+      stop( "The 'conditions' accessor is only for simple single-factor conditions, but you have specified multivariate conditions. Access them via 'pData'." )
    pData(cds)$`condition` <- factor( value )
    validObject( cds )
    cds
-}   
+})
+
+setMethod("dispTable", signature(cds="CountDataSet"),
+ function( cds ) {
+    cds@dispTable
+})   
+
+setMethod("dispTable<-", signature(cds="CountDataSet"),
+ function( cds, value ) {
+    cds@dispTable <- value
+    validObject( cds )
+    cds
+})   
 
 #rawVarFunc <- function( cds, condOrName=NULL, byName=FALSE ) {
 #   stopifnot( is( cds, "CountDataSet" ) )
@@ -208,9 +221,4 @@ conditions <- function( cds ) {
 #   stopifnot( is( cds, "CountDataSet" ) )
 #   stop( "This function has been removed. Do not use it. See help page." )
 #}
-
-dispTable <- function( cds ) {
-   stopifnot( is( cds, "CountDataSet" ) )
-   cds@dispTable
-}   
 

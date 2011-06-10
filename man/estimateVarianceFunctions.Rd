@@ -10,9 +10,9 @@
     to estimate the raw variance function for this condition.     
 }
 \usage{
-estimateVarianceFunctions(cds, method = c( "normal", "blind", "pooled" ),
-   pool = NULL, locfit_extra_args = list(), lp_extra_args = list(),
-   modelFrame = NULL )
+#estimateVarianceFunctions(cds, method = c( "normal", "blind", "pooled" ),
+#   pool = NULL, locfit_extra_args = list(), lp_extra_args = list(),
+#   modelFrame = NULL )
 }
 \arguments{
   \item{cds}{
@@ -96,9 +96,9 @@ estimateVarianceFunctions(cds, method = c( "normal", "blind", "pooled" ),
    Simon Anders, sanders@fs.tum.de
 }
 \examples{
-cds <- makeExampleCountDataSet()
-cds <- estimateSizeFactors( cds )
-cds <- estimateVarianceFunctions( cds )
-vf <- rawVarFunc( cds, "A" )
-vf( head( counts(cds)[,1] / sizeFactors(cds)[1] ) )
+#cds <- makeExampleCountDataSet()
+#cds <- estimateSizeFactors( cds )
+#cds <- estimateVarianceFunctions( cds )
+#vf <- rawVarFunc( cds, "A" )
+#vf( head( counts(cds)[,1] / sizeFactors(cds)[1] ) )
 }

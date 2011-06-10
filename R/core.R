@@ -238,6 +238,9 @@ multiecdfWithoutLegend <- function( x, ... )
 # scvBiasCorrectionFits, which is stored in the file
 # inst/scvBiasCorrectionFits.rda, gets loadewd by the line after this
 # function and is used by the function adjustScvForBias
+#
+# To do: the correct place for this type of documentation is a vignette
+#
 
 prepareScvBiasCorrectionFits <- function( maxnrepl=15, mu=100000, ngenes=10000,
       true_raw_scv = c( seq( 0, 2, length.out=100 )[-1], seq( 2, 10, length.out=20 )[-1] ) )
