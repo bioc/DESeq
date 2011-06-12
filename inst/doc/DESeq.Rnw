@@ -1,7 +1,7 @@
 %\VignetteIndexEntry{Analysing RNA-Seq data with the "DESeq" package}
 %\VignettePackage{DESeq}
 
-% To compile this document:
+% To compile this document
 % library('weaver'); rm(list=ls()); Sweave('DESeq.Rnw', driver=weaver()); system('pdflatex DESeq')
 
 \documentclass{article}
@@ -9,12 +9,15 @@
 \usepackage{Sweave}
 \usepackage[a4paper]{geometry}
 \usepackage{hyperref,graphicx}
+\usepackage{natbib}
+\usepackage{color}
 
 \SweaveOpts{keep.source=TRUE,eps=FALSE,include=FALSE,width=4,height=4.5} 
 \newcommand{\Robject}[1]{\texttt{#1}}
 \newcommand{\Rpackage}[1]{\textit{#1}}
 \newcommand{\Rclass}[1]{\textit{#1}}
 \newcommand{\Rfunction}[1]{{\small\texttt{#1}}}
+\newcommand{\fixme}[1]{{\textbf{Fixme:} \textit{\textcolor{blue}{#1}}}}
 
 \author{Simon Anders\\[1em]European Molecular Biology Laboratory (EMBL),\\ Heidelberg, Germany\\[1em]
 \texttt{sanders@fs.tum.de}}
@@ -48,13 +51,15 @@ the statistical method employed, please see our paper~\cite{Anders:2010:GB}.
 \end{abstract}
 
 %--------------------------------------------------
-\section{Quick start}
+\section{Quick start}\label{sec:quickstart}
 %--------------------------------------------------
-This first section quickly presents a complete analysis workflow in one go. 
-A more gentle introduction is provided Section~\ref{sec:prep} and subsequent.
+This first section quickly gives you an overview over a complete
+analysis workflow in one go.  A more gentle introduction is provided
+Section~\ref{sec:prep} and subsequent.
 
 We load the \Rpackage{DESeq} package and an example dataset, the
-gene level read counts from the \Robject{pasilla} dataset.
+gene level read counts from the \Rpackage{pasilla} package,
+which presents a dataset by \citet{Brooks2010}.
 
 <<pasilla,results=hide>>=
 library("DESeq")
@@ -79,15 +84,15 @@ batch effects, we look only at the paired-end data\footnote{We will
   effects in Section~\ref{sec:fixme}.}.
 Then, the minimal set of commands to run a full analysis is:
 %
-<<makecds>>=
-cds = pasillaGenes[, pasillaGenes$type=="paired-end"]
-cds@multivariateConditions = FALSE   ## ugly
-cds$condition = factor(cds$condition)
+<<makepgp>>=
+pgp = pasillaGenes[, pasillaGenes$type=="paired-end"]
+pgp@multivariateConditions = FALSE   ## ugly
+pgp$condition = factor(pgp$condition)
 @ 
 <<demo1, cache=TRUE>>=
-cds = estimateSizeFactors( cds )
-cds = estimateDispersions( cds )
-res = nbinomTest( cds, "treated", "untreated")
+pgp = estimateSizeFactors( pgp )
+pgp = estimateDispersions( pgp )
+res = nbinomTest( pgp, "untreated", "treated")
 @
 
 \Rfunction{nbinomTest} tests for differential expression between the
@@ -98,110 +103,90 @@ which looks as follows:
 head(res)
 @ 
 
-
+%--------------------------------------------------
 \section{Preparations} \label{sec:prep}
+%--------------------------------------------------
 The \Rpackage{DESeq} package expects count data, as obtained, e.g.,
 from an RNA-Seq or other high-throughput sequencing (HTS) experiment,
 in the form of a matrix of integer values. Each column corresponds to
 a sample, e.g., one library preparation or one lane.
-Each row corresponds to the entities for which you compare coverage, 
+The rows correspond to the entities for which you want to compare coverage, 
 e.\,g.\ to a gene, to a binding region in a ChIP-Seq dataset, 
-a window in CNV-Seq, or the like.
+a window in CNV-Seq or the like.
 
-Each column must stem from an independent biological replicate.  For
-purely technical replicates (e.\,g. when the same library preparation was
-distributed over multiple lanes of the sequencer in order to increase
-coverage), please sum up their counts to get a single column,
-corresponding to a unique biological replicate.  This is important in
-order to allow \Rpackage{DESEq} to estimate variability in the
-experiment correctly.
+It is important that each column stems from an independent biological
+replicate.  For purely technical replicates (e.\,g. when the same
+library preparation was distributed over multiple lanes of the
+sequencer in order to increase coverage), please sum up their counts
+to get a single column, corresponding to a unique biological
+replicate.  This is important in order to allow \Rpackage{DESEq} to
+estimate variability in the experiment correctly.
 
-The data thus looks as follows
-<<countsTable,eval=FALSE,echo=FALSE>>=
-head(counts(pasillaGenes))
-pData(pasillaGenes)
-@
+Let us start with a table of counts:
+%
+<<countsTable>>=
+countsTable = counts(pgp)
+head(countsTable)
+@ 
+%
+Here, we have generated this matrix by extracting it from the object
+\Robject{pgp} that we created above. For your own data, you will need
+to create from the sequence alignments by use of tools outside of the
+\Rpackage{DESeq} package. For instance, in the course materials
+available on the Bioconductor web page, there are examples for how to
+do this with the \Rpackage{ShortRead} and \Rpackage{IRanges}
+packages\footnote{Another, easy way to produce such a table from the output
+  of the aligner is to use the \texttt{htseq-count} script distributed
+  with the \emph{HTSeq} package. Even though \emph{HTSeq} is a Python
+  package, you do not need to know any Python to use
+  \texttt{htseq-count}. See
+  \url{http://www-huber.embl.de/users/anders/HTSeq/doc/count.html}.}.
 
+As a second component of the analysis, you need a \Rclass{factor}
+variable with as many elements as there are columns in
+\texttt{countTable}. It indicates treatment groups. Here, we use
+the column \Robject{condition} of the \Robject{pgp} object.
+<<condition>>=
+conds = factor(pgp$condition)
+conds
+@ 
+%
+For your own data, you will need to create an analogous
+\Rclass{factor} variable from the metadata of your dataset.
 
-Let's say you have the counts in a matrix or data frame \texttt{countTable}, and you
-further have a factor \texttt{conds} with as many element as there are
-columns in \texttt{countTable} that indicates treatment groups, i.e., data in the following
-form:
-
-Refer to pasialla vignette.
-
-They extracted mRNA from the cultures and sequenced only the 3' end of the transcripts (Tag-Seq) with
-an Illumina GenomeAnalyzer, one lane per sample. They got from 6.8 to 13.6 mio reads from each lane,
-which they assigned to genes. They were able to assign 30\% to 50\% of the tags unambiguously to
-annotated genes and produced a table that gives these counts.\footnote{An easy way to produce such a table
-from the output of the aligner is to use the \texttt{htseq-count} script distributed with the \emph{HTSeq}
-package. (Even though HTSeq is a Python package, you do not need to know any Python to use \texttt{htseq-count}.) See \url{http://www-huber.embl.de/users/anders/HTSeq/doc/count.html}.} A version of this table is distributed with the \Rpackage{DESeq} package as example data in a file called
-``TagSeqExample.tab''. The
-\Rfunction{system.file} function allows to see where R has stored the file when the package was
-installed:
-
-<<>>=
-library( DESeq )
-exampleFile = system.file( "extra/TagSeqExample.tab", package="DESeq" )
-exampleFile
-@
-
-It is a tab-delimited file with column headers in the first line. We read it in with
-<<>>=
-countsTable <- read.delim( exampleFile, header=TRUE, stringsAsFactors=TRUE )
-head( countsTable )
-@
-
-To obtain such a table for your own data, you will need other software; this is out of the scope of DESeq. In the course materials from the Workshops section of the Bioconductor web page, you might find further information how to do this with the \Rpackage{ShortRead} and \Rpackage{IRanges} packages.
-
-The first column is the gene ID. (We have shuffled the table rows, removed the RefSeq IDs and replaced them with dummy identifiers of the form ``Gene\_\textit{NNNNN}''.) We use the gene IDs for the row names and remove the gene ID column:
-<<>>=
-rownames( countsTable ) <- countsTable$gene
-countsTable <- countsTable[ , -1 ]
-@ % $
-
-We are now left with six columns, referring to the six samples. The first four (labelled
-``T1a'', ``T1b'', ``T2'', and ``T3'') are from cancerous tissue, the last two (labelled
-``N1'', ``N2'') are from healthy tissue and served as control. 
-
-We code this information in the following vector, which assigns each sample a ``condition'':
-<<>>=
-conds <- c( "T", "T", "T", "Tb", "N", "N" )
-@
-where ``T'' stands for a sample derived from a certain tumour type and ``N'' for a sample 
-derived from non-pathological tissue. The first three samples
-had a very similar histopathological phenotype, while the fourth sample was atypical, and
-hence, we assign it another condition (``Tb'').
-
-
-We can now instantiate a \Rclass{CountDataSet}, which is the central data structure in the
-\Rpackage{DESeq} package:
-<<>>=
+We can now instantiate a \Rclass{CountDataSet}, which is the central
+data structure in the \Rpackage{DESeq} package:
+%
+<<instantiate>>=
 cds <- newCountDataSet( countsTable, conds )
 @
 
-The \Rclass{CountDataSet} class is derived from the \Rclass{eSet} class and so shares all
-features of this standard Bioconductor class. Furthermore, accessors are provided for its data slots.
-For example, the counts can be accessed with the \Rfunction{counts} function.
-<<>>=
+The \Rclass{CountDataSet} class is derived from \Rpackage{Biobase}'s
+\Rclass{eSet} class and so shares all features of this standard
+Bioconductor class. Furthermore, accessors are provided for its data
+slots\footnote{In fact, the objects \Robject{pasillaGenes} and \Robject{cds}
+  from Section~\ref{sec:quickstart} are also of class \Rclass{CountDataSet};
+  here we re-created \Robject{cds} from elementary datatypes, a matrix and a factor,
+  for pedagogic effect.}.  For example, the counts can be accessed with the
+\Rfunction{counts} function.
+%
+<<headcounts1>>=
 head( counts(cds) )
 @
+%
 
-One feature derived from the \Rclass{eSet} class is the possibility to subset. We can remove
-the first sample (i.e., the first column) as follows
-<<>>=
-cds <- cds[ ,-1 ]
-@
-We remove it because samples T1a and T1b were derived from the same individuum and are hence
-more similar than the others. In order to keep the present example simple we continue without
-sample T1a.
-
-As first processing step, we have to estimate the effective library size. This information is called the ``size
-factors'' vector, as the package only needs to now the relative library sizes. So, if a
-non-differentially expressed gene produces twice as many counts in one sample than in another, the size
-factor for this sample should be twice as large as the one for the other sample. The
-function \Rfunction{estimateSizeFactors} estimates the size factors from the count data. (See the man page of \Rfunction{estimateSizeFactorsForMatrix} for technical details on the calculation.)
-<<>>=
+As first processing step, we need to estimate the effective library
+size. This information is called the ``size factors'' vector, as the
+package only needs to know the relative library sizes. So, if the counts
+of non-differentially expressed genes in one sample are, on average, twice as high 
+as in another, the size factor for the first sample should be
+twice as large as the one for the other sample. The function
+\Rfunction{estimateSizeFactors} estimates the size factors from the
+count data. (See the man page of
+\Rfunction{estimateSizeFactorsForMatrix} for technical details on the
+calculation.)
+%
+<<estimateSizeFactors>>=
 cds <- estimateSizeFactors( cds )
 sizeFactors( cds )
 @
@@ -210,18 +195,24 @@ If we divide each column of the count table by the size factor for this column, 
 count values are brought to a common scale, making them comparable. When called
 with \texttt{normalized=TRUE}, the \texttt{counts} accessor function performs this
 calculation. This is useful, e.g., for visualization.
-
-<<>>=
+%
+<<headcounts2>>=
 head( counts( cds, normalized=TRUE ) )
 @
 
+%------------------------------------------------------------
 \section{Variance estimation}
+%------------------------------------------------------------
 
-As explained in detail in the paper, the core assumption of this method it that the mean is a good
-predictor of the variance, i.e., that genes with a similar expression level tend to have similar
-variance across replicates. Hence, we need to estimate for each condition a function that allows
-to predict the variance from the mean. This estimation is done by calculating, for each gene, 
-the sample mean and variance within replicates and then fitting a curve to this data.
+The inference in \Rpackage{DESeq} relies on an estimation of the typical
+relationship between the data's variance and their mean, or, equivalently,
+between the data's dispersion and their mean~\cite{Anders:2010:GB}.
+This estimation is done by calculating, for each gene, 
+the sample mean and variance within replicates \fixme{this needs to be updated, perhaps
+  not mant details here, but then please provide them later} and fitting a curve to this graph.
+
+
+
 
 In RNA-Seq, the variance is the sum of two components, the technical and the biological variation.
 By biological variation, we mean the variation in the concentration of cDNA fragments from a given
@@ -272,7 +263,7 @@ This fit info contains the estimates for each gene, the curve fitted through the
 dispersions, and the fitted values that then will be finally used in the test.
 
 <<>>=
-str( cds@fitInfo[["N"]] )
+str( cds@fitInfo[["untreated"]] )
 @
 
 \begin{figure}
@@ -287,11 +278,15 @@ To visualize these, we plot the per-gene estimates against the normalized mean
 expressions per gene, and the overlay the fitted values in red:
 
 <<figFitT,fig=TRUE>>=
-cond <- "T"
+cond <- "untreated"
 means <- rowMeans( counts( cds, normalized=TRUE ) )
 plot( means, cds@fitInfo[[cond]]$perGeneDispEsts, log="xy", pch="." )
 points( means, cds@fitInfo[[cond]]$fittedDispEsts, pch=".", col="red" )
 @
+%
+\fixme{Should \Robject{cond} be \Robject{treated}? Need to check order / asymmetry between the 
+  arguments of \Rfunction{nbinomTest}.}
+
 
 The plot (Fig.\ \ref{figFitT}) is doubly logarithmic; this may be helpful or
 misleading, and it is worth experimenting with other plotting styles.
@@ -356,7 +351,7 @@ Now, \texttt{disp\_T} contains the maximum of the two value vectors we looked at
 namely 
 
 <<>>=
-str( cds@fitInfo[["N"]] )
+str( cds@fitInfo[["untreated"]] )
 @
 
 Advanced users who may want to fiddle with the dispersion estimation can change the values
@@ -413,7 +408,7 @@ replicates will help.
 %$\chi^2$ distribution, as explained in the paper. These values are the fourth
 %column.
 %<<>>=
-%diagForT <- varianceFitDiagnostics( cds, "T" )
+%diagForT <- varianceFitDiagnostics( cds, "treated" )
 %head( diagForT )
 %@
 
@@ -452,8 +447,8 @@ replicates will help.
 %We look at them for the conditions ``T'' and ``N'':
 %<<figECDF,fig=TRUE,width=14,height=7>>=
 %par( mfrow=c(1,2 ) )
-%residualsEcdfPlot( cds, "T" )
-%residualsEcdfPlot( cds, "N" )
+%residualsEcdfPlot( cds, "treated" )
+%residualsEcdfPlot( cds, "untreated" )
 %@
 %Fig.~\ref{figECDF} shows the output. In both cases, the ECDF curves follow the diagonal well,
 %i.e., the fit is good. Only for very low counts (below 10), the deviations become stronger, but as at these levels,
@@ -480,7 +475,7 @@ expression between conditions ``N'' and ``T'', we simply call the function \Rfun
 It performs the tests as described in the paper and returns a data frame with the $p$ value and other
 useful data.
 <<>>=
-res <- nbinomTest( cds, "N", "T" )
+res <- nbinomTest( cds, "untreated", "treated" )
 head(res)
 @
 For each gene, we get its mean expression level (at the base scale) as a joint estimate from both conditions, and
@@ -643,7 +638,7 @@ we can contrast the single ``Tb'' sample against the two ``N'' samples.
 
 
 <<>>=
-resTbvsN <- nbinomTest( cds, "N", "Tb" )
+resTbvsN <- nbinomTest( cds, "untreated", "treated" )
 @
 We produce the same plot as before, again with
 <<figDE_Tb,fig=TRUE>>=
@@ -685,7 +680,7 @@ We shall now see how well this works for our example data, even though it has ra
 
 We reduce our count data set to just two columns, one ``T'' and one ``N'' sample:
 <<>>=
-cds2 <- cds[ ,c( "T1b", "N1" ) ]
+cds2 <- cds[ ,c(  "untreated3fb", "treated3fb"   ) ]
 @
 
 Now, without any replicates at all, the \Rfunction{estimateDispersions} function will refuse to proceed unless we 
@@ -697,7 +692,7 @@ cds2 <- estimateDispersions( cds2, method="blind" )
 
 Now, we can attempt to find differential expression:
 <<>>=
-res2 <- nbinomTest( cds2, "N", "T" )
+res2 <- nbinomTest( cds2, "untreated", "treated" )
 @
 
 \begin{figure}
@@ -730,8 +725,8 @@ sample size. To see this, we run the original analysis again, but now using the 
 %specified separately. (This is inconvenient normally but enables us here to substitute another variance function
 %for the one that the \Rfunction{nbinomTest} function would use.)
 %<<>>=
-%colsN <- conditions(cds) == "N"
-%colsT <- conditions(cds) == "T"
+%colsN <- conditions(cds) == "untreated"
+%colsT <- conditions(cds) == "treated"
 %baseMeansNT <- getBaseMeansAndVariances( 
 %   counts(cds)[ , colsN|colsT ], 
 %   sizeFactors(cds)[ colsN|colsT ] )$baseMean
@@ -761,7 +756,7 @@ to a copy of \texttt{cds}:
 <<>>=
 cdsB <- cds
 fData(cdsB) <- fData(cds2)
-resB <- nbinomTest( cdsB, "N", "T" )
+resB <- nbinomTest( cdsB, "untreated", "treated" )
 
 addmargins( table( 
    res_sig = res$padj < .1, 
@@ -827,8 +822,8 @@ The data are now on a logarithm like scale, and we can compute
 \emph{moderated log fold changes}.
 
 <<modlr>>=
-mod_lfc = (rowMeans( vsd[, conditions(cds)=="T"] ) - 
-           rowMeans( vsd[, conditions(cds)=="N"] ))
+mod_lfc = (rowMeans( vsd[, conditions(cds)=="treated", drop=FALSE] ) - 
+           rowMeans( vsd[, conditions(cds)=="untreated", drop=FALSE] ))
 @ 
 
 Now let us compare these to the original (log) fold changes. First we find that many of the latter
