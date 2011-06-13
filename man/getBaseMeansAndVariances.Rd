@@ -27,6 +27,10 @@ A data frame with one row for each row in 'counts' and two columns:
   \item{comp2 }{The base variance for each row. This is the variance of the counts after they have been divided
      by the size factors}
 }
+\details{
+This function is kept for backwards compatibility. See the example below for an alternative and
+more self-explanatory way to get the same data.
+}
 
 \author{
    Simon Anders, sanders@fs.tum.de
@@ -35,4 +39,8 @@ A data frame with one row for each row in 'counts' and two columns:
 cds <- makeExampleCountDataSet()
 cds <- estimateSizeFactors( cds )
 head( getBaseMeansAndVariances( counts(cds), sizeFactors(cds) ) )
+
+# You can get the same as follows
+head( rowMeans( counts( cds, normalized=TRUE ) ) )
+head( genefilter::rowVars( counts( cds, normalized=TRUE ) ) )
 }

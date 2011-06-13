@@ -47,10 +47,7 @@ for condition A}
 \item{log2FoldChange}{The log2 of the fold change}
 \item{pval}{The p value for rejecting the null hypothesis 'meanA==meanB'}
 \item{padj}{The adjusted p values (adjusted with 'p.adjust( pval, method="BH")')}
-\item{resVarA}{The ratio of the row-wise estimate of the base variance of the counts for condition A, divided by
-the value predicted with the base variance function from the base mean. If this number is very high, the hit seems
-to be a variance outlier and might be false.}
-\item{resVarB}{The same for condition B.}
+
 }
 \author{
    Simon Anders, sanders@fs.tum.de
@@ -58,6 +55,6 @@ to be a variance outlier and might be false.}
 \examples{
 cds <- makeExampleCountDataSet()
 cds <- estimateSizeFactors( cds )
-cds <- estimateVarianceFunctions( cds )
+cds <- estimateDispersions( cds )
 head( nbinomTest( cds, "A", "B" ) )
 }

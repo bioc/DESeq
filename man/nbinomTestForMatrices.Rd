@@ -47,7 +47,7 @@ nbinomTestForMatrices(countsA, countsB, sizeFactorsA, sizeFactorsB, rawScvA, raw
 \examples{
 cds <- makeExampleCountDataSet()
 cds <- estimateSizeFactors( cds )
-cds <- estimateVarianceFunctions( cds )
+cds <- estimateDispersions( cds )
 colsA <- conditions(cds) == "A"
 colsB <- conditions(cds) == "B"
 bmvA <- getBaseMeansAndVariances( counts(cds)[,colsA], sizeFactors(cds)[colsA] )
@@ -57,12 +57,11 @@ pvals <- nbinomTestForMatrices(
    counts(cds)[,colsB],
    sizeFactors(cds)[colsA],
    sizeFactors(cds)[colsB],
-   adjustScvForBias( 
-      rawVarFunc( cds, "A" )( bmvA$baseMean ) / bmvA$baseMean^2,
-      length( colsA ) ),
-   adjustScvForBias( 
-      rawVarFunc( cds, "B" )( bmvB$baseMean ) / bmvB$baseMean^2,
-      length( colsB ) ) )
+   cds@fitInfo$A$dispFunc( rowMeans( counts( cds, normalized=TRUE ) ) ),
+   cds@fitInfo$B$dispFunc( rowMeans( counts( cds, normalized=TRUE ) ) ) )
 names( pvals ) <- row.names( counts(cds) )
 head( pvals )
+
+# This here should give the same results:
+head( nbinomTest( cds, "A", "B" )$pval )
 }

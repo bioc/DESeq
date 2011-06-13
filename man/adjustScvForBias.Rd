@@ -10,7 +10,7 @@
    Assume that a small sample of i.i.d. random variables from a negative binomial
    distribution is given, and you have obtained unbiased estimates of mean and
    raw variance. Then, a new bias is introduced when the squared coefficient of 
-   variation (SCV) is calculated from these unbiased estimates by dividing the
+   variation (SCV, a.k.a. dispersion) is calculated from these unbiased estimates by dividing the
    raw variance by the square of the mean. This bias can be calculated by numerical
    simulation and a pre-calculated adjustment table (or rather a fit through tabulated
    values) is supplied with the package. The present function uses this to remove the 

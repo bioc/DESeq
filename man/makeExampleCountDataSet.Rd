@@ -24,7 +24,7 @@ makeExampleCountDataSet()
    each gene for 5 samples, the first three corresponding to condition "A" and
    the remaining two for condition "B". The counts are drawn from a negative
    binomial with the specified mean, multiplied by the size factor for the sample,
-   with a constant raw SCV of 0.2 (i.e., a 'size' parameter of 1/0.2). The true
+   with a constant raw SCV (dispersion) of 0.2 (i.e., a 'size' parameter of 1/0.2). The true
    size factors are fixed to c( 1., 1.3, .7, .9, 1.6 ). 
    
    All these values were chosen to give data that at least somewhat resembles

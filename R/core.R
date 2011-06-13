@@ -8,7 +8,7 @@ estimateSizeFactorsForMatrix <- function( counts, locfunc = median )
 
 getBaseMeansAndVariances <- function( counts, sizeFactors ) {
 
-   # Devides the counts by sizeFactors and calculates the estimates for
+   # Divides the counts by sizeFactors and calculates the estimates for
    # base means and variances for each gene.
    
    data.frame(
@@ -16,15 +16,6 @@ getBaseMeansAndVariances <- function( counts, sizeFactors ) {
       baseVar = rowVars( t( t(counts) / sizeFactors ) ) )
 }   
 
-#estimateVarianceFunctionForMatrix <- function( counts, sizeFactors, 
-#         locfit_extra_args=list(), lp_extra_args=list() ) {
-
-#   stopifnot( ncol( counts ) == length( sizeFactors ) )
-#   bmv <- getBaseMeansAndVariances( counts, sizeFactors ) 
-#   estimateVarianceFunctionFromBaseMeansAndVariances( bmv$baseMean,
-#      bmv$baseVar, sizeFactors, locfit_extra_args, lp_extra_args )
-#}      
-   
 modelMatrixToConditionFactor <- function( modelMatrix ) {
 
    mmconds <- 1:nrow(modelMatrix)

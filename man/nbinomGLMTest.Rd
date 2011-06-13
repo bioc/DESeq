@@ -9,7 +9,7 @@
     "df.residual") - attr(resFull, "df.residual"))}
 }
 \usage{
-nbinomGLMTest(resFull, resReduced)
+nbinomGLMTest(resFull, resReduced_FIXME)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -29,9 +29,9 @@ Simon Anders, anders@embl.de
 \examples{
 cds <- makeExampleCountDataSet()[ 1:100, ]
 cds <- estimateSizeFactors( cds )
-cds <- estimateVarianceFunctions( cds, "pooled" )
-fit1 <- nbinomFitGLM( cds, count ~ condition )
-fit0 <- nbinomFitGLM( cds, count ~ 1 )
-nbinomGLMTest( fit1, fit0 )
+cds <- estimateDispersions( cds, method="pooled" )
+#fit1 <- nbinomFitGLM( cds, count ~ condition )
+#fit0 <- nbinomFitGLM( cds, count ~ 1 )
+#nbinomGLMTest( fit1, fit0 )
 }
 

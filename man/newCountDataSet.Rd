@@ -30,11 +30,9 @@ newCountDataSet(countData, conditions, sizeFactors = NULL, phenoData = NULL, fea
       columns can be refered top in a model formula provided to \code{\link{nbinomFitGLM}}.
 }
   \item{sizeFactors}{
-      The size factors (see \code{\link{sizeFactors}}). If you have estimated the size factors beforehand, 
-      you can pass your estimate here as a numerical vector with as many elements as there are columns in
-      the count data. Usually, however, this field is left blank. Then, you must call function 
-      \code{\link{estimateSizeFactors}} afterwards, which will estimate the size factors and fill
-      in the information.
+      This argument is deprecated. Do not use it. (Size factors should always be estimated from
+      the data with \code{\link{estimateSizeFactors}}. If you need to set size factors manually for
+      some reasons, change the \code{pData(cds)$sizeFactor}.
 }
   \item{phenoData}{
       You may pass an AnnotatedDataFrame here to describe the columns of the count matrix. Note that the
@@ -43,11 +41,12 @@ newCountDataSet(countData, conditions, sizeFactors = NULL, phenoData = NULL, fea
 }
   \item{featureData}{
       You may pass an AnnotatedDataFrame here to describe the rows of the count matrix. The package will just
-      pass through this information without using it.
+      pass through this information without using it. Note that further columns will be added to feature data
+      later, when estimating dispersions.
 }
 }
 \details{
-   See also the documentation of \code{eSet} (package Biobase) for the meaning of the other slots, which CountDataSet
+   See also \code{\link{CountDataSet-class}} and the documentation of \code{eSet} (package Biobase) for the meaning of the other slots, which CountDataSet
    inherits from eSet (but which the present package does not use).
 }
 \value{

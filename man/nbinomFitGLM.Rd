@@ -11,10 +11,9 @@
 \usage{
 nbinomFitGLM( cds, modelFormula, glmControl=list() )
 }
-%- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{cds}{ a CountDataSet }
-  \item{modelFormula}{ a formula. The left hand side must be 'count', the right
+  \item{modelFormula}{ a formula. The left hand side must be 'count' (not 'counts'!), the right
      hand side can involve any column of \code{pData(cds)}, i.e., \code{pData(cds)}
      is used as the model frame. If you have passed just a single factor to the
      'conditions' argument of \code{\link{newCountDataSet}}, it can be referred to as

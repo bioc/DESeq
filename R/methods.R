@@ -111,52 +111,20 @@ estimateDispersions <- function( cds, method = c( "normal", "blind", "pooled" ),
    cds
 }
 
+estimateVarianceFunctions <- function( ... )
+{
+   stop( "The function 'estimateVarianceFunctions' has been removed. Use 'estimateDispersions' intead." )
+}
 
-#varianceFitDiagnostics <- function( cds, cond=NULL, modelFrame=NULL )
-#{
-#   stopifnot( is( cds, "CountDataSet" ) )
-#   ensureHasVarFuncs( cds )
-#   
-#   if( is.null( cond ) ) {
-#      if( length(cds@rawVarFuncs) != 1 )
-#         stop( "There is more than one variance function. 'cond' may not be omitted." )
-#      cond <- ls( cds@rawVarFuncs )[[1]]
-#      rvf <- rawVarFunc( cds, cond, byName=TRUE ) 
-#   } 
-#   else
-#      rvf <- rawVarFunc( cds, cond ) 
-#   
-#   if( cond == "_pooled" ) {
-#      if( cds@multivariateConditions ) {
-#         if( is.null( modelFrame ) )
-#            modelFrame <- pData(cds)[ , colnames(pData(cds)) != "sizeFactor" ]
-#         poolconds <- modelMatrixToConditionFactor( modelFrame ) }
-#      else
-#         poolconds <- conditions(cds)
+varianceFitDiagnostics <- function( ... )
+{
+   stop( "This function has been removed. Please do not use it anymore. See the vignette for our current suggestions to check fit quality." )
+}
 
-#      varianceFitDiagnosticsForMatrix(
-#         counts(cds), sizeFactors(cds), rvf, poolconds )
-#   }
-#   
-#   else if( cond == "_blind" )
-#      varianceFitDiagnosticsForMatrix(
-#         counts(cds), sizeFactors(cds), rvf )
-#   
-#   else 
-#      varianceFitDiagnosticsForMatrix(
-#         counts(cds)[,conditions(cds)==cond], 
-#         sizeFactors(cds)[conditions(cds)==cond],
-#         rvf ) 
-#}
-
-#residualsEcdfPlot <- function( cds, condition=NULL, ncuts=7 )
-#{
-#   stopifnot( is( cds, "CountDataSet" ) )   
-#   ensureHasVarFuncs( cds )
-#   fitdiag <- varianceFitDiagnostics( cds, condition )
-#   residualsEcdfPlotFromDiagnostics( fitdiag, ncuts,
-#      sprintf( "Residuals ECDF plot for condition '%s'", condition ) )
-#}  
+residualsEcdfPlot <- function( ... )
+{
+   stop( "This function has been removed. Please do not use it anymore. See the vignette for our current suggestions to check fit quality." )
+}
 
 nbinomTest <- function( cds, condA, condB, pvals_only=FALSE, eps=1e-4 )
 {
@@ -203,55 +171,11 @@ nbinomTest <- function( cds, condA, condB, pvals_only=FALSE, eps=1e-4 )
          stringsAsFactors = FALSE ) }
 }
 
-#scvPlot <- function( cds, xlim=NULL, ylim=c(0,.8), skipBiasCorrection = FALSE ) {
-#   stopifnot( is( cds, "CountDataSet" ) )
-#   ensureHasVarFuncs( cds )
-#   
-#   baseMeans <- getBaseMeansAndVariances( counts(cds), sizeFactors(cds) )$baseMean
+scvPlot <- function( ... )
+{
+   stop( "This function has been removed. Please do not use it anymore. See the vignette for our current suggestions to check fit quality." )
+}
 
-#   xg <- exp( seq( log( max( min(baseMeans), 2/sum(sizeFactors(cds)) ) ), 
-#      log( max(baseMeans) ), length.out = 1000 ) )
-#   if( is.null( xlim ) )
-#      xlim <- range( xg )
-#   plot( NULL, xlim = xlim, ylim = ylim, yaxs="i",
-#      xlab = "base mean", ylab = "squared coefficient of variation", log="x" )
-#      
-#   color <- 2
-#   legendData <- data.frame( text=character(0), col=integer(0), lty=character(0), 
-#      stringsAsFactors=FALSE ) 
-#   for( funcName in unique( rawVarFuncTable(cds) ) ) {
-#   
-#      rawScv <- rawVarFunc( cds, funcName, byName=TRUE )( xg ) / xg^2      
-
-#      lty <- if( funcName != "_max" ) "solid" else "dotted"
-#      lines( xg, rawScv, col=color, lty=lty )
-#      legendData <- rbind( legendData, data.frame( text=funcName, col=color, lty=lty,
-#         stringsAsFactors=FALSE ) )
-#	 
-#      for( cond in names(rawVarFuncTable(cds))[ rawVarFuncTable(cds) == funcName ] ) {
-#         if( cond != "_all" )
-#	    cols <- which( conditions(cds) == cond )
-#	 else
-#	    cols <- 1:ncol(counts(cds))
-#	 for( j in cols )
-#	    lines( xg, rawScv + 1 / ( sizeFactors(cds)[[j]] * xg ), col=color, lty="dashed" )
-#      }
-
-#      color <- color + 1 
-#   }
-#   
-#   dens <- density( log(baseMeans) )
-#   lines( exp(dens$x), .7 * ylim[2] / max(dens$y) * dens$y, col=1, lty="solid" )
-#   legendData <- rbind( legendData, data.frame( text="base mean density", col=1, lty="solid",
-#      stringsAsFactors=FALSE ) )   
-
-#   legend( "topright", 
-#      legend = legendData$text,
-#      col    = legendData$col,
-#      lty    = legendData$lty )
-
-#   invisible( NULL )
-#}
 
 getVarianceStabilizedData <- function( cds ) {
    stopifnot( is( cds, "CountDataSet" ) )
@@ -293,42 +217,23 @@ makeExampleCountDataSet <- function( )
    newCountDataSet( m, conds )
 }
 
-#nbinomFitGLM <- function( cds, modelFormula, glmControl=list() )
-#{
-#   stopifnot( is( cds, "CountDataSet" ) )
-#   ensureHasVarFuncs( cds )
-#   if( is.null( cds@rawVarFuncs[["_pooled"]] ) )
-#      stop( "No pooled variance function found. Have you called 'estimateVarianceFunctions' with 'method=\"pooled\"'?" )
+nbinomFitGLM <- function( cds, modelFormula, glmControl=list() )
+{
+   stopifnot( is( cds, "CountDataSet" ) )
+   ensureHasVarFuncs( cds )
+   if( is.null( cds@rawVarFuncs[["_pooled"]] ) )
+      stop( "No pooled variance function found. Have you called 'estimateVarianceFunctions' with 'method=\"pooled\"'?" )
       
-#   baseMeans <- colMeans(t(counts(cds))/sizeFactors(cds))
-#   rawVars <- rawVarFunc( cds, "_pooled", TRUE )( baseMeans )
-#   rawScv <- adjustScvForBias( rawVars/baseMeans^2, attr( rawVars, "size" ) )
+   baseMeans <- colMeans(t(counts(cds))/sizeFactors(cds))
+   rawVars <- rawVarFunc( cds, "_pooled", TRUE )( baseMeans )
+   rawScv <- adjustScvForBias( rawVars/baseMeans^2, attr( rawVars, "size" ) )
 
-#   nbinomGLMsForMatrix( counts(cds), sizeFactors(cds), rawScv, 
-#      modelFormula, pData(cds), glmControl=glmControl )
-#}
+   nbinomGLMsForMatrix( counts(cds), sizeFactors(cds), rawScv, 
+      modelFormula, pData(cds), glmControl=glmControl )
+}
 
 nbinomGLMTest <- function( resFull, resReduced )
    1 - pchisq( resReduced$deviance - resFull$deviance, 
    attr( resReduced, "df.residual" ) - attr( resFull, "df.residual" ) )
 
-#getRawScvForSamplePair <- function( cds, sample1, sample2 ) {
-#   if( any( is.na( sizeFactors(cds) ) ) )
-#      stop( "Call 'estimateSizeFactors' first." )
-#   data <- counts(cds)[ ,c( sample1, sample2 ) ]
-#   sf <- sizeFactors(cds)[ c( sample1, sample2 ) ]
-#   vf <- estimateVarianceFunctionForMatrix( data, sf )
-#   bm <- t( t(data) / sf )
-#   mean( adjustScvForBias( vf( bm ) / bm^2, 2 ), na.rm=TRUE ) }
 
-#getRawScvDistanceMatrix <- function( cds ) {
-#   res <- matrix( nrow=ncol(cds), ncol=ncol(cds) )
-#   for( i in 1:ncol(cds) )
-#      res[ i, i ] <- 0
-#   for( i in 1:(ncol(cds)-1) )
-#      for( j in (i+1):ncol(cds) ) {
-#         res[ i, j ] <- getRawScvForSamplePair( cds, i, j )
-#         res[ j, i ] <- res[ i, j ] }
-#   colnames( res ) <- colnames( counts(cds) )
-#   rownames( res ) <- colnames( counts(cds) )
-#   res }

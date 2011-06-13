@@ -28,25 +28,31 @@ can be read with the accessor function \code{\link{conditions}}.
 
 In the following analysis steps, further data slots are populated. First, the size factors
 can be estimated with \code{\link{estimateSizeFactors}}, which are afterwards accessible 
-via \code{\link{sizeFactors}}. Then, the variance functions are estimated with \code{\link{estimateVarianceFunctions}}. The resulting estimates are accessible via the function
-\code{\link{rawVarFunc}}.
+via \code{\link{sizeFactors}}. Then, the dispersions (variance fits) are estimated with \code{\link{estimateDispersions}}. The resulting estimates are stored in phenoData columns, accessible
+via \code{pData}, with the column names staring with \code{disp_}. The intermediate steps
+of the fit are stored in the environment-values slot \code{fitInfo} (see \code{\link{estimateDispersions}} 
+for details).
 
 Internally, the mentioned data is stored in slots as follows: 
 
-As \code{CountDataSet} is derived from \code{eSet}, it has a \code{phenoData} slots 
+As \code{CountDataSet} is derived from \code{eSet}, it has a \code{phenoData} slot
 which allows to store sample annotation. This is used to store the factor with the conditions,
 as a data frame column named \code{condition}, and to store the size factors, as an numeric data 
-frame column named \code{sizeFactor}. The user may add further columns to the \code{phenoData} AnnotatedDataFrame.
+frame column named \code{sizeFactor}. If the user creates an object with multivariate design,
+i.e., passes a data frame instead of a factor for \code{conditions}, this data frame's
+columns are placed in the \code{phenoData} slot instead of the \code{condition} column.
+Furthermore, the function \code{\link{estimateDispersions}} adds columns with the dispersion
+values to be used by \code{\link{nbinomTest}} and \code{\link{nbinomFitGLM}}. These
+columns have names starting with \code{disp_}.
+
+The user may add further columns to the \code{phenoData} AnnotatedDataFrame.
 
 The counts table is stored in the \code{eSet}'s \code{assayData} locked environment with 
 the name \code{counts}.
 
-The fits calculated by \code{\link{estimateVarianceFunctions}} are stored as closures in
-an environment, which is part of the object as slot \code{rawVarFuncs}. The assignment of the
-closures' names in the environment to the condition names is stored in as the first column (named "funcName") of the data freame in the slot \code{rawVarFuncTable}. The second column ("varAdjFactor") contains the
-variance adjustment factors. For further details on these two slots, see \code{\link{estimateVarianceFunctions}}
-and \code{\link{varAdjFactors}}.
-
+The slot \code{dispInfo} is an environment containing lists, one for each set of estimated
+dispersion values and the slot \code{dispTable} (with accessor \code{\link{dispTable}}
+shows the assignment of conditions to dispersion estimates. See \code{\link{estimateDispersions}}
 }
 
 \examples{
