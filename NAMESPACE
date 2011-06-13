@@ -19,8 +19,8 @@ export(
    getVarianceStabilizedData,
    makeExampleCountDataSet,
    adjustScvForBias,
-   #nbinomGLMsForMatrix,
-   nbinomFitGLM,
+   fitNbinomGLMsForMatrix,
+   fitNbinomGLMs,
    nbkd.sf,
    nbinomGLMTest,
    dispTable 

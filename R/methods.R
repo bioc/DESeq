@@ -217,18 +217,19 @@ makeExampleCountDataSet <- function( )
    newCountDataSet( m, conds )
 }
 
-nbinomFitGLM <- function( cds, modelFormula, glmControl=list() )
+fitNbinomGLMs <- function( cds, modelFormula, glmControl=list() )
 {
    stopifnot( is( cds, "CountDataSet" ) )
-   ensureHasVarFuncs( cds )
-   if( is.null( cds@rawVarFuncs[["_pooled"]] ) )
-      stop( "No pooled variance function found. Have you called 'estimateVarianceFunctions' with 'method=\"pooled\"'?" )
-      
-   baseMeans <- colMeans(t(counts(cds))/sizeFactors(cds))
-   rawVars <- rawVarFunc( cds, "_pooled", TRUE )( baseMeans )
-   rawScv <- adjustScvForBias( rawVars/baseMeans^2, attr( rawVars, "size" ) )
 
-   nbinomGLMsForMatrix( counts(cds), sizeFactors(cds), rawScv, 
+   if( "disp_pooled" %in% colnames( fData(cds) ) )
+      disps <- fData(cds)$disp_pooled
+   else if( "disp_blind" %in% colnames( fData(cds) ) )
+      disps <- fData(cds)$disp_blind
+   else
+      stop( "Call 'estimateDispersions' with 'method=\"pooled\"' (or 'blind') first." )
+
+
+   fitNbinomGLMsForMatrix( counts(cds), sizeFactors(cds), disps, 
       modelFormula, pData(cds), glmControl=glmControl )
 }
 

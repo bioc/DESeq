@@ -42,7 +42,7 @@ frame column named \code{sizeFactor}. If the user creates an object with multiva
 i.e., passes a data frame instead of a factor for \code{conditions}, this data frame's
 columns are placed in the \code{phenoData} slot instead of the \code{condition} column.
 Furthermore, the function \code{\link{estimateDispersions}} adds columns with the dispersion
-values to be used by \code{\link{nbinomTest}} and \code{\link{nbinomFitGLM}}. These
+values to be used by \code{\link{nbinomTest}} and \code{\link{fitNbinomGLMs}}. These
 columns have names starting with \code{disp_}.
 
 The user may add further columns to the \code{phenoData} AnnotatedDataFrame.

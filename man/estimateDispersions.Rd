@@ -56,7 +56,7 @@ estimateDispersions( cds, method = c( "normal", "blind", "pooled" ),
      value typical for genes with an average expression similar to this gene's expression
      value). The \code{sharingMode} argument specifies which of these two values will be 
      written to the \code{featureData}'s \code{disp_} columns and hence be used 
-     by the functions \code{\link{nbinomTest}} and \code{\link{nbinomFitGLM}}.
+     by the functions \code{\link{nbinomTest}} and \code{\link{fitNbinomGLMs}}.
      
      \itemize{     
      \item fit-only -- use only the fitted value, i.e., the per-gene value is used only as

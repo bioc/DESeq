@@ -9,12 +9,12 @@
     "df.residual") - attr(resFull, "df.residual"))}
 }
 \usage{
-nbinomGLMTest(resFull, resReduced_FIXME)
+nbinomGLMTest(resFull, resReduced)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{resFull, resReduced}{
-     GLM fit data frames, as returned by \code{\link{nbinomFitGLM}},
+     GLM fit data frames, as returned by \code{\link{fitNbinomGLMs}},
      first the full, then the reduced model. }
 }
 \value{
@@ -24,14 +24,14 @@ nbinomGLMTest(resFull, resReduced_FIXME)
 Simon Anders, anders@embl.de
 }
 \seealso{
-\code{\link{nbinomFitGLM}}
+\code{\link{fitNbinomGLMs}}
 }
 \examples{
 cds <- makeExampleCountDataSet()[ 1:100, ]
 cds <- estimateSizeFactors( cds )
 cds <- estimateDispersions( cds, method="pooled" )
-#fit1 <- nbinomFitGLM( cds, count ~ condition )
-#fit0 <- nbinomFitGLM( cds, count ~ 1 )
-#nbinomGLMTest( fit1, fit0 )
+fit1 <- fitNbinomGLMs( cds, count ~ condition )
+fit0 <- fitNbinomGLMs( cds, count ~ 1 )
+nbinomGLMTest( fit1, fit0 )
 }
 

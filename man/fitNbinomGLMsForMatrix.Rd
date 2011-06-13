@@ -1,5 +1,5 @@
-\name{nbinomGLMsForMatrix}
-\alias{nbinomGLMsForMatrix}
+\name{fitNbinomGLMsForMatrix}
+\alias{fitNbinomGLMsForMatrix}
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{
 Fit negative binomial GLMs to a count matrix.
@@ -8,7 +8,7 @@ Fit negative binomial GLMs to a count matrix.
 This is a low-level function that is wrapped by \code{\link{nbinomGLMTest}}.
 }
 \usage{
-nbinomGLMsForMatrix(counts, sizeFactors, rawScv, modelFormula, 
+fitNbinomGLMsForMatrix(counts, sizeFactors, rawScv, modelFormula, 
    modelFrame, quiet = FALSE, reportLog2 = TRUE, glmControl = list() )
 }
 %- maybe also 'usage' for other objects documented here.
@@ -54,5 +54,5 @@ the number of residual degrees of freedom.
 Simon Anders, sanders@fs.tum.de
 }
 \examples{
-# See the code of nbinomFitGLM for an example.
+# See the code of fitNbinomGLMs for an example.
 }

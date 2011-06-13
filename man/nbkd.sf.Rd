@@ -7,7 +7,7 @@ GLM family for a negative binomial with known dispersion and log link with size 
 A distribution family for use with \code{\link{glm}}. It describes a negative binomial
 (as \code{negative.binomial} in the MASS package), but with a special link function, namely
 eta[i] = log( mu[i] / sf[i] ), i.e., each count value is divided by its size factor before
-the log is taken. This is used internally by \code{\link{nbinomFitGLM}}.
+the log is taken. This is used internally by \code{\link{fitNbinomGLMs}}.
 }
 \usage{
 nbkd.sf(r, sf)

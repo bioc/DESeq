@@ -1,5 +1,5 @@
-\name{nbinomFitGLM}
-\alias{nbinomFitGLM}
+\name{fitNbinomGLMs}
+\alias{fitNbinomGLMs}
 
 \title{ Fit a generalized linear model (GLM) for each gene. }
 \description{
@@ -9,7 +9,7 @@
   that the variance functions were estimated with method "pooled" or "blind".
 }
 \usage{
-nbinomFitGLM( cds, modelFormula, glmControl=list() )
+fitNbinomGLMs( cds, modelFormula, glmControl=list() )
 }
 \arguments{
   \item{cds}{ a CountDataSet }

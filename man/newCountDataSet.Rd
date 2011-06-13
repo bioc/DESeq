@@ -27,7 +27,7 @@ newCountDataSet(countData, conditions, sizeFactors = NULL, phenoData = NULL, fea
       
       Alternatively, you may pass a data frame, that will be placed in pData(cds) as is and can then
       be used with the modes "pooled" and "blind" in \code{\link{estimateVarianceFunctions}} and its
-      columns can be refered top in a model formula provided to \code{\link{nbinomFitGLM}}.
+      columns can be refered top in a model formula provided to \code{\link{fitNbinomGLMs}}.
 }
   \item{sizeFactors}{
       This argument is deprecated. Do not use it. (Size factors should always be estimated from

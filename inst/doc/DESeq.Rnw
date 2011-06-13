@@ -51,70 +51,39 @@ the statistical method employed, please see our paper~\cite{Anders:2010:GB}.
 \end{abstract}
 
 %--------------------------------------------------
-\section{Quick start}\label{sec:quickstart}
+\section{Input data and preparations} \label{sec:prep}
 %--------------------------------------------------
-This first section quickly gives you an overview over a complete
-analysis workflow in one go.  A more gentle introduction is provided
-Section~\ref{sec:prep} and subsequent.
 
-We load the \Rpackage{DESeq} package and an example dataset, the
-gene level read counts from the \Rpackage{pasilla} package,
-which presents a dataset by \citet{Brooks2010}.
-
-<<pasilla,results=hide>>=
-library("DESeq")
-library("pasilla")
-data("pasillaGenes")
-@
-
-<<countsTable,eval=FALSE,echo=FALSE>>=
-head(counts(pasillaGenes))
-pData(pasillaGenes)
-@
-
-<<condNames,echo=FALSE>>=
-condNames = unique(pasillaGenes$condition)
-stopifnot(setequal(c("treated", "untreated"), condNames))
-@ 
-
-We want to perform a simple pairwise comparison between the two
-conditions \Sexpr{condNames[1]} and \Sexpr{condNames[2]}. To side-step
-batch effects, we look only at the paired-end data\footnote{We will
-  see how to do more complex, factorial analyses that can absorb batch
-  effects in Section~\ref{sec:fixme}.}.
-Then, the minimal set of commands to run a full analysis is:
-%
-<<makepgp>>=
-pgp = pasillaGenes[, pasillaGenes$type=="paired-end"]
-pgp@multivariateConditions = FALSE   ## ugly
-pgp$condition = factor(pgp$condition)
-@ 
-<<demo1, cache=TRUE>>=
-pgp = estimateSizeFactors( pgp )
-pgp = estimateDispersions( pgp )
-res = nbinomTest( pgp, "untreated", "treated")
-@
-
-\Rfunction{nbinomTest} tests for differential expression between the
-two conditions and returns a data frame with $p$ values (raw and
-adjusted), mean values, fold changes, and other useful information,
-which looks as follows:
-<<res>>=
-head(res)
-@ 
-
-%--------------------------------------------------
-\section{Preparations} \label{sec:prep}
-%--------------------------------------------------
 The \Rpackage{DESeq} package expects count data, as obtained, e.g.,
 from an RNA-Seq or other high-throughput sequencing (HTS) experiment,
 in the form of a matrix of integer values. Each column corresponds to
 a sample, e.g., one library preparation or one lane.
 The rows correspond to the entities for which you want to compare coverage, 
 e.\,g.\ to a gene, to a binding region in a ChIP-Seq dataset, 
-a window in CNV-Seq or the like.
+a window in CNV-Seq or the like. So, for a typical RNA-Seq experiment, each
+element in the table tells how many reads have been mapped in a given sample
+to a given gene. 
 
-It is important that each column stems from an independent biological
+To obtain such a count table for your own data, you will need
+to create it from the sequence alignments by use of tools outside of the
+\Rpackage{DESeq} package. For instance, in the course materials
+available on the Bioconductor web page, there are examples for how to
+do this with the \Rpackage{ShortRead} and \Rpackage{IRanges}
+packages. \textsl{TODO: Add a reference to these.}
+
+Another, easy way to produce such a table from the output
+  of the aligner is to use the \texttt{htseq-count} script distributed
+  with the \emph{HTSeq} package. Even though \emph{HTSeq} is a Python
+  package, you do not need to know any Python to use
+  \texttt{htseq-count}. See
+  \url{http://www-huber.embl.de/users/anders/HTSeq/doc/count.html}.
+
+The count values must be raw counts of
+sequencing reads. This is important for DESeq's statistical model to hold,
+as only raw reads allow to assess the measurement precision correctly. (Hence,
+do not supply rounded values of normalized counts, or counts of covered base pairs.)
+
+Furthermore, it is important that each column stems from an independent biological
 replicate.  For purely technical replicates (e.\,g. when the same
 library preparation was distributed over multiple lanes of the
 sequencer in order to increase coverage), please sum up their counts
@@ -122,37 +91,60 @@ to get a single column, corresponding to a unique biological
 replicate.  This is important in order to allow \Rpackage{DESEq} to
 estimate variability in the experiment correctly.
 
-Let us start with a table of counts:
-%
-<<countsTable>>=
-countsTable = counts(pgp)
-head(countsTable)
-@ 
-%
-Here, we have generated this matrix by extracting it from the object
-\Robject{pgp} that we created above. For your own data, you will need
-to create from the sequence alignments by use of tools outside of the
-\Rpackage{DESeq} package. For instance, in the course materials
-available on the Bioconductor web page, there are examples for how to
-do this with the \Rpackage{ShortRead} and \Rpackage{IRanges}
-packages\footnote{Another, easy way to produce such a table from the output
-  of the aligner is to use the \texttt{htseq-count} script distributed
-  with the \emph{HTSeq} package. Even though \emph{HTSeq} is a Python
-  package, you do not need to know any Python to use
-  \texttt{htseq-count}. See
-  \url{http://www-huber.embl.de/users/anders/HTSeq/doc/count.html}.}.
+As an example dataset, we use the
+gene level read counts from the \Rpackage{pasilla} package,
+which presents data by \citet{Brooks2010}. This data set is from a study using
+\emph{Drosophila melanogaster} cell cultures and studying the effect of a 
+knock-down of the gene \emph{pasilla}, a spliciong factor.
 
-As a second component of the analysis, you need a \Rclass{factor}
-variable with as many elements as there are columns in
-\texttt{countTable}. It indicates treatment groups. Here, we use
-the column \Robject{condition} of the \Robject{pgp} object.
-<<condition>>=
-conds = factor(pgp$condition)
+In the \Rpackage{pasilla} package, the data is presented as the object called \Robject{pasillaGenes},
+of class \Rclass{CountDataSet}, which is the data structure used internally by 
+\Rpackage{DESeq}. We load the \Rpackage{DESeq} and then the pasilla data as follows.
+
+<<pasilla2>>=
+library( "DESeq" )
+
+library( "pasilla" )
+data( "pasillaGenes" )
+@
+
+\Robject{pasillaGenes} contains the counts and also meta information about the samples:
+
+<<look_into_pasillaGenes>>=
+head( counts(pasillaGenes) )
+pData( pasillaGenes )
+@
+
+As you can see, the samples differ in their condition (untreated or treated, i.e., with
+pasilla knocked down) and in the library type. To keep things simple, we will only 
+look at the paired-end data for now. In Section \ref{sec:GLM}, we will see how to deal 
+with more than one factor.
+
+For your own analysis, you will start form a count table, so we ``unpack'' the 
+\Rclass{countDataSet} object and build a new one ``from scratch'' to demonstrate how this is done.
+
+<<>>=
+pairedSamples <- pData(pasillaGenes)$type == "paired-end"
+countsTable <- counts(pasillaGenes)[ , pairedSamples ]
+conds <- pData(pasillaGenes)$condition[ pairedSamples ]
+@
+
+Now, we have a count table, as described above, of integer count data. For your own data,
+use R's \Rfunction{read.table} or \Rfunction{read.csv} function to read your count data
+from a text file. For details how this specific count table was created from the
+raw data, see the vignette of the \Rpackage{pasilla} package.
+
+We also need a description of the samples, which is here simply a factor:
+
+<<>>=
 conds
-@ 
-%
-For your own data, you will need to create an analogous
-\Rclass{factor} variable from the metadata of your dataset.
+@
+
+For your own data, create such a factor simply with 
+<<eval=FALSE>>=
+#not run
+conds <- factor( c( "treated", "treated", "untreated", "untreated" ) )
+@
 
 We can now instantiate a \Rclass{CountDataSet}, which is the central
 data structure in the \Rpackage{DESeq} package:
@@ -165,7 +157,7 @@ The \Rclass{CountDataSet} class is derived from \Rpackage{Biobase}'s
 \Rclass{eSet} class and so shares all features of this standard
 Bioconductor class. Furthermore, accessors are provided for its data
 slots\footnote{In fact, the objects \Robject{pasillaGenes} and \Robject{cds}
-  from Section~\ref{sec:quickstart} are also of class \Rclass{CountDataSet};
+  from the \Rpackage{pasilla} are also of class \Rclass{CountDataSet};
   here we re-created \Robject{cds} from elementary datatypes, a matrix and a factor,
   for pedagogic effect.}.  For example, the counts can be accessed with the
 \Rfunction{counts} function.
@@ -284,8 +276,8 @@ plot( means, cds@fitInfo[[cond]]$perGeneDispEsts, log="xy", pch="." )
 points( means, cds@fitInfo[[cond]]$fittedDispEsts, pch=".", col="red" )
 @
 %
-\fixme{Should \Robject{cond} be \Robject{treated}? Need to check order / asymmetry between the 
-  arguments of \Rfunction{nbinomTest}.}
+% \fixme{Should \Robject{cond} be \Robject{treated}? Need to check order / asymmetry between the 
+%  arguments of \Rfunction{nbinomTest}.} --> Doesn't matter, one should look at both.
 
 
 The plot (Fig.\ \ref{figFitT}) is doubly logarithmic; this may be helpful or
@@ -357,114 +349,11 @@ str( cds@fitInfo[["untreated"]] )
 Advanced users who may want to fiddle with the dispersion estimation can change the values
 in \texttt{fData(cds)} priot to calling the testing function.
 
-%The function 'scvPlot' shows all the base variance functions in one plot:
-%<<figSCV,fig=TRUE,width=5,height=5>>=
-%scvPlot( cds, ylim=c(0,2) )
-%@
-%In the produced plot (Fig.\ \ref{figSCV}), the x axis is the base mean, the y 
-%axis the squared coefficient of variation (SCV),
-%i.e., the ratio of the variance at base level to the square of the base mean. 
-%The solid lines are the SCV for the raw variances, i.e., the noise due to biological 
-%replication. There is one coloured solid line per condition, and, in case there are
-%non-replicated conditions, a dashed black line for the maximum of the raw variances, 
-%which is used for these. 
-
-%On top of the variance, there is shot noise, i.e., the Poissonean variance inherent 
-%to the process of counting reads. The amount of shot noise depends on the size factor, and
-%hence, for each sample, a dotted line in the colour of its condition is plotted above the
-%solid line. The dotted line is the base variance, i.e., the full variance, scaled down to
-%base level by the size factors. The vertical distance between solid and dotted lines is the
-%shot noise.
-
-%The solid black line is a density estimate of the base means: Only were
-%there is an appreciable number of base mean values, the variance estimates can be
-%expected to be accurate. 
-
-For the condition ``Tb'', we cannot estimate a variance function  as we have no replicates. When a variance estimate 
-is needed for ``Tb'', the package will use the
-maximum of the variances estimated for all the other conditions (given in the column \texttt{disp\_max} above). 
-To see the assignment of conditions to 
-variance functions, use the \Rfunction{dispTable} accessor function:
-<<>>=
-dispTable( cds )
-@
-
 It is instructive to observe at which count level the biological 
 noise starts to dominate the shot noise. At low counts, where shot noise dominates, higher
 sequencing depth (larger library size) will improve the signal-to-noise ratio while
 for high counts, where the biological noise dominates, only additional biological 
 replicates will help. 
-
-%One should check whether the base variance functions seem to follow the
-%empirical variance well. To this end, two diagnostic functions are provided.
-%The function \Rfunction{varianceFitDiagnostics} returns, for a specified condition,
-%a data frame with four columns: the mean base level for each gene, the base
-%variance as estimated from the count values of this gene only, and the fitted
-%base variance, i.e., the predicted value from the local fit through the
-%base variance estimates from all genes. As one typically has few replicates,
-%the single-gene estimate of the base variance can deviate wildly from the
-%fitted value. To see whether this might be too wild, the cumulative probability
-%for this ratio of single-gene estimate to fitted value is calculated from the
-%$\chi^2$ distribution, as explained in the paper. These values are the fourth
-%column.
-%<<>>=
-%diagForT <- varianceFitDiagnostics( cds, "treated" )
-%head( diagForT )
-%@
-
-%\begin{figure}
-%\centering
-%\includegraphics[width=.6\textwidth]{DESeq-figFit}
-%\caption{Diagnostic plot to check the fit of the variance function.}
-%\label{figFit}
-%\end{figure}
-
-%We may now plot the per-gene estimates of the base variance against the base
-%levels and draw a line with the fit from the local regression:
-%<<figFit,fig=TRUE>>=
-%smoothScatter( log10(diagForT$baseMean), log10(diagForT$baseVar) )
-%lines( log10(fittedBaseVar) ~ log10(baseMean), 
-%   diagForT[ order(diagForT$baseMean), ], col="red" )
-%@ % $
-
-%As one can see (Fig.~\ref{figFit}), the fit (red line) follows the single-gene estimates well, even
-%though the spread of the latter is considerable, as one should expect, given
-%that each variance value is estimated from just three values.
-
-%\begin{figure}
-%\centering
-%\includegraphics[width=\textwidth]{DESeq-figECDF}
-%\caption{Another diagnostic plot to check the fit of the variance functions. This one is 
-%produced with the function \Rfunction{residualsEcdfPlot}.}
-%\label{figECDF}
-%\end{figure}
-
-%Another way to study the diagnostic data is to check whether the probabilities in the fourth column of the diagnostics
-%data frame are uniform, as they should be. One may simply look at the histogram of 
-%\texttt{diagForGB\$pchisq} but a more convenient way is the function 
-%\Rfunction{residualsEcdfPlot}, which show empirical cumulative density functions 
-%(ECDF) stratified by base level. 
-%We look at them for the conditions ``T'' and ``N'':
-%<<figECDF,fig=TRUE,width=14,height=7>>=
-%par( mfrow=c(1,2 ) )
-%residualsEcdfPlot( cds, "treated" )
-%residualsEcdfPlot( cds, "untreated" )
-%@
-%Fig.~\ref{figECDF} shows the output. In both cases, the ECDF curves follow the diagonal well,
-%i.e., the fit is good. Only for very low counts (below 10), the deviations become stronger, but as at these levels,
-%shot noise dominates, this is no reason for concern. 
-
-%If in your data the residuals ECDF plot indicates problems with the fit, you may want to
-%manually adjust the variance estimates. If the ECDF curves are below the green line, variance is 
-%underestimated, and if you test for differential expression (see next section) you 
-%will get  too low p values (and hence, too many false positives). 
-%If the ECDF curves are above the green line, variance is overestimated, which leads to 
-%too high p values (and hence, an overestimation of the false discovery rate). 
-
-%The first case (curves below the green line) may indicate a serious problem that might compromise
-%your results. However, this seems to rarely happen (and I'd appreciate if you could sent me
-%a mail if you observe it with real data so I can investigate). The second case (curves above
-%the green line) is usually nothing to worry about; it only causes DESeq to be conservative with the tests.
 
 
 \section{Inference: Calling differential expression} \label{sec:DE}
@@ -529,124 +418,50 @@ or at the most strongly up-regulated ones:
 head( resSig[ order( -resSig$foldChange, -resSig$baseMean ), ] )
 @
 
-%The test is based on the assumption that the fitted variance, i.e., the variance 
-%as deduced from the mean vie the raw variance functions, is a good estimate for a
-%gene's true variance. We have tested the appropriateness of this approach above
-%with the plot produced by \Rfunction{residualsEcdfPlot} and concluded that it seems 
-%to hold well for most genes. The \texttt{res} object gives us two columns to have
-%a closer look at this, namely \texttt{resVarA} and \texttt{resVarB}. These contain the
-%residual variance quotients, i.e. the ratio of the variance as calculated 
-%only from the counts for the gene under consideration to the fitted variance.
+To save the output to a file, use the R functions \Rfunction{write.table} and
+\Rfunction{write.csv}. (The latter is useful if you want to load the table in a
+spreadsheet program such as Excel.)
 
-%\begin{figure}
-%\centering
-%\includegraphics[width=.6\textwidth]{DESeq-figResVarDens}
-%\caption{Density of residual variance ratios.}
-%\label{figResVarDens}
-%\end{figure}
-
-% 
-%We can plot the density of these ratios (Fig.\ \ref{figResVarDens}):
-%<<figResVarDens,fig=TRUE>>=
-%plot( density( res$resVarA, na.rm=TRUE, from=0, to=20 ), col="red" )
-%lines( density( res$resVarB, na.rm=TRUE, from=0, to=20 ), col="blue" )
-%xg <- seq( 0, 20, length.out=1000 ); lines( xg, dchisq( xg, df=1 ), col="grey" )
-%@
-
-%The first two lines estimate the density of the quotients for conditions A and B 
-%and plot them in red and blue. If the model holds, these should agree with a
-%$\chi^2$ distribution with 1 degree of freedom (we have two replicates for each condition,
-%and the number of degrees of freedom is one less than the number of replicates). The third
-%line adds the theoretical density function in grey. The fact that the curves agree well is
-%not surprising; we have seen this already in the residual ECDF plots (which show the same information,
-%but in a way that makes it easier to see deviations).
-
-%We can also see that hardly any genes have a ratio exceeding, say, 20. In 
-%fact, there are, however, a few such genes, but we cannot see them in a density plot:
-
-%<<>>=
-%table( res$resVarA > 15 | res$resVarB > 15)
-%@
-
-%From the $chi^2$ distribution, we expect such high ratios to only occur for maybe two genes:
-%<<>>=
-%( 1 - pchisq( 15, df=1) ) * nrow(counts(cds))
-%@
-
-%Hence, these genes seem to be ``variance outliers'', and it may be prudent to
-%exclude them from the list of significant hits. (Of course, the threshold of 15 was chosen
-%ad hoc here and other thresholds of the same order of magnitude would be defensible as well.)
-
-%\section{Power considerations}
-%
-%How does detection power depend on sequencing depth and on the number of replicates?
-%
-%Our example data is a bit atypical as it has extremely strong biological noise (because
-%its sample was from a different subject, with different genotype). The function
-%\Rfunction{makeExampleCountDataSet} creates a data set with simulated data with a 
-%more moderate amount of noise. However, the steps shown in the following can be done with real data, too.
-%
-%<<>>=
-%cds.simu <- makeExampleCountDataSet( rawSCV = .05)
-%cds.simu <- estimateSizeFactors( cds.simu )
-%cds.simu <- estimateVarianceFunctions( cds.simu )
-%res.simu <- nbinomTest( cds.simu, "A", "B" )
-%@
-%
-%To see the effect of sequencing depth, we can artificially quadruple all counts and see how the
-%results change:
-%
-%<<>>=
-%cds.deeper <- newCountDataSet( 4 * counts(cds.simu), conditions(cds.simu) )
-%cds.deeper <- estimateSizeFactors( cds.deeper )
-%cds.deeper <- estimateVarianceFunctions( cds.deeper )
-%res.deeper <- nbinomTest( cds.deeper, "A", "B" )
-%@
-%
-%The effect of having four times as many replicates would be that the biological (raw) 
-%variance is reduced by a factor of the square root of 4. Using the variance adjustment 
-%factors, we can simulate this situation:
-%
-%<<>>=
-%cds.morerepl <- cds.simu
-%varAdjFactors( cds.morerepl ) <- c( 1/sqrt(4), 1/sqrt(4) )
-%res.morerepl <- nbinomTest( cds.morerepl, "A", "B" )
-%@
-%
-%We can make plots as above for all three cases:
-%
-%<<>>=
-%par( mfrow=c(1,3) )
-%plotDE( res.simu )
-%plotDE( res.deeper )
-%plotDE( res.morerepl )
-%@
+<<eval=FALSE>>=
+#not run
+write.table( res, file="results.txt" )
+@
 
 \subsection{Working partially without replicates}
 
 If you have replicates for one condition but not for the other, you can still proceed as
 before. As already stated above, the testing function will simply take the maximum of all 
-estimated variance function for conditions without replicates. If we consider this acceptable,
-we can contrast the single ``Tb'' sample against the two ``N'' samples.
+estimated variance function for conditions without replicates. Whether this is acceptable,
+needs to be checked, of course, but often, it may seem reasonable to assume that the variance
+in your unreplicated conditions is not that differen from what you see in the replicated
+ones.
+
+To demonstrate, we subset our data object to only three samples:
+
+<<>>=
+cdsTTU <- cds[ , 1:3] 
+pData( cdsTTU )
+@
 
 \begin{figure}
 \centering
 \includegraphics[width=.6\textwidth]{DESeq-figDE_Tb}
-\caption{MvA plot for the contrast ``Tb'' vs.\ ``N''.}
+\caption{MvA plot for the contrast ``treated'' vs.\ ``untreated'', using two treated and
+only one untreated sample.}
 \label{figDE_Tb}
 \end{figure}
 
+Now, we do the analysis as before, and get a similar result:
 
 <<>>=
-resTbvsN <- nbinomTest( cds, "untreated", "treated" )
+cdsTTU <- estimateSizeFactors( cdsTTU )
+cdsTTU <- estimateDispersions( cdsTTU )
+resTTU <- nbinomTest( cdsTTU, "untreated", "treated" )
 @
+
 We produce the same plot as before, again with
 <<figDE_Tb,fig=TRUE>>=
-plot( 
-   resTbvsN$baseMean, 
-   resTbvsN$log2FoldChange, 
-   log="x", pch=20, cex=.3, 
-   col = ifelse( resTbvsN$padj < .1, "red", "black" ) )
+plotDE( resTTU )
 @ %$
 The result (Fig.~\ref{figDE_Tb}) shows the same symmetry in up- and down-regulation
 as in Fig.~\ref{figDE} but a striking asymmetry in the boundary line for significance. This
@@ -678,7 +493,7 @@ side of being too conservative, i.e., we only lose power.
 
 We shall now see how well this works for our example data, even though it has rather many differentially expressed genes.
 
-We reduce our count data set to just two columns, one ``T'' and one ``N'' sample:
+We reduce our count data set to just two columns, one ``untreated'' and one ``treated'' sample:
 <<>>=
 cds2 <- cds[ ,c(  "untreated3fb", "treated3fb"   ) ]
 @
@@ -698,57 +513,24 @@ res2 <- nbinomTest( cds2, "untreated", "treated" )
 \begin{figure}
 \centering
 \includegraphics[width=.6\textwidth]{DESeq-figDE2}
-\caption{MvA plot for the contrast ``T'' vs.\ ``N'', from a test using no replicates.}
+\caption{MvA plot, from a test using no replicates.}
 \label{figDE2}
 \end{figure}
 
 Unsurprisingly, we find much fewer hits, as can be seen from the plot (Fig.\ \ref{figDE2})
 <<figDE2,fig=TRUE>>=
-plot( 
-   res2$baseMean,
-   res2$log2FoldChange, 
-   log="x", pch=20, cex=.3, 
-   col = ifelse( res2$padj < .1, "red", "black" ) )
+plotDE( res2 )
 @
 and from this table, tallying the number of significant hits in our previous and our new, restricted analysis:
 <<>>=
 addmargins( table( res_sig = res$padj < .1, res2_sig = res2$padj < .1 ) )
 @
 As can be seen, we have still found about 1/5 of the hits, and only a reassuringly small number of 
-new (and potentially false) hits.
+new (and potentially false) hits. \textsl{TODO: pdate discussion!}
 
 One may finally ask whether the reduction of discoveries to a quarter is due to the higher variance
 estimate, or due to the lower confidence in the base mean estimates, which is due to the reduced
 sample size. To see this, we run the original analysis again, but now using the new, worse variance function. 
-%As this analysis is outside the standard work-flow, we have to use a lower-level function of the package,
-%which does not recognise the \Rclass{CountDataSet} S4 object but instead expects all data to be 
-%specified separately. (This is inconvenient normally but enables us here to substitute another variance function
-%for the one that the \Rfunction{nbinomTest} function would use.)
-%<<>>=
-%colsN <- conditions(cds) == "untreated"
-%colsT <- conditions(cds) == "treated"
-%baseMeansNT <- getBaseMeansAndVariances( 
-%   counts(cds)[ , colsN|colsT ], 
-%   sizeFactors(cds)[ colsN|colsT ] )$baseMean
-%pvals2b <- nbinomTestForMatrices(
-%   counts(cds)[ ,colsN ],
-%   counts(cds)[ ,colsT ],
-%   sizeFactors(cds)[ colsN ],
-%   sizeFactors(cds)[ colsT ],
-%   rawVarFunc( cds2, "_blind", TRUE )( baseMeansNT ),
-%   rawVarFunc( cds2, "_blind", TRUE )( baseMeansNT ) )
-%@
-
-%We adjust the $p$ values and then compare the hits with those found originally:
-%<<padj>>=   
-%padj2b <- p.adjust( pvals2b, method="BH" )
-%notNAinRes2 <- !is.na( res2$padj )
-%addmargins( table( 
-%   res_sig = res$padj[notNAinRes2] < .1, 
-%   res2b_sig = padj2b[notNAinRes2] < .1 ) )
-%@ %$
-%(There are a few genes with NA as p value in \texttt{res2} because all counts in the restricted
-%data set were zero. We have excluded these to make the tables comparable.)
 
 To do so, we just copy the dispersion values from the feature data of \texttt{cds2}
 to a copy of \texttt{cds}:
@@ -769,6 +551,106 @@ addmargins( table(
 \textsl{TODO: This is an incorrect comparison. We are comparing here
 a two tests with different sharingMode setting.}
 
+%-------------------------------------------------------------------------------------------------
+\section{Multi-factor designs} \label{sec:GLM}
+%-------------------------------------------------------------------------------------------------
+
+Let us return to the full pasilla data set, which we got as \Robject{pasillaGenes}
+from the \Rpackage{pasilla} package. Due to the usage of both single-end
+and paired-end libraries, it has a design with two factors,  \emph{condition}
+(or treatment) and library \emph{type}:
+
+<<>>=
+design <- pData(pasillaGenes)[ , c("condition","type") ]
+design
+@
+
+When creating a count data xset with multiple factors, just pass a data frame
+instead of the condition factor:
+
+<<>>=
+fullCountsTable <- counts( pasillaGenes )
+
+cdsFull <- newCountDataSet( fullCountsTable, design )
+@
+
+\Robject{cdsFull} is now essentially the same object as \Robject{pasillaGenes},
+we have only recreated it for demonstration.
+
+As before, we estimate the size factors and then the dispersions. For the latter,
+we specify the method ``pooled''. Then, only one dispersion is for each gene, 
+an average over all cells (weighted by the number of samples for each cells), where
+the term \emph{cell} denotes any of the four combinations of factor levels of
+the design.
+
+<<>>=
+cdsFull <- estimateSizeFactors( cdsFull )
+cdsFull <- estimateDispersions( cdsFull, method="pooled", sharingMode="maximum" )
+@
+
+\begin{figure}
+\centering
+\includegraphics[width=.7\textwidth]{DESeq-figFitTwithQuantilesFull}
+\caption{Estimated (black) pooled dispersion values for all seven samples, with
+regression curve and 5- and 95-percentiles of theoretical sampling
+distribution for dispersion estimates.}
+\label{figFitTwithQuantilesFull}
+\end{figure}
+
+
+As we now have more samples to estimate variance, we get better estimates. Comparing
+with our previous results using only four samples, we can see the effect of
+the additional degrees of freedom (Fig.\ \ref{figFitTwithQuantilesFull}).
+
+<<figFitTwithQuantilesFull,fig=TRUE>>=
+cond <- "pooled"
+plot( means, cdsFull@fitInfo[[cond]]$perGeneDispEsts, log="xy", pch=".", ylim=c(1e-4,1e2) )
+xg <- 10^seq( min(log10(means[means>0])), max(log10(means)), length.out=1000 )
+lines( xg, cdsFull@fitInfo[[cond]]$dispFunc( xg ), col="blue" )
+df <- 7 - 2  # seven samples and 2 design factors
+lines( xg, cdsFull@fitInfo[[cond]]$dispFunc( xg ), col="blue" )
+lines( xg, cdsFull@fitInfo[[cond]]$dispFunc( xg ) * qchisq( .05, df )/df, col="blue", lty="dashed" )
+lines( xg, cdsFull@fitInfo[[cond]]$dispFunc( xg ) * qchisq( .95, df )/df, col="blue", lty="dashed" )
+@ %$
+
+For inference, we now specify two \emph{models} by formulas. The \emph{full model}
+specifies that the genes' expression is influenced by both the library type and
+the treatment condition, the \emph{reduced model} assumes that only the library
+type has influence. For each gene, we fit generalized linear models (GLMs)
+according to the two models, and then compare in orderto infer whether
+the additional specification of the treatment improves the fit and hence, whether 
+the treatment has significant effect.
+
+<<>>=
+fit1 <- fitNbinomGLMs( cdsFull, count ~ type + condition )
+fit0 <- fitNbinomGLMs( cdsFull, count ~ type  )
+@
+(These commands take a while to execute.)
+
+For the actual test, we call
+<<>>=
+pvalsGLM <- nbinomGLMTest( fit1, fit0 )
+padjGLM <- p.adjust( pvalsGLM, method="BH" )
+@
+
+\begin{figure}
+\centering
+\includegraphics[width=.7\textwidth]{DESeq-figPval}
+\caption{Comparison of p values (unadjusted) from the test using only the
+four paired-end samples and
+the test using all seven samples.}
+\label{figFitTwithQuantilesFull}
+\end{figure}
+
+Let's compare with the result from the four-samples test:
+<<>>=
+addmargins( table( `paired-end-only` = res$padj < .1, `all-samples` = padjGLM < .1 ) )
+@
+
+A more informative comparison might be a scatter plot of p values:
+<<figPval,fig=TRUE>>=
+plot( res$pval, pvalsGLM, log="xy", xlim=c(1e-17,1), ylim=c(1e-17,1), pch=20, cex=.3 )
+@
 %-------------------------------------------------------------------------------------------------
 \section{Moderated fold change estimates and applications to sample clustering and visualisation}
 %-------------------------------------------------------------------------------------------------
@@ -939,6 +821,8 @@ or the manual page for \Rfunction{dendrogramGrob} in the package \Rpackage{latti
 \appendix
 
 \section{Reference overview}
+
+\textsl{TODO: Update or remove this!}
 
 This appendix gives a terse overview of the class and all the functions defined in the package. The
 description assumed that the reader is familiar with the \texttt{eSet} class.
