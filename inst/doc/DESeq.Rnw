@@ -198,28 +198,42 @@ The inference in \Rpackage{DESeq} relies on an estimation of the typical
 relationship between the data's variance and their mean, or, equivalently,
 between the data's dispersion and their mean~\cite{Anders:2010:GB}.
 This estimation is done by calculating, for each gene, 
-the sample mean and variance within replicates \fixme{this needs to be updated, perhaps
-  not mant details here, but then please provide them later} and fitting a curve to this graph.
+the sample mean $\mu$ and sample variance $v$ within replicates, and the
+dispersion
+\begin{equation}
+\alpha = \frac{v-\mu}{\mu^2}.
+\end{equation}
+When the number of replicates is not large, the precision of these
+values is low, i.\,e.\ they will tend to fluctuate strongly, and one of the features
+of the \Rpackage{DESeq} method is to increase their precision by "sharing information"
+across genes through fitting a smooth curve to the graph of $\alpha$ versus $\mu$ for all genes.
 
-In RNA-Seq, the variance results from two components, technical and the biological variation.
+\fixme{What follows is a lot of philosophy that I think is not at the right place here.
+  It might scare away people who just want to use the method. 
+  It could be moved to a later section (like an appendix), but then should gain some 
+  substance by showing diagnostic plots that demonstrate the variance components,
+  e.g. by focusing at the high and low ends of the dynamic range, where one or the other dominates.}
 
-
-By biological variation, we mean the variation in the concentration of cDNA fragments from a given
-gene in different samples from the same experimental condition. Sequencing does not allow to
-measure the concentration with arbitrary precision; rather, if one sequences two aliquots of
-the same sample in two lanes, one sees variation in the count. From theoretical considerations,
-it can be seen (please see our paper and reference therein for detailled reasoning) that 
-in any kind of shotgun sequencing, this
-technical noise cannot be lower than what the assumption of a Poisson distribution predicts,
+\verb+\begin{philosophy}+\\
+In RNA-Seq, the variance results from two components, technical and the biological variability.
+Biological variability results, for instance, from variations in the concentration of cDNA fragments from a given
+gene in different replicate samples obtained under the same experimental condition. 
+Technical variability is caused by the fact that the data arise from discrete
+counting. From theoretical considerations,
+it can be seen\footnote{Please see our paper and reference therein.} that 
+the technical noise cannot be lower than what the Poisson distribution predicts,
 namely that the variance is equal to the mean. As Nagalakshmi et al.\ and Marioni et al.\ 
-have shown, the technical noise is not much higher than this minimum either (at least if
-everything went well with sample preparation) and hence, we assume the tehncial noise to
-be equal to the mean and refer to it as the Poisson or shot noise. The difference between 
-observed variance and Poisson variance, i.e., the difference between variance and mean, is hence
-the biological variation. (Note that this ``biological'' variance also includes noise
-from technical steps prior to sequencing; however, the part due to biological differences
-in the samples and their responses to treatment usually dominates, hence we use the
-term ``biological variance'' for the whole difference of observed variance and mean.)
+showed, the technical noise is indeed not much higher than this theoretical minimum (at least if
+everything went well with sample preparation) and hence, we assume the variance contribution
+from technical noise to be equal to the mean and refer to it as the Poisson or shot noise. 
+
+% The next paragraph seems pointless - are these definitions needed for anything that follows?
+%The difference between 
+%observed variance and Poisson variance, i.e., the difference between variance and mean, is hence
+%the biological variation. (Note that this ``biological'' variance also includes noise
+%from technical steps prior to sequencing; however, the part due to biological differences
+%in the samples and their responses to treatment usually dominates, hence we use the
+%term ``biological variance'' for the whole difference of observed variance and mean.)
 
 It is helpful to present the biological variance as a coefficient of variation (CV),
 i.e., as the ratio of standard deviation to mean. For an observed variance $v$ and
@@ -229,15 +243,18 @@ concentration of fragments from the gene typically changes by 15\% from a sample
 its biological replicate sample. For mathematical reasons, \textit{DESeq}, instead
 uses the square of the biological variation, i.e., the quantity $(v-\mu)/\mu^2$, 
 which is called the dispersion or the raw squared coefficient of 
-variation (raw SCV)).
+variation (raw SCV)).\\
+\verb+\end{philosophy}+
 
 To estimate the dispersion, use this command.
 <<estimateDispersions,cache=TRUE>>=
 cds <- estimateDispersions( cds )
 @
 
-We could now directly jump to the test (Section \ref{sec:DE}), but it might be
-prudent ot check whether the dispersion estimates look sound.
+We could now proceed straight to the testing for differetial
+expression in Section~\ref{sec:DE}.  However, it is prudent to check
+the dispersion estimates and to make sure that the data quality is as
+expected.
 
 The function \Rfunction{estimateDispersions} performs two steps. First, it estimates,
 for each gene and each (replicated) condition, a dispersion value, then, it fits,
@@ -248,8 +265,9 @@ intermediate steps, a ``fit info'' object is stored for each condition:
 ls( cds@fitInfo )
 @
 
-This fit info contains the estimates for each gene, the curve fitted through the
-dispersions, and the fitted values that then will be finally used in the test.
+Each of the objects in the environment \Robject{cds@fitInfo} contains
+the empirical dispersion values for each gene, the curve fitted through the dispersions,
+and the fitted values that will be used in the test.
 
 <<str>>=
 str( cds@fitInfo[["untreated"]] )
@@ -257,9 +275,11 @@ str( cds@fitInfo[["untreated"]] )
 
 \begin{figure}
 \centering
-\includegraphics[width=.7\textwidth]{DESeq-figFitT}
-\caption{Estimated (black) and fitted (red) dispersion values for condition ``T'',
-plotted against mean expression strength.}
+\includegraphics[width=.66\textwidth]{DESeq-figFitTwithQuantiles}
+\caption{Estimated (black) and fitted (red) dispersion values for condition ``untreated'',
+plotted against mean expression strength.
+The blue line indicates the 99-percentile of the theoretical sampling
+distribution for dispersion estimates.}
 \label{figFitT}
 \end{figure}
 
@@ -269,16 +289,16 @@ expressions per gene, and the overlay the fitted values in red:
 <<figFitT,fig=TRUE>>=
 cond <- "untreated"
 means <- rowMeans( counts( cds, normalized=TRUE ) )
-plot( means, cds@fitInfo[[cond]]$perGeneDispEsts, log="xy", pch="." )
+plot(   means, cds@fitInfo[[cond]]$perGeneDispEsts, log="xy", pch="." )
 points( means, cds@fitInfo[[cond]]$fittedDispEsts, pch=".", col="red" )
 @
-%
-% \fixme{Should \Robject{cond} be \Robject{treated}? Need to check order / asymmetry between the 
-%  arguments of \Rfunction{nbinomTest}.} --> Doesn't matter, one should look at both.
 
-
-The plot (Fig.\ \ref{figFitT}) is doubly logarithmic; this may be helpful or
+The plot (Fig.~\ref{figFitTWithQuantiles}) is doubly logarithmic; this may be helpful or
 misleading, and it is worth experimenting with other plotting styles.
+\fixme{The boundary effects of the smoothing line look awful - I understand this may not
+       be a big problem in practice, but then we should also show a plot that
+       deemphasizes them. Perhaps show the fit only within the \[0.025,0.975\] 
+       range of the x-axis?}
 
 In any case, we could be worried by the genes at the upper end of the plot.
 Can we really assume hese to have the same variance as the other genes
@@ -290,24 +310,12 @@ $chi^2$ distribution with the appriate number of degrees of freedom (here: 1=2-1
 have 2 samples and estimate one nuisance parameter, the mean). We redo the
 plot with lines indicating the 5- and 95-percentil of this distribution:
 
-\begin{figure}
-\centering
-\includegraphics[width=.7\textwidth]{DESeq-figFitTwithQuantiles}
-\caption{Estimated (black) dispersion values for condition ``T'', with
-regression curve and 5- and 95-percentiles of theoretical sampling
-distribution for dispersion estimates.}
-\label{figFitTwithQuantiles}
-\end{figure}
-
-
 <<figFitTwithQuantiles,fig=TRUE>>=
 plot( means, cds@fitInfo[[cond]]$perGeneDispEsts, log="xy", pch="." )
 xg <- 10^seq( min(log10(means[means>0])), max(log10(means)), length.out=1000 )
-lines( xg, cds@fitInfo[[cond]]$dispFunc( xg ), col="blue" )
 df <- sum( conditions(cds) == cond ) - 1
-lines( xg, cds@fitInfo[[cond]]$dispFunc( xg ), col="blue" )
-lines( xg, cds@fitInfo[[cond]]$dispFunc( xg ) * qchisq( .05, df )/df, col="blue", lty="dashed" )
-lines( xg, cds@fitInfo[[cond]]$dispFunc( xg ) * qchisq( .95, df )/df, col="blue", lty="dashed" )
+lines( xg, cds@fitInfo[[cond]]$dispFunc( xg ), col="red" )
+lines( xg, cds@fitInfo[[cond]]$dispFunc( xg ) * qchisq( .99, df )/df, col="blue")
 @ %$
 
 There are a substantial number of genes above the 95\% line, definitely more than
