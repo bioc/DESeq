@@ -2,119 +2,7 @@
 %\VignettePackage{DESeq}
 
 % To compile this document
-% library('weaver'); rm(list=ls()); Sweave('DESeq.Rnw', driver=weaver()); system('pdflatex DESeq')
-
-\documentclass{article}
-
-\usepackage{Sweave}
-\usepackage[a4paper]{geometry}
-\usepackage{hyperref,graphicx}
-\usepackage{natbib}
-\usepackage{color}
-
-\SweaveOpts{keep.source=TRUE,eps=FALSE,include=FALSE,width=4,height=4.5} 
-\newcommand{\Robject}[1]{\texttt{#1}}
-\newcommand{\Rpackage}[1]{\textit{#1}}
-\newcommand{\Rclass}[1]{\textit{#1}}
-\newcommand{\Rfunction}[1]{{\small\texttt{#1}}}
-\newcommand{\fixme}[1]{{\textbf{Fixme:} \textit{\textcolor{blue}{#1}}}}
-
-\author{Simon Anders\\[1em]European Molecular Biology Laboratory (EMBL),\\ Heidelberg, Germany\\[1em]
-\texttt{sanders@fs.tum.de}}
-
-\title{\textsf{\textbf{Analysing RNA-Seq data with the \Rpackage{DESeq} package}}}
-
-\begin{document}
-
-\maketitle
-
-\begin{center}
-  \fbox{\parbox{.7\textwidth}{
-\textbf{Notice:} This is the vignette of the development version of
-DESeq. The \Rpackage{DESeq} package is currently undergoing a major overhaul, and 
-users are advised to work with the release version, until this note is removed.}}
-\end{center}
-
-
-\tableofcontents
-
-\begin{abstract}
-A basic task in the analysis of count data from RNA-Seq and analogous assay types 
-(e.\,g.\ comparative ChIP-Seq) is the detection of differentially expressed genes.
-The count data are presented as a table which reports, for each sample, the number of
-reads that have been assigned to a gene (or other types of entities).
-The package \Rpackage{DESeq} provides a method to test for differential 
-expression by use of a shrinkage estimtor for the variance\footnote{Other Bioconductor packages 
-  for this use case are \Rpackage{edgeR} and \Rpackage{baySeq}.}. 
-This vignette explains the use of the package. For an exposition of 
-the statistical method employed, please see our paper~\cite{Anders:2010:GB}.
-\end{abstract}
-
-%--------------------------------------------------
-\section{Input data and preparations} \label{sec:prep}
-%--------------------------------------------------
-
-The \Rpackage{DESeq} package expects count data, as obtained, e.g.,
-from an RNA-Seq or other high-throughput sequencing (HTS) experiment,
-in the form of a matrix of integer values. Each column corresponds to
-a sample, e.g., one library preparation or one lane.
-The rows correspond to the entities for which you want to compare coverage, 
-e.\,g.\ to a gene, to a binding region in a ChIP-Seq dataset, 
-a window in CNV-Seq or the like. So, for a typical RNA-Seq experiment, each
-element in the table tells how many reads have been mapped in a given sample
-to a given gene. 
-
-To obtain such a count table for your own data, you will need
-to create it from the sequence alignments by use of tools outside of the
-\Rpackage{DESeq} package. For instance, in the course materials
-available on the Bioconductor web page, there are examples for how to
-do this with the \Rpackage{ShortRead} and \Rpackage{IRanges}
-packages. \textsl{TODO: Add a reference to these.}
-
-Another, easy way to produce such a table from the output
-  of the aligner is to use the \texttt{htseq-count} script distributed
-  with the \emph{HTSeq} package. Even though \emph{HTSeq} is a Python
-  package, you do not need to know any Python to use
-  \texttt{htseq-count}. See
-  \url{http://www-huber.embl.de/users/anders/HTSeq/doc/count.html}.
-
-The count values must be raw counts of
-sequencing reads. This is important for DESeq's statistical model to hold,
-as only raw reads allow to assess the measurement precision correctly. (Hence,
-do not supply rounded values of normalized counts, or counts of covered base pairs.)
-
-Furthermore, it is important that each column stems from an independent biological
-replicate.  For purely technical replicates (e.\,g. when the same
-library preparation was distributed over multiple lanes of the
-sequencer in order to increase coverage), please sum up their counts
-to get a single column, corresponding to a unique biological
-replicate.  This is important in order to allow \Rpackage{DESEq} to
-estimate variability in the experiment correctly.
-
-As an example dataset, we use the
-gene level read counts from the \Rpackage{pasilla} package,
-which presents data by \citet{Brooks2010}. This data set is from a study using
-\emph{Drosophila melanogaster} cell cultures and studying the effect of a 
-knock-down of the gene \emph{pasilla}, a spliciong factor.
-
-In the \Rpackage{pasilla} package, the data is presented as the object called \Robject{pasillaGenes},
-of class \Rclass{CountDataSet}, which is the data structure used internally by 
-\Rpackage{DESeq}. We load the \Rpackage{DESeq} and then the pasilla data as follows.
-
-<<pasilla2>>=
-library( "DESeq" )
-
-library( "pasilla" )
-data( "pasillaGenes" )
-@
-
-\Robject{pasillaGenes} contains the counts and also meta information about the samples:
-
-<<look_into_pasillaGenes>>=
-head( counts(pasillaGenes) )
-pData( pasillaGenes )
-@
-
+% 
 As you can see, the samples differ in their condition (untreated or treated, i.e., with
 pasilla knocked down) and in the library type. To keep things simple, we will only 
 look at the paired-end data for now. In Section \ref{sec:GLM}, we will see how to deal 
@@ -123,7 +11,7 @@ with more than one factor.
 For your own analysis, you will start form a count table, so we ``unpack'' the 
 \Rclass{countDataSet} object and build a new one ``from scratch'' to demonstrate how this is done.
 
-<<>>=
+<<pairedSamples>>=
 pairedSamples <- pData(pasillaGenes)$type == "paired-end"
 countsTable <- counts(pasillaGenes)[ , pairedSamples ]
 conds <- pData(pasillaGenes)$condition[ pairedSamples ]
@@ -136,15 +24,15 @@ raw data, see the vignette of the \Rpackage{pasilla} package.
 
 We also need a description of the samples, which is here simply a factor:
 
-<<>>=
+<<conds>>=
 conds
 @
 
-For your own data, create such a factor simply with 
-<<eval=FALSE>>=
-#not run
-conds <- factor( c( "treated", "treated", "untreated", "untreated" ) )
+For your own data, you can create such a factor simply with 
+<<conds,results=hide>>=
+factor( c( "treated", "treated", "untreated", "untreated" ) )
 @
+and assign it to \Robject{conds}.
 
 We can now instantiate a \Rclass{CountDataSet}, which is the central
 data structure in the \Rpackage{DESeq} package:
@@ -235,7 +123,7 @@ which is called the dispersion or the raw squared coefficient of
 variation (raw SCV)).
 
 To estimate the dispersion, use this command.
-<<>>=
+<<estimateDisp>>=
 cds <- estimateDispersions( cds )
 @
 
@@ -247,14 +135,14 @@ for each gene and each (replicated) condition, a dispersion value, then, it fits
 for each condition, a curve through the estimates. To allow the user to inspect the
 intermediate steps, a ``fit info'' object is stored for each condition:
 
-<<>>=
+<<lscds>>=
 ls( cds@fitInfo )
 @
 
 This fit info contains the estimates for each gene, the curve fitted through the
 dispersions, and the fitted values that then will be finally used in the test.
 
-<<>>=
+<<strcds>>=
 str( cds@fitInfo[["untreated"]] )
 @
 
@@ -323,7 +211,7 @@ i.e., to use the \textit{maximum} of the fitted values and the per-gene estimate
 
 Hence, we redo the dispersion estimation, this time as follows:
 
-<<>>=
+<<estimateDispersions,cache=TRUE>>=
 cds <- estimateDispersions( cds, sharingMode="maximum" )
 @
 
@@ -335,14 +223,14 @@ the fit, directly use the per-gene estimates; usually not appriate, see above).
 In any case, the dispersion values which finally should be used by the test are stored in
 the feature data slot of \texttt{cds}:
 
-<<>>=
+<<headfdata>>=
 head( fData(cds) )
 @
 
 Now, \texttt{disp\_T} contains the maximum of the two value vectors we looked at before,
 namely 
 
-<<>>=
+<<strfitinfo>>=
 str( cds@fitInfo[["untreated"]] )
 @
 
@@ -363,7 +251,8 @@ differentially expressed genes. To contrast two conditions, e.g., to see whether
 expression between conditions ``N'' and ``T'', we simply call the function \Rfunction{nbinomTest}.
 It performs the tests as described in the paper and returns a data frame with the $p$ value and other
 useful data.
-<<>>=
+%
+<<nbt,cache=TRUE>>=
 res <- nbinomTest( cds, "untreated", "treated" )
 head(res)
 @
@@ -400,21 +289,21 @@ See Fig.~\ref{figDE} for the plot. As we will use this plot more often, we have
 stored its code in a function.
 
 We can filter for the significant genes, 
-<<>>=
+<<resSig>>=
 resSig <- res[ res$padj < .1, ]
 @
 and list, e.g., the most significantly differentially expressed genes:
-<<>>=
+<<headresSig1>>=
 head( resSig[ order(resSig$pval), ] )
 @
 
 We may also want to look at the most strongly down-regulated of the significant
 genes,
-<<>>=
+<<headresSig2>>=
 head( resSig[ order( resSig$foldChange, -resSig$baseMean ), ] )
 @
 or at the most strongly up-regulated ones:
-<<>>=
+<<headresSig3>>=
 head( resSig[ order( -resSig$foldChange, -resSig$baseMean ), ] )
 @
 
@@ -422,7 +311,7 @@ To save the output to a file, use the R functions \Rfunction{write.table} and
 \Rfunction{write.csv}. (The latter is useful if you want to load the table in a
 spreadsheet program such as Excel.)
 
-<<eval=FALSE>>=
+<<writetable,eval=FALSE>>=
 #not run
 write.table( res, file="results.txt" )
 @
@@ -438,7 +327,7 @@ ones.
 
 To demonstrate, we subset our data object to only three samples:
 
-<<>>=
+<<subset>>=
 cdsTTU <- cds[ , 1:3] 
 pData( cdsTTU )
 @
@@ -453,7 +342,7 @@ only one untreated sample.}
 
 Now, we do the analysis as before, and get a similar result:
 
-<<>>=
+<<cdsTTU,cache=TRUE>>=
 cdsTTU <- estimateSizeFactors( cdsTTU )
 cdsTTU <- estimateDispersions( cdsTTU )
 resTTU <- nbinomTest( cdsTTU, "untreated", "treated" )
