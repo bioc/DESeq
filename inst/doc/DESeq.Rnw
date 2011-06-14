@@ -2,9 +2,119 @@
 %\VignettePackage{DESeq}
 
 % To compile this document
-% 
-As you can see, the samples differ in their condition (untreated or treated, i.e., with
-pasilla knocked down) and in the library type. To keep things simple, we will only 
+% library('weaver'); rm(list=ls()); Sweave('DESeq.Rnw', driver=weaver()); system('pdflatex DESeq')
+
+\documentclass{article}
+
+\usepackage{Sweave}
+\usepackage[a4paper]{geometry}
+\usepackage{hyperref,graphicx}
+\usepackage{natbib}
+\usepackage{color}
+
+\SweaveOpts{keep.source=TRUE,eps=FALSE,include=FALSE,width=4,height=4.5} 
+\newcommand{\Robject}[1]{\texttt{#1}}
+\newcommand{\Rpackage}[1]{\textit{#1}}
+\newcommand{\Rclass}[1]{\textit{#1}}
+\newcommand{\Rfunction}[1]{{\small\texttt{#1}}}
+\newcommand{\fixme}[1]{{\textbf{Fixme:} \textit{\textcolor{blue}{#1}}}}
+
+\author{Simon Anders\\[1em]European Molecular Biology Laboratory (EMBL),\\ Heidelberg, Germany\\[1em]
+\texttt{sanders@fs.tum.de}}
+
+\title{\textsf{\textbf{Analysing RNA-Seq data with the \Rpackage{DESeq} package}}}
+
+\begin{document}
+
+\maketitle
+
+\begin{center}
+  \fbox{\parbox{.7\textwidth}{
+\textbf{Notice:} This is the vignette of the development version of
+DESeq. The \Rpackage{DESeq} package is currently undergoing a major overhaul, and 
+users are advised to work with the release version, until this note is removed.}}
+\end{center}
+
+
+\tableofcontents
+
+\begin{abstract} 
+A basic task in the analysis of count data from RNA-Seq is the detection of differentially expressed genes.  
+The count data are presented as a table which reports, for each sample, the number of reads that have been 
+assigned to a gene. Analogous analyses also arise for other assay types, such as comparative ChIP-Seq.
+The package \Rpackage{DESeq} provides a method to test for differential 
+expression by use of a shrinkage estimtor for the variance\footnote{Other Bioconductor packages 
+  for this use case are \Rpackage{edgeR} and \Rpackage{baySeq}.}. 
+This vignette explains the use of the package. For an exposition of 
+the statistical method employed, please see our paper~\cite{Anders:2010:GB}.
+\end{abstract}
+
+%--------------------------------------------------
+\section{Input data and preparations} \label{sec:prep}
+%--------------------------------------------------
+
+The \Rpackage{DESeq} package expects count data, as obtained, e.g.,
+from an RNA-Seq or other high-throughput sequencing (HTS) experiment,
+in the form of a matrix of integer values. Each column corresponds to
+a sample, e.g., one library preparation or one lane.
+The rows correspond to the entities for which you want to compare coverage, 
+e.\,g.\ to a gene, to a binding region in a ChIP-Seq dataset, 
+a window in CNV-Seq or the like. So, for a typical RNA-Seq experiment, each
+element in the table tells how many reads have been mapped in a given sample
+to a given gene. 
+
+To obtain such a count table for your own data, you will need
+to create it from the sequence alignments by use of tools outside of the
+\Rpackage{DESeq} package. For instance, in the course materials
+available on the Bioconductor web page, there are examples for how to
+do this with the \Rpackage{ShortRead} and \Rpackage{IRanges}
+packages. \textsl{TODO: Add a reference to these.}
+
+Another, easy way to produce such a table from the output
+  of the aligner is to use the \texttt{htseq-count} script distributed
+  with the \emph{HTSeq} package. Even though \emph{HTSeq} is a Python
+  package, you do not need to know any Python to use
+  \texttt{htseq-count}. See
+  \url{http://www-huber.embl.de/users/anders/HTSeq/doc/count.html}.
+
+The count values must be raw counts of
+sequencing reads. This is important for DESeq's statistical model to hold,
+as only raw reads allow to assess the measurement precision correctly. (Hence,
+do not supply rounded values of normalized counts, or counts of covered base pairs.)
+
+Furthermore, it is important that each column stems from an independent biological
+replicate.  For purely technical replicates (e.\,g. when the same
+library preparation was distributed over multiple lanes of the
+sequencer in order to increase coverage), please sum up their counts
+to get a single column, corresponding to a unique biological
+replicate.  This is needed in order to allow \Rpackage{DESEq} to
+estimate variability in the experiment correctly.
+
+As an example dataset, we use the gene level read counts from the
+\Rpackage{pasilla} package. This dataset is from an experiment on
+\emph{Drosophila melanogaster} cell cultures. The experiment
+investigated the effect of RNAi knock down of the splicing factor
+\emph{pasilla}~\cite{Brooks2010}. The data are presented in the object
+called \Robject{pasillaGenes}. The object is of class
+\Rclass{CountDataSet}, which is the data container used by
+\Rpackage{DESeq}. We load the needed packages and the data as
+follows.
+
+<<pasilla2,results=hide>>=
+library( "DESeq" )
+library( "pasilla" )
+data( "pasillaGenes" )
+@
+
+\Robject{pasillaGenes} contains the counts and also metadata about the samples:
+
+<<look_into_pasillaGenes>>=
+head( counts(pasillaGenes) )
+pData( pasillaGenes )
+@
+
+As you can see, the samples differ by experimental condition (untreated or treated, i.\,e., with
+pasilla knocked down) and by library type. To keep things simple, we will only 
 look at the paired-end data for now. In Section \ref{sec:GLM}, we will see how to deal 
 with more than one factor.
 
@@ -28,11 +138,11 @@ We also need a description of the samples, which is here simply a factor:
 conds
 @
 
-For your own data, you can create such a factor simply with 
-<<conds,results=hide>>=
-factor( c( "treated", "treated", "untreated", "untreated" ) )
+For your own data, create such a factor simply with 
+<<conds,eval=FALSE>>=
+#not run
+conds <- factor( c( "treated", "treated", "untreated", "untreated" ) )
 @
-and assign it to \Robject{conds}.
 
 We can now instantiate a \Rclass{CountDataSet}, which is the central
 data structure in the \Rpackage{DESeq} package:
@@ -66,7 +176,7 @@ count data. (See the man page of
 \Rfunction{estimateSizeFactorsForMatrix} for technical details on the
 calculation.)
 %
-<<estimateSizeFactors>>=
+<<estimateSizeFactors,cache=TRUE>>=
 cds <- estimateSizeFactors( cds )
 sizeFactors( cds )
 @
@@ -91,10 +201,9 @@ This estimation is done by calculating, for each gene,
 the sample mean and variance within replicates \fixme{this needs to be updated, perhaps
   not mant details here, but then please provide them later} and fitting a curve to this graph.
 
+In RNA-Seq, the variance results from two components, technical and the biological variation.
 
 
-
-In RNA-Seq, the variance is the sum of two components, the technical and the biological variation.
 By biological variation, we mean the variation in the concentration of cDNA fragments from a given
 gene in different samples from the same experimental condition. Sequencing does not allow to
 measure the concentration with arbitrary precision; rather, if one sequences two aliquots of
@@ -123,7 +232,7 @@ which is called the dispersion or the raw squared coefficient of
 variation (raw SCV)).
 
 To estimate the dispersion, use this command.
-<<estimateDisp>>=
+<<estimateDispersions,cache=TRUE>>=
 cds <- estimateDispersions( cds )
 @
 
@@ -135,14 +244,14 @@ for each gene and each (replicated) condition, a dispersion value, then, it fits
 for each condition, a curve through the estimates. To allow the user to inspect the
 intermediate steps, a ``fit info'' object is stored for each condition:
 
-<<lscds>>=
+<<ls>>=
 ls( cds@fitInfo )
 @
 
 This fit info contains the estimates for each gene, the curve fitted through the
 dispersions, and the fitted values that then will be finally used in the test.
 
-<<strcds>>=
+<<str>>=
 str( cds@fitInfo[["untreated"]] )
 @
 
@@ -211,7 +320,7 @@ i.e., to use the \textit{maximum} of the fitted values and the per-gene estimate
 
 Hence, we redo the dispersion estimation, this time as follows:
 
-<<estimateDispersions,cache=TRUE>>=
+<<estimateDispersions2,cache=TRUE>>=
 cds <- estimateDispersions( cds, sharingMode="maximum" )
 @
 
@@ -223,14 +332,14 @@ the fit, directly use the per-gene estimates; usually not appriate, see above).
 In any case, the dispersion values which finally should be used by the test are stored in
 the feature data slot of \texttt{cds}:
 
-<<headfdata>>=
+<<head>>=
 head( fData(cds) )
 @
 
 Now, \texttt{disp\_T} contains the maximum of the two value vectors we looked at before,
 namely 
 
-<<strfitinfo>>=
+<<str>>=
 str( cds@fitInfo[["untreated"]] )
 @
 
@@ -256,6 +365,7 @@ useful data.
 res <- nbinomTest( cds, "untreated", "treated" )
 head(res)
 @
+%
 For each gene, we get its mean expression level (at the base scale) as a joint estimate from both conditions, and
 estimated separately for each  condition, the fold change from
 the first to the second condition, the logarithm (to basis 2) of the fold change, and the
@@ -289,21 +399,21 @@ See Fig.~\ref{figDE} for the plot. As we will use this plot more often, we have
 stored its code in a function.
 
 We can filter for the significant genes, 
-<<resSig>>=
+<<ressig1>>=
 resSig <- res[ res$padj < .1, ]
 @
 and list, e.g., the most significantly differentially expressed genes:
-<<headresSig1>>=
+<<ressig2>>=
 head( resSig[ order(resSig$pval), ] )
 @
 
 We may also want to look at the most strongly down-regulated of the significant
 genes,
-<<headresSig2>>=
+<<ressig3>>=
 head( resSig[ order( resSig$foldChange, -resSig$baseMean ), ] )
 @
 or at the most strongly up-regulated ones:
-<<headresSig3>>=
+<<ressig4>>=
 head( resSig[ order( -resSig$foldChange, -resSig$baseMean ), ] )
 @
 
@@ -342,7 +452,7 @@ only one untreated sample.}
 
 Now, we do the analysis as before, and get a similar result:
 
-<<cdsTTU,cache=TRUE>>=
+<<est123,cache=TRUE>>=
 cdsTTU <- estimateSizeFactors( cdsTTU )
 cdsTTU <- estimateDispersions( cdsTTU )
 resTTU <- nbinomTest( cdsTTU, "untreated", "treated" )
@@ -383,19 +493,19 @@ side of being too conservative, i.e., we only lose power.
 We shall now see how well this works for our example data, even though it has rather many differentially expressed genes.
 
 We reduce our count data set to just two columns, one ``untreated'' and one ``treated'' sample:
-<<>>=
+<<subset2>>=
 cds2 <- cds[ ,c(  "untreated3fb", "treated3fb"   ) ]
 @
 
 Now, without any replicates at all, the \Rfunction{estimateDispersions} function will refuse to proceed unless we 
 instruct it to ignore the condition labels and estimate the variance by treating all
 samples as if they were replicates of the same condition:
-<<>>=
+<<cds2,cache=TRUE>>=
 cds2 <- estimateDispersions( cds2, method="blind" )
 @
 
 Now, we can attempt to find differential expression:
-<<>>=
+<<res2,cache=TRUE>>=
 res2 <- nbinomTest( cds2, "untreated", "treated" )
 @
 
@@ -411,7 +521,7 @@ Unsurprisingly, we find much fewer hits, as can be seen from the plot (Fig.\ \re
 plotDE( res2 )
 @
 and from this table, tallying the number of significant hits in our previous and our new, restricted analysis:
-<<>>=
+<<addmarg>>=
 addmargins( table( res_sig = res$padj < .1, res2_sig = res2$padj < .1 ) )
 @
 As can be seen, we have still found about 1/5 of the hits, and only a reassuringly small number of 
@@ -424,7 +534,7 @@ sample size. To see this, we run the original analysis again, but now using the 
 To do so, we just copy the dispersion values from the feature data of \texttt{cds2}
 to a copy of \texttt{cds}:
 
-<<>>=
+<<cdsB,cache=TRUE>>=
 cdsB <- cds
 fData(cdsB) <- fData(cds2)
 resB <- nbinomTest( cdsB, "untreated", "treated" )
@@ -449,7 +559,7 @@ from the \Rpackage{pasilla} package. Due to the usage of both single-end
 and paired-end libraries, it has a design with two factors,  \emph{condition}
 (or treatment) and library \emph{type}:
 
-<<>>=
+<<design>>=
 design <- pData(pasillaGenes)[ , c("condition","type") ]
 design
 @
@@ -457,7 +567,7 @@ design
 When creating a count data xset with multiple factors, just pass a data frame
 instead of the condition factor:
 
-<<>>=
+<<fct>>=
 fullCountsTable <- counts( pasillaGenes )
 
 cdsFull <- newCountDataSet( fullCountsTable, design )
@@ -472,7 +582,7 @@ an average over all cells (weighted by the number of samples for each cells), wh
 the term \emph{cell} denotes any of the four combinations of factor levels of
 the design.
 
-<<>>=
+<<estsfdisp,cache=TRUE>>=
 cdsFull <- estimateSizeFactors( cdsFull )
 cdsFull <- estimateDispersions( cdsFull, method="pooled", sharingMode="maximum" )
 @
@@ -489,7 +599,7 @@ distribution for dispersion estimates.}
 
 As we now have more samples to estimate variance, we get better estimates. Comparing
 with our previous results using only four samples, we can see the effect of
-the additional degrees of freedom (Fig.\ \ref{figFitTwithQuantilesFull}).
+the additional degrees of freedom (Fig.~\ref{figFitTwithQuantilesFull}).
 
 <<figFitTwithQuantilesFull,fig=TRUE>>=
 cond <- "pooled"
@@ -510,14 +620,14 @@ according to the two models, and then compare in orderto infer whether
 the additional specification of the treatment improves the fit and hence, whether 
 the treatment has significant effect.
 
-<<>>=
+<<fit1,cache=TRUE>>=
 fit1 <- fitNbinomGLMs( cdsFull, count ~ type + condition )
 fit0 <- fitNbinomGLMs( cdsFull, count ~ type  )
 @
 (These commands take a while to execute.)
 
 For the actual test, we call
-<<>>=
+<<pvalsGLM,cache=TRUE>>=
 pvalsGLM <- nbinomGLMTest( fit1, fit0 )
 padjGLM <- p.adjust( pvalsGLM, method="BH" )
 @
@@ -528,11 +638,11 @@ padjGLM <- p.adjust( pvalsGLM, method="BH" )
 \caption{Comparison of p values (unadjusted) from the test using only the
 four paired-end samples and
 the test using all seven samples.}
-\label{figFitTwithQuantilesFull}
+\label{figPval}
 \end{figure}
 
 Let's compare with the result from the four-samples test:
-<<>>=
+<<addmarg2>>=
 addmargins( table( `paired-end-only` = res$padj < .1, `all-samples` = padjGLM < .1 ) )
 @
 
@@ -540,6 +650,8 @@ A more informative comparison might be a scatter plot of p values:
 <<figPval,fig=TRUE>>=
 plot( res$pval, pvalsGLM, log="xy", xlim=c(1e-17,1), ylim=c(1e-17,1), pch=20, cex=.3 )
 @
+The result is shown in Fig.~\ref{figPval}.
+
 %-------------------------------------------------------------------------------------------------
 \section{Moderated fold change estimates and applications to sample clustering and visualisation}
 %-------------------------------------------------------------------------------------------------
@@ -583,10 +695,6 @@ is necessary.
 cdsBlind <- estimateDispersions( cds, method="blind" )
 vsd <- getVarianceStabilizedData( cdsBlind )
 @
-
-% FIXME: is it possible to provide an explicit expression for the VST 
-%  (like  glog(x) = log(x + sqrt(x*x+c))   for vsn)
-% No, it is a numerical integration
 
 
 The data are now on a logarithm like scale, and we can compute
@@ -663,12 +771,6 @@ heatmap(as.matrix( dists ),
         scale="none",
         col = colorRampPalette(c("darkblue","white"))(100))
 @
-% FIXME - Simon, I have sacrificed this nice observation to using the same 5 samples 
-% throughout, in order to keep the presentation simple and not confound people's minds... 
-%
-%From the output (Fig.~\ref{figHeatmap}), we can see, e.g., that the two samples T1a and T1b
-%that were derived from the same patient are indeed quite similar, and that the sample T3
-%with the atypical histopathological phenotype is not that different from sample T2.
 
 We can also visualise the expression data of, say, the top 100 differentially expressed genes.
 %
