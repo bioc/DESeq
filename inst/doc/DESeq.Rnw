@@ -9,7 +9,6 @@
 \usepackage{Sweave}
 \usepackage[a4paper]{geometry}
 \usepackage{hyperref,graphicx}
-\usepackage{natbib}
 \usepackage{color}
 
 \SweaveOpts{keep.source=TRUE,eps=FALSE,include=FALSE,width=4,height=4.5} 
@@ -27,14 +26,6 @@
 \begin{document}
 
 \maketitle
-
-\begin{center}
-  \fbox{\parbox{.7\textwidth}{
-\textbf{Notice:} This is the vignette of the development version of
-DESeq. The \Rpackage{DESeq} package is currently undergoing a major overhaul, and 
-users are advised to work with the release version, until this note is removed.}}
-\end{center}
-
 
 \tableofcontents
 
@@ -68,9 +59,11 @@ to create it from the sequence alignments by use of tools outside of the
 \Rpackage{DESeq} package. For instance, in the course materials
 available on the Bioconductor web page, there are examples for how to
 do this with the \Rpackage{ShortRead} and \Rpackage{IRanges}
-packages. \textsl{TODO: Add a reference to these.}
+packages. The Bioconductor package \Rpackage{easyrnaseq} (by
+Nicolas Delhomme; in preparation, available soon; package name may change) 
+will offer this functionality in a convenient manner.
 
-Another, easy way to produce such a table from the output
+Another easy way to produce such a table from the output
   of the aligner is to use the \texttt{htseq-count} script distributed
   with the \emph{HTSeq} package. Even though \emph{HTSeq} is a Python
   package, you do not need to know any Python to use
@@ -91,11 +84,15 @@ replicate.  This is needed in order to allow \Rpackage{DESEq} to
 estimate variability in the experiment correctly.
 
 As an example dataset, we use the gene level read counts from the
-\Rpackage{pasilla} package. This dataset is from an experiment on
-\emph{Drosophila melanogaster} cell cultures. The experiment
-investigated the effect of RNAi knock down of the splicing factor
+\Rpackage{pasilla} data package. This dataset is from an experiment on
+\emph{Drosophila melanogaster} cell cultures and
+investigated the effect of RNAi knock-down of the splicing factor
 \emph{pasilla}~\cite{Brooks2010}. The data are presented in the object
-called \Robject{pasillaGenes}. The object is of class
+called \Robject{pasillaGenes}. For a description how this data object
+was created from the raw data of Ref.~\cite{Brooks2010}, see the vingette
+included with the \Rpackage{pasilla} package.
+
+The \Robject{pasillaGenes} object is of class
 \Rclass{CountDataSet}, which is the data container used by
 \Rpackage{DESeq}. We load the needed packages and the data as
 follows.
@@ -129,8 +126,7 @@ conds <- pData(pasillaGenes)$condition[ pairedSamples ]
 
 Now, we have a count table, as described above, of integer count data. For your own data,
 use R's \Rfunction{read.table} or \Rfunction{read.csv} function to read your count data
-from a text file. For details how this specific count table was created from the
-raw data, see the vignette of the \Rpackage{pasilla} package.
+from a text file. 
 
 We also need a description of the samples, which is here simply a factor:
 
@@ -196,57 +192,18 @@ head( counts( cds, normalized=TRUE ) )
 
 The inference in \Rpackage{DESeq} relies on an estimation of the typical
 relationship between the data's variance and their mean, or, equivalently,
-between the data's dispersion and their mean~\cite{Anders:2010:GB}.
-This estimation is done by calculating, for each gene, 
-the sample mean $\mu$ and sample variance $v$ within replicates, and the
-dispersion
-\begin{equation}
-\alpha = \frac{v-\mu}{\mu^2}.
-\end{equation}
-When the number of replicates is not large, the precision of these
-values is low, i.\,e.\ they will tend to fluctuate strongly, and one of the features
-of the \Rpackage{DESeq} method is to increase their precision by "sharing information"
-across genes through fitting a smooth curve to the graph of $\alpha$ versus $\mu$ for all genes.
+between the data's dispersion and their mean.
 
-\fixme{What follows is a lot of philosophy that I think is not at the right place here.
-  It might scare away people who just want to use the method. 
-  It could be moved to a later section (like an appendix), but then should gain some 
-  substance by showing diagnostic plots that demonstrate the variance components,
-  e.g. by focusing at the high and low ends of the dynamic range, where one or the other dominates.}
+The \emph{dispersion} can be understood as the square of the coefficient 
+of biological variation. So, if a gene's expression typically differs 
+from replicate to replicate sample by 20\%, this gene's dispersion is $.20^2=.04$.
+(Note that the variance seen between counts is the sum of two components: the
+sample-to-sample variation just mentioned, and the uncertainty in measuring
+a concentration by counting reads. The latter, known as shot noise or Poisson
+noise, is the dominating noise source for lowly expressed genes and is not
+included in the dispersion.)
 
-\verb+\begin{philosophy}+\\
-In RNA-Seq, the variance results from two components, technical and the biological variability.
-Biological variability results, for instance, from variations in the concentration of cDNA fragments from a given
-gene in different replicate samples obtained under the same experimental condition. 
-Technical variability is caused by the fact that the data arise from discrete
-counting. From theoretical considerations,
-it can be seen\footnote{Please see our paper and reference therein.} that 
-the technical noise cannot be lower than what the Poisson distribution predicts,
-namely that the variance is equal to the mean. As Nagalakshmi et al.\ and Marioni et al.\ 
-showed, the technical noise is indeed not much higher than this theoretical minimum (at least if
-everything went well with sample preparation) and hence, we assume the variance contribution
-from technical noise to be equal to the mean and refer to it as the Poisson or shot noise. 
-
-% The next paragraph seems pointless - are these definitions needed for anything that follows?
-%The difference between 
-%observed variance and Poisson variance, i.e., the difference between variance and mean, is hence
-%the biological variation. (Note that this ``biological'' variance also includes noise
-%from technical steps prior to sequencing; however, the part due to biological differences
-%in the samples and their responses to treatment usually dominates, hence we use the
-%term ``biological variance'' for the whole difference of observed variance and mean.)
-
-It is helpful to present the biological variance as a coefficient of variation (CV),
-i.e., as the ratio of standard deviation to mean. For an observed variance $v$ and
-mean $\mu$, the biological variation is $v-\mu$ and the biological CV is hence 
-$\sqrt{v-\mu}/\mu$. If it takes a value of, say, 0.15, this means roughly that the  
-concentration of fragments from the gene typically changes by 15\% from a sample to
-its biological replicate sample. For mathematical reasons, \textit{DESeq}, instead
-uses the square of the biological variation, i.e., the quantity $(v-\mu)/\mu^2$, 
-which is called the dispersion or the raw squared coefficient of 
-variation (raw SCV)).\\
-\verb+\end{philosophy}+
-
-To estimate the dispersion, use this command.
+To estimate the dispersions, use this command.
 <<estimateDispersions,cache=TRUE>>=
 cds <- estimateDispersions( cds )
 @
@@ -275,42 +232,57 @@ str( cds@fitInfo[["untreated"]] )
 
 \begin{figure}
 \centering
+\includegraphics[width=.66\textwidth]{DESeq-figFit}
+\caption{Estimated (black) and fitted (red) dispersion values for condition ``untreated'',
+plotted against mean expression strength.}
+\label{figFitT}
+\end{figure}
+
+
+\begin{figure}
+\centering
 \includegraphics[width=.66\textwidth]{DESeq-figFitTwithQuantiles}
 \caption{Estimated (black) and fitted (red) dispersion values for condition ``untreated'',
 plotted against mean expression strength.
 The blue line indicates the 99-percentile of the theoretical sampling
 distribution for dispersion estimates.}
-\label{figFitT}
+\label{figFitTwQ}
 \end{figure}
 
 To visualize these, we plot the per-gene estimates against the normalized mean 
-expressions per gene, and the overlay the fitted values in red:
+expressions per gene, and then overlay the fitted values in red. We do this for both
+conditions:
 
-<<figFitT,fig=TRUE>>=
-cond <- "untreated"
+<<figFit,fig=TRUE>>=
 means <- rowMeans( counts( cds, normalized=TRUE ) )
-plot(   means, cds@fitInfo[[cond]]$perGeneDispEsts, log="xy", pch="." )
-points( means, cds@fitInfo[[cond]]$fittedDispEsts, pch=".", col="red" )
+par( mfrow=c(1,2) )
+plot(   means, cds@fitInfo[["untreated"]]$perGeneDispEsts, pch=".", log="xy" )
+points( means, cds@fitInfo[["untreated"]]$fittedDispEsts,  pch=".", col="red" )
+plot(   means, cds@fitInfo[[ "treated" ]]$perGeneDispEsts, pch=".", log="xy" )
+points( means, cds@fitInfo[[ "treated" ]]$fittedDispEsts,  pch=".", col="red" )
 @
 
-The plot (Fig.~\ref{figFitTWithQuantiles}) is doubly logarithmic; this may be helpful or
+The plot (Fig.~\ref{figFit}) is doubly logarithmic; this may be helpful or
 misleading, and it is worth experimenting with other plotting styles.
+
 \fixme{The boundary effects of the smoothing line look awful - I understand this may not
        be a big problem in practice, but then we should also show a plot that
        deemphasizes them. Perhaps show the fit only within the \[0.025,0.975\] 
        range of the x-axis?}
 
 In any case, we could be worried by the genes at the upper end of the plot.
-Can we really assume hese to have the same variance as the other genes
+Can we really assume these to have the same variance as the other genes
 with similar expression? As we estimated the dispersion from
 only three samples we should expect the estimates to scatter with quite some
 sampling variance around their true values. To quantify this, we assume that
 dispersion estimates scatter around their true values according to a scaled
 $chi^2$ distribution with the appriate number of degrees of freedom (here: 1=2-1, as we
 have 2 samples and estimate one nuisance parameter, the mean). We redo the
-plot with lines indicating the 5- and 95-percentil of this distribution:
+plot with lines indicating the 5- and 95-percentil of this distribution (Fig.\ 
+\ref{figFitTwQ}):
 
 <<figFitTwithQuantiles,fig=TRUE>>=
+cond <- "untreated"
 plot( means, cds@fitInfo[[cond]]$perGeneDispEsts, log="xy", pch="." )
 xg <- 10^seq( min(log10(means[means>0])), max(log10(means)), length.out=1000 )
 df <- sum( conditions(cds) == cond ) - 1
@@ -352,14 +324,7 @@ str( cds@fitInfo[["untreated"]] )
 @
 
 Advanced users who may want to fiddle with the dispersion estimation can change the values
-in \texttt{fData(cds)} priot to calling the testing function.
-
-It is instructive to observe at which count level the biological 
-noise starts to dominate the shot noise. At low counts, where shot noise dominates, higher
-sequencing depth (larger library size) will improve the signal-to-noise ratio while
-for high counts, where the biological noise dominates, only additional biological 
-replicates will help. 
-
+in \texttt{fData(cds)} prior to calling the testing function.
 
 \section{Inference: Calling differential expression} \label{sec:DE}
 
@@ -402,7 +367,7 @@ plotDE <- function( res )
       col = ifelse( res$padj < .1, "red", "black" ) )
 
 plotDE( res )
-@
+@ %$
 See Fig.~\ref{figDE} for the plot. As we will use this plot more often, we have
 stored its code in a function.
 
@@ -433,6 +398,34 @@ spreadsheet program such as Excel.)
 #not run
 write.table( res, file="results.txt" )
 @
+
+\begin{figure}
+\centering
+\includegraphics[width=.6\textwidth]{DESeq-MArepl}
+\caption{Plot of the log2 fold change between the untreated replicates 
+versus average expression strength.}
+\label{figMArepl}
+\end{figure}
+
+Note in Fig.~\ref{figDE} how the power to detect significant differential expression depends on
+the expression strength. For weakly expressed genes, stronger changes are 
+required for the gene to be called significantly expressed. To understand the reason for
+this let, us compare the normalized counts between two replicate samples, here
+taking the two untreated samples as an example:
+
+<<MArepl,fig=TRUE>>=
+ncu <- counts( cds, normalized=TRUE )[ , conditions(cds)=="untreated" ]
+   # ncu is now a matrix with two columns
+   
+plot( ( ncu[,1]+ncu[,2] )/2, log2( ncu[,2] / ncu[,1] ), pch=".", log="x" )
+@
+
+As one can see (Fig.\ \ref{figMArepl}), the log fold changes between replicates 
+are stronger for lowly expressed genes than for highly expressed ones. We 
+may conclude that a gene's expression is influenced by the treatment only
+if the change between treated and untreated samples are strong as compared to
+what we see between replicates, and hence, the dividing line between red and black in
+Fig.\ \ref{figDE} mimics the shape seen in Fig.\ \ref{figMArepl}.\footnote{}
 
 \subsection{Working partially without replicates}
 
@@ -871,7 +864,7 @@ perform test & \Rfunction{nbinomTest} & \Rfunction{nbinomTestForMatrices}
 sessionInfo()
 @
 
-\bibliographystyle{unsrt} 
+\bibliographystyle{plainnat} 
 \bibliography{DESeq}
 
 
