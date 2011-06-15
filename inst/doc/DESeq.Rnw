@@ -27,8 +27,6 @@
 
 \maketitle
 
-\tableofcontents
-
 \begin{abstract} 
 A basic task in the analysis of count data from RNA-Seq is the detection of differentially expressed genes.  
 The count data are presented as a table which reports, for each sample, the number of reads that have been 
@@ -39,6 +37,8 @@ expression by use of a shrinkage estimtor for the variance\footnote{Other Biocon
 This vignette explains the use of the package. For an exposition of 
 the statistical method employed, please see our paper~\cite{Anders:2010:GB}.
 \end{abstract}
+
+\tableofcontents
 
 %--------------------------------------------------
 \section{Input data and preparations} \label{sec:prep}
@@ -232,7 +232,7 @@ str( cds@fitInfo[["untreated"]] )
 
 \begin{figure}
 \centering
-\includegraphics[width=.66\textwidth]{DESeq-figFit}
+\includegraphics[width=\textwidth]{DESeq-figFit}
 \caption{Estimated (black) and fitted (red) dispersion values for condition ``untreated'',
 plotted against mean expression strength.}
 \label{figFitT}
@@ -253,7 +253,7 @@ To visualize these, we plot the per-gene estimates against the normalized mean
 expressions per gene, and then overlay the fitted values in red. We do this for both
 conditions:
 
-<<figFit,fig=TRUE>>=
+<<figFit,fig=TRUE,width=14,height=7>>=
 means <- rowMeans( counts( cds, normalized=TRUE ) )
 par( mfrow=c(1,2) )
 plot(   means, cds@fitInfo[["untreated"]]$perGeneDispEsts, pch=".", log="xy" )
@@ -328,9 +328,11 @@ in \texttt{fData(cds)} prior to calling the testing function.
 
 \section{Inference: Calling differential expression} \label{sec:DE}
 
+\subsection{Standard comparison between two experimental conditions}
+
 Having estimated and verified the variance--mean dependence, it is now straight-forward to look for
 differentially expressed genes. To contrast two conditions, e.g., to see whether there is differential
-expression between conditions ``N'' and ``T'', we simply call the function \Rfunction{nbinomTest}.
+expression between conditions ``untreated'' and ``treated'', we simply call the function \Rfunction{nbinomTest}.
 It performs the tests as described in the paper and returns a data frame with the $p$ value and other
 useful data.
 %
@@ -425,7 +427,7 @@ are stronger for lowly expressed genes than for highly expressed ones. We
 may conclude that a gene's expression is influenced by the treatment only
 if the change between treated and untreated samples are strong as compared to
 what we see between replicates, and hence, the dividing line between red and black in
-Fig.\ \ref{figDE} mimics the shape seen in Fig.\ \ref{figMArepl}.\footnote{}
+Fig.\ \ref{figDE} mimics the shape seen in Fig.\ \ref{figMArepl}.
 
 \subsection{Working partially without replicates}
 
@@ -464,7 +466,7 @@ We produce the same plot as before, again with
 plotDE( resTTU )
 @ %$
 The result (Fig.~\ref{figDE_Tb}) shows the same symmetry in up- and down-regulation
-as in Fig.~\ref{figDE} but a striking asymmetry in the boundary line for significance. This
+as in Fig.~\ref{figDE} but a certain asymmetry in the boundary line for significance. This
 has an easy explanation: low counts suffer from proportionally stronger shot noise than high counts, and this
 is more pronounced in the ``Tb'' data than in the ``N'' data due to the lack of replicates. Hence
 a stronger signal is required to call a down-regulation significant than for an up-regulation.
@@ -525,31 +527,31 @@ and from this table, tallying the number of significant hits in our previous and
 <<addmarg>>=
 addmargins( table( res_sig = res$padj < .1, res2_sig = res2$padj < .1 ) )
 @
-As can be seen, we have still found about 1/5 of the hits, and only a reassuringly small number of 
-new (and potentially false) hits. \textsl{TODO: pdate discussion!}
+%As can be seen, we have still found about 1/5 of the hits, and only a reassuringly small number of 
+%new (and potentially false) hits. \textsl{TODO: pdate discussion!}
 
-One may finally ask whether the reduction of discoveries to a quarter is due to the higher variance
-estimate, or due to the lower confidence in the base mean estimates, which is due to the reduced
-sample size. To see this, we run the original analysis again, but now using the new, worse variance function. 
+%One may finally ask whether the reduction of discoveries to a quarter is due to the higher variance
+%estimate, or due to the lower confidence in the base mean estimates, which is due to the reduced
+%sample size. To see this, we run the original analysis again, but now using the new, worse variance function. 
 
-To do so, we just copy the dispersion values from the feature data of \texttt{cds2}
-to a copy of \texttt{cds}:
+%To do so, we just copy the dispersion values from the feature data of \texttt{cds2}
+%to a copy of \texttt{cds}:
 
-<<cdsB,cache=TRUE>>=
-cdsB <- cds
-fData(cdsB) <- fData(cds2)
-resB <- nbinomTest( cdsB, "untreated", "treated" )
+%<<cdsB,cache=TRUE>>=
+%cdsB <- cds
+%fData(cdsB) <- fData(cds2)
+%resB <- nbinomTest( cdsB, "untreated", "treated" )
 
-addmargins( table( 
-   res_sig = res$padj < .1, 
-   resB_sig = resB$padj < .1 ) )
-@
+%addmargins( table( 
+%   res_sig = res$padj < .1, 
+%   resB_sig = resB$padj < .1 ) )
+%@
 
-%In conclusion, the worse variance estimates costs less in power than the reduction
-%in sample size. For another data set, this may well be quite different.
+%%In conclusion, the worse variance estimates costs less in power than the reduction
+%%in sample size. For another data set, this may well be quite different.
 
-\textsl{TODO: This is an incorrect comparison. We are comparing here
-a two tests with different sharingMode setting.}
+%\textsl{TODO: This is an incorrect comparison. We are comparing here
+%a two tests with different sharingMode setting.}
 
 %-------------------------------------------------------------------------------------------------
 \section{Multi-factor designs} \label{sec:GLM}
@@ -565,7 +567,7 @@ design <- pData(pasillaGenes)[ , c("condition","type") ]
 design
 @
 
-When creating a count data xset with multiple factors, just pass a data frame
+When creating a count data set with multiple factors, just pass a data frame
 instead of the condition factor:
 
 <<fct>>=
@@ -609,8 +611,10 @@ xg <- 10^seq( min(log10(means[means>0])), max(log10(means)), length.out=1000 )
 lines( xg, cdsFull@fitInfo[[cond]]$dispFunc( xg ), col="blue" )
 df <- 7 - 2  # seven samples and 2 design factors
 lines( xg, cdsFull@fitInfo[[cond]]$dispFunc( xg ), col="blue" )
-lines( xg, cdsFull@fitInfo[[cond]]$dispFunc( xg ) * qchisq( .05, df )/df, col="blue", lty="dashed" )
-lines( xg, cdsFull@fitInfo[[cond]]$dispFunc( xg ) * qchisq( .95, df )/df, col="blue", lty="dashed" )
+lines( xg, cdsFull@fitInfo[[cond]]$dispFunc( xg ) * qchisq( .05, df )/df, 
+   col="blue", lty="dashed" )
+lines( xg, cdsFull@fitInfo[[cond]]$dispFunc( xg ) * qchisq( .95, df )/df, 
+   col="blue", lty="dashed" )
 @ %$
 
 For inference, we now specify two \emph{models} by formulas. The \emph{full model}
@@ -633,6 +637,10 @@ pvalsGLM <- nbinomGLMTest( fit1, fit0 )
 padjGLM <- p.adjust( pvalsGLM, method="BH" )
 @
 
+The function \Rfunction{nbinomTestGLM} returned simply vector of $p$ values which 
+we handed to the standard R function \Rfunction{p.adjust} to adjust for multiple
+testing using the Benjamini-Hochberg (BH) method.
+
 \begin{figure}
 \centering
 \includegraphics[width=.7\textwidth]{DESeq-figPval}
@@ -653,23 +661,60 @@ plot( res$pval, pvalsGLM, log="xy", xlim=c(1e-17,1), ylim=c(1e-17,1), pch=20, ce
 @
 The result is shown in Fig.~\ref{figPval}.
 
+Now, we can extract the significant genes from the vector \Robject{padjGLM} as before.
+To see the corresponding fold changes, we have a closer look at the object
+\Robject{fit1}
+<<lookatfit1>>=
+head(fit1)
+@
+
+The first three columns show the fitted coefficients, converted to a log2 scale.
+The log2 fold change due to the condition is shown in the third column. As indicated
+by the column name, it is the effect of ``untreated'', i.e., the log ratio of
+``untreated'' versus ``treated''. (This is unfortunately the other way round as 
+before, due to the peculiarities of contrast coding in R.) Note that the library type also
+had noticeable influence on the expression, and hence would have increased the dispersion
+estimates (and so reduced power) if we had not fitted an effect for it.
+
+The column \emph{deviance} 
+is the deviance of the fit. (Comparing the deviances with a $\chi^2$ likelihood ratio test is
+how \Rfunction{nbinomGLMTest} calculates the p values.) The last column, \emph{converged},
+indicates whether the calculation of coefficients and deviance has fully converged.
+(If it is false to often, you can try to change the GLM control parameters, as 
+explained in the help page to \Rfunction{fitNbinomGLMs}.)
+\medskip
+
+Finally, we show that taking the library type into account was important to have
+good detection power by doing the analysis again using the standard workflow, 
+as outlined earlier, and without informing \Rpackage{DESeq} of the library types:
+
+<<fullAnalysisSimple>>=
+cdsFullB <- newCountDataSet( fullCountsTable, design$condition )
+cdsFullB <- estimateSizeFactors( cdsFullB )
+cdsFullB <- estimateDispersions( cdsFullB, method="pooled", sharingMode="maximum" )
+resFullB <- nbinomTest( cdsFullB, "untreated", "treated" )
+
+table( `all-samples-simple` = resFullB$padj < .1, `all-samples-GLM` = padjGLM < .1 )
+@ %$
+
+
 %-------------------------------------------------------------------------------------------------
 \section{Moderated fold change estimates and applications to sample clustering and visualisation}
 %-------------------------------------------------------------------------------------------------
 In Section~\ref{sec:DE} we have seen how to use \Rpackage{DESeq} for
 calling differentially expressed genes. For each gene,
-\Rpackage{DESeq} reports a (log) fold--change estimate and a
+\Rpackage{DESeq} reports a (log2) fold change estimate and a
 $p$-value, as shown for instance in the dataframe \Robject{res} in the
 beginning of that section.  When the involved counts are small, the
-(log) fold--change estimate can be highly variable, and can even be
+(log) fold-change estimate can be highly variable, and can even be
 infinite.
 
 For some purposes, such as the clustering of samples (or genes)
 according to their overall profiles, or for visualisation of the data,
-the (log) fold--changes may thus not be useful: the random variability
-associated with fold--changes computed from ratios between low counts
+the (log) fold changes may thus not be useful: the random variability
+associated with fold changes computed from ratios between low counts
 might drown informative, systematic signal in other parts of the data.
-We would like to \emph{moderate} the fold--change estimates in some
+We would like to \emph{moderate} the fold change estimates in some
 way, so that they are more amenable to plotting or clustering. One
 approach to do so uses so-called pseudocounts: instead of the
 log-ratio $\log_2(n_A/n_B)$ between the counts $n_A$, $n_B$ in two
@@ -698,7 +743,7 @@ vsd <- getVarianceStabilizedData( cdsBlind )
 @
 
 
-The data are now on a logarithm like scale, and we can compute
+The data are now on a logarithm-like scale, and we can compute
 \emph{moderated log fold changes}.
 
 <<modlr>>=
@@ -720,14 +765,14 @@ table(as.character(lfc[!finite]), useNA="always")
 
 For plotting (Figure~\ref{figmodlr}), we replace the infinite values by an arbitrary fixed large number:
 <<repl>>=
-LargeNumber = 10
-lfc = ifelse(finite, lfc, sign(lfc)*LargeNumber)
+largeNumber = 10
+lfc = ifelse(finite, lfc, sign(lfc) * largeNumber)
 @ 
 
 <<figscp1, eval=FALSE>>=
 plot( lfc, mod_lfc, pch=16, 
-      col = ifelse(finite, "#80808040", "red"))
-abline(a=0, b=1, col="#40404040")
+      col = ifelse( finite, "#80808040", "red" ) )
+abline( a=0, b=1, col="#40404040" )
 @ 
 <<figscp2, eval=TRUE, echo=FALSE, results=hide>>=
 png(file="DESeq-figmodlr.png", width=800, height=800, pointsize=24)
@@ -744,7 +789,7 @@ dev.off()
 \caption{Scatterplot of direct (\Robject{lfc}) versus \emph{moderated} log-ratios (\Robject{moderated\_lfc}).
   The moderation criterion used is variance stabilisation.
   The red points correspond to values that were infinite in \Robject{lfc}
-  and were abitrarily set to \Sexpr{LargeNumber} for the purpose of plotting.
+  and were abitrarily set to \Sexpr{largeNumber} for the purpose of plotting.
   These values vary in a finite range (as shown in the plot) in \Robject{moderated\_lfc}.}
 \label{figmodlr}
 \end{figure}
@@ -809,62 +854,12 @@ or the manual page for \Rfunction{dendrogramGrob} in the package \Rpackage{latti
 
 
 
-
-\appendix
-
-\section{Reference overview}
-
-\textsl{TODO: Update or remove this!}
-
-This appendix gives a terse overview of the class and all the functions defined in the package. The
-description assumed that the reader is familiar with the \texttt{eSet} class.
-
-The package defines one S4 class, \Rclass{CountDataSet}, which is derived from \Rclass{eSet}. To instantiate 
-an object, use the function \Rfunction{newCountDataSet}. Do not call \Rfunction{new} directly.
-
-The class's \texttt{assayData} is a locked environment containing a single object, namely the matrix
-\texttt{counts} with the count data. The \texttt{featureData} is not used internally, but the user may
-wish to store annotation there. The \texttt{phenoData} contains two columns, \texttt{\_sizeFactors}
-and \texttt{\_conditions} to hold the vector of size factors and the factor of conditions. The user may add
-further columns for annotation. 
-
-Furthermore, there is a slot \texttt{rawVarFuncs} of type environment that holds the raw variance functions.
-Each of these functions has a name to access it in the environment, which is either the name of a condition, or
-\texttt{"\_max"} for conditions without replicates in normal mode, or \texttt{"\_blind"} or \texttt{"\_pooled"} for the single estimate that \Rfunction{estimateVarianceFunction} produces when called with \texttt{method="blind"}
-or or \texttt{method="pooled"}.
-Finally, the slot \texttt{rawVarFuncTable} contains a charcter vector which serves as a look-up table. 
-The names are the conditions and the values are the function names, i.e., the hash keys for the \texttt{rawVarFuncs} environment.
-
-All these properties are checked by the validity method.
-
-The following slot accessors are provided: \Rfunction{counts}, \Rfunction{sizeFactors}, \Rfunction{conditions},
-\Rfunction{rawVarFunc}, \Rfunction{rawVarFuncTable}. To avoid accidental invalidation, a setter is provided only for
-\Rfunction{sizeFactors}. (The other slots may be change via the ``\texttt{@}'' syntax, but only at the user's risk.)
-
-All functions that perform actual calculations are offered in two variants: a ``core'' one that takes base types as explicit
-arguments, and a wrapper that takes a \Rclass{CountDataObject} and finds the data there itself. As these function pairs
-have rather different argument lists, they are not made as generic functions, but rather have two different names, as follows:
-\medskip
-
-\small{\noindent
-\begin{tabular}{lll}
-Purpose & Wrapper function & Core function \\
-\hline \\
-estimate size factors & \texttt{estimateSizeFactors} & \texttt{estimateSizeFactorsForMatrix} \\
-estimate variance functions & \Rfunction{estimateVarianceFunctions} & \Rfunction{estimateVarianceFunctionForMatrix} \\
-calculate base means and variances & N/A & \Rfunction{getBaseMeansAndVariances} \\
-get diagnostics for variance fit & \Rfunction{varianceFitDiagnostics} & \Rfunction{varianceFitDiagnosticsForMatrix} \\
-produce ECDF plot for variance residuals & \Rfunction{residualsEcdfPlot} & \Rfunction{residualsEcdfPlotFromDiagnostics} \\
-perform test & \Rfunction{nbinomTest} & \Rfunction{nbinomTestForMatrices} 
-\end{tabular}
-}
-
 \section{Session Info}
 <<sessi>>=
 sessionInfo()
 @
 
-\bibliographystyle{plainnat} 
+\bibliographystyle{plain} 
 \bibliography{DESeq}
 
 
