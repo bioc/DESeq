@@ -1,5 +1,5 @@
 Package: DESeq
-Version: 1.5.8
+Version: 1.5.9
 Title: Differential gene expression analysis based on the negative binomial distribution
 Author: Simon Anders, EMBL Heidelberg <sanders@fs.tum.de>
 Maintainer: Simon Anders <sanders@fs.tum.de>
