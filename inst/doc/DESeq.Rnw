@@ -205,7 +205,7 @@ The sum of both, shot noise and dispersion, is considered in the differential ex
 
 To estimate the dispersions, use this command.
 <<estimateDispersions,cache=TRUE>>=
-cds <- estimateDispersions( cds )
+cds <- estimateDispersions( cds , lp_extra_args=list(deg=1))
 @
 
 We could now proceed straight to the testing for differetial
@@ -237,25 +237,23 @@ conditions.
 \fixme{\begin{enumerate}
   \item Move the function definition below into the package.
   \item Double check the factor \texttt{qchisq( .99, df )/df} - is it correct?
-  \item The boundary effects of the smoothing line look awful - I understand this may not
-       be a big problem in practice, but then we should also show a plot that
-       deemphasizes them. Perhaps show the fit only within the \[0.025,0.975\] 
-       range of the x-axis?
-  \end{enumerate}}
+  \item The boundary effects of the smoothing line look awful - change to parametric fit?
+  \end{enumerate}
+}
 
 <<plotFitInfo>>=
 plotFitInfo = function(cds, conds = ls(cds@fitInfo), probs = 0.99) {
   means = rowMeans( counts( cds, normalized=TRUE ) )
-  xg = 10^seq( log10(min(means[means>0])), 
-               log10(max(means)), length.out=100 )
+  ## xrange = log10(quantile( means[means>1], probs=c(0.025, 0.975)))
+  xrange = log10(quantile( means[means>1], probs=c(0, 1)))
+  xg = 10^seq( xrange[1], xrange[2], length.out=100 )
   for(cond in conds){
     df = sum( conditions(cds) == cond ) - 1
     matplot(xg,
-      cds@fitInfo[[cond]]$dispFunc( xg ) %*% rbind(c(1, qchisq( probs, df )/df)), 
-      col=c("red","blue"), lty=1, type="l",
-      log="xy", main=cond, 
-      ylab="dispersions",
-      xlab="normalized average mean")
+      cds@fitInfo[[cond]]$dispFunc( xg ) %*% rbind(c(1, qchisq( probs, df )/df)),
+      xlim = c(1, max(means, na.rm=TRUE)),
+      col=c("red","blue"), lty=1, type="l", log="xy", 
+      main=cond, ylab="dispersions", xlab="normalized average mean")
     points(means, cds@fitInfo[[cond]][["perGeneDispEsts"]], pch=".")
   }
 }
