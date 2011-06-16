@@ -18,6 +18,8 @@
 \newcommand{\Rfunction}[1]{{\small\texttt{#1}}}
 \newcommand{\fixme}[1]{{\textbf{Fixme:} \textit{\textcolor{blue}{#1}}}}
 
+\renewcommand{\floatpagefraction}{0.7}	
+  
 \author{Simon Anders\\[1em]European Molecular Biology Laboratory (EMBL),\\ Heidelberg, Germany\\[1em]
 \texttt{sanders@fs.tum.de}}
 
@@ -96,6 +98,10 @@ The \Robject{pasillaGenes} object is of class
 \Rclass{CountDataSet}, which is the data container used by
 \Rpackage{DESeq}. We load the needed packages and the data as
 follows.
+
+<<options,results=hide,echo=FALSE>>=
+options(digits=3)
+@  
 
 <<pasilla2,results=hide>>=
 library( "DESeq" )
@@ -334,16 +340,26 @@ in \texttt{fData(cds)} prior to calling the testing function.
 \section{Inference: Calling differential expression} \label{sec:DE}
 %------------------------------------------------------------
 
-\subsection{Standard comparison between two experimental conditions}
+\begin{figure}
+\centering
+\includegraphics[width=.6\textwidth]{DESeq-figDE}
+\caption{Plot of normalised mean versus $log_2$ fold change 
+(this plot is sometimes also called the ``MA-plot'') for the contrast ``untreated'' 
+versus ``treated''.}
+\label{figDE}
+\end{figure}
 
-Having estimated and verified the variance--mean dependence, it is now straight-forward to look for
+\subsection{Comparison between two experimental conditions}
+
+Having estimated the dispersion for each gene, it is now straight-forward to look for
 differentially expressed genes. To contrast two conditions, e.g., to see whether there is differential
 expression between conditions ``untreated'' and ``treated'', we simply call the function \Rfunction{nbinomTest}.
-It performs the tests as described in the paper and returns a data frame with the $p$ value and other
-useful data.
+It performs the tests as described in the paper and returns a data frame with the $p$ values and other
+useful information.
 %
-<<nbt,cache=TRUE>>=
+<<nbt1,cache=TRUE>>=
 res <- nbinomTest( cds, "untreated", "treated" )
+<<nbt2>>=
 head(res)
 @
 %
@@ -351,18 +367,11 @@ For each gene, we get its mean expression level (at the base scale) as a joint e
 estimated separately for each  condition, the fold change from
 the first to the second condition, the logarithm (to basis 2) of the fold change, and the
 $p$ value for the statistical significance of this change. The \texttt{padj} column contains the 
-$p$ values, adjusted for multiple testing with the Benjamini-Hochberg procedure (see the standard R function
+$p$ values, adjusted for multiple testing with the Benjamini-Hochberg procedure (see the R function
 \Rfunction{p.adjust}), which controls false discovery 
 rate (FDR). The last two columns show the ratio of the single gene estimates for the base
 variance to the fitted value. This may help to notice false hits due to ``variance outliers''. Any hit
-that has a very large value in one these two columns should be checked carefully.
-
-\begin{figure}
-\centering
-\includegraphics[width=.6\textwidth]{DESeq-figDE}
-\caption{MvA plot for the contrast ``T'' vs.\ ``N''.}
-\label{figDE}
-\end{figure}
+that has a very large value in one these two columns should be checked carefully. \fixme{Do we still need this?}
 
 Let us first plot the $\log_2$ fold changes against the base means, colouring in red those genes
 that are significant at 10\% FDR.
@@ -376,14 +385,14 @@ plotDE <- function( res )
 
 plotDE( res )
 @ %$
-See Fig.~\ref{figDE} for the plot. As we will use this plot more often, we have
+See Figure~\ref{figDE} for the plot. As we will use this plot more often, we have
 stored its code in a function.
 
-We can filter for the significant genes, 
+We can filter for significant genes, according to some chosen threshold,
 <<ressig1>>=
-resSig <- res[ res$padj < .1, ]
+resSig <- res[ res$padj < 0.1, ]
 @
-and list, e.g., the most significantly differentially expressed genes:
+and list, e.\,g., the most significantly differentially expressed genes:
 <<ressig2>>=
 head( resSig[ order(resSig$pval), ] )
 @
@@ -420,29 +429,34 @@ the expression strength. For weakly expressed genes, stronger changes are
 required for the gene to be called significantly expressed. To understand the reason for
 this let, us compare the normalized counts between two replicate samples, here
 taking the two untreated samples as an example:
-
-<<MArepl,fig=TRUE>>=
+%
+<<ncu>>=
 ncu <- counts( cds, normalized=TRUE )[ , conditions(cds)=="untreated" ]
-   # ncu is now a matrix with two columns
-   
-plot( ( ncu[,1]+ncu[,2] )/2, log2( ncu[,2] / ncu[,1] ), pch=".", log="x" )
+@ 
+\Robject{ncu} is now a matrix with two columns.
+%   
+<<MArepl,fig=TRUE>>=
+plot( rowMeans(ncu), log2( ncu[,2] / ncu[,1] ), pch=".", log="x" )
 @
-
-As one can see (Fig.\ \ref{figMArepl}), the log fold changes between replicates 
+%
+As one can see in Figure~\ref{figMArepl}, the log fold changes between replicates 
 are stronger for lowly expressed genes than for highly expressed ones. We 
-may conclude that a gene's expression is influenced by the treatment only
-if the change between treated and untreated samples are strong as compared to
+ought to conclude that a gene's expression is influenced by the treatment only
+if the change between treated and untreated samples is stronger than
 what we see between replicates, and hence, the dividing line between red and black in
-Fig.\ \ref{figDE} mimics the shape seen in Fig.\ \ref{figMArepl}.
+Figure~\ref{figDE} mimics the shape seen in Figure~\ref{figMArepl}.
 
+%------------------------------------------------------------
 \subsection{Working partially without replicates}
+%------------------------------------------------------------
 
 If you have replicates for one condition but not for the other, you can still proceed as
-before. As already stated above, the testing function will simply take the maximum of all 
-estimated variance function for conditions without replicates. Whether this is acceptable,
-needs to be checked, of course, but often, it may seem reasonable to assume that the variance
-in your unreplicated conditions is not that differen from what you see in the replicated
-ones.
+before. As explained in the manual page of the \Rfunction{estimateDispersions} function,
+in such cases, the dispersion estimates for the conditions without replicates
+will simply be assigned the maximum of the dispersion estimates of those
+conditions that do have replicates.  Whether this is appropriate,
+needs to be checked, of course, but often, it may seem reasonable to assume that the data's
+dispersion in different conditions is not that different.
 
 To demonstrate, we subset our data object to only three samples:
 
@@ -459,7 +473,7 @@ only one untreated sample.}
 \label{figDE_Tb}
 \end{figure}
 
-Now, we do the analysis as before, and get a similar result:
+Now, we do the analysis as before.
 
 <<est123,cache=TRUE>>=
 cdsTTU <- estimateSizeFactors( cdsTTU )
@@ -467,40 +481,40 @@ cdsTTU <- estimateDispersions( cdsTTU )
 resTTU <- nbinomTest( cdsTTU, "untreated", "treated" )
 @
 
-We produce the same plot as before, again with
+We produce the analogous plot as before, again with
 <<figDE_Tb,fig=TRUE>>=
 plotDE( resTTU )
 @ %$
-The result (Fig.~\ref{figDE_Tb}) shows the same symmetry in up- and down-regulation
+Figure~\ref{figDE_Tb} shows the same symmetry in up- and down-regulation
 as in Fig.~\ref{figDE} but a certain asymmetry in the boundary line for significance. This
-has an easy explanation: low counts suffer from proportionally stronger shot noise than high counts, and this
-is more pronounced in the ``Tb'' data than in the ``N'' data due to the lack of replicates. Hence
-a stronger signal is required to call a down-regulation significant than for an up-regulation.
+has an easy explanation: low counts suffer from proportionally stronger shot noise than high 
+counts, and since there is only one ``untreated'' sample versus two ``treated'' ones, 
+a stronger downward fold-change is required to be called significant than for the upward direction.
+\fixme{Please double check if this is still correct, after the dataset change.}
 
-
+%--------------------------------------------------
 \subsection{Working without any replicates}
+%--------------------------------------------------
 
 Proper replicates are essential to interpret a biological experiment. After all, if one compares two
-conditions and finds a difference, how else would one know that this difference is due to the different conditions
-and would not have arisen between replicates, as well, just due to noise? Hence, any attempt to work without any
+conditions and finds a difference, how else can one know that this difference is due to the different conditions
+and would not have arisen between replicates, as well, just due to experimental or biological noise? Hence, any attempt to work without any
 replicates will lead to conclusions of very limited reliability.
 
-Nevertheless, such experiments are often undertaken, especially in HTS, and the \Rpackage{DESeq} package
-can deal with them, even though the soundness of the results may depend very much on the circumstances.
+Nevertheless, such experiments are sometimes undertaken, and the \Rpackage{DESeq} package
+can deal with them, even though the soundness of the results may depend much on the circumstances.
 
-Our primary assumption is still that the mean is a good predictor for the variance. Hence, if a number of genes 
-with similar expression level are compared between replicates, we expect that their variation is of
-comparable magnitude. Once we accept this assumption, we may argue as follows: Given two samples from 
+Our primary assumption is still that the mean is a good predictor for the dispersion. 
+Once we accept this assumption, we may argue as follows: Given two samples from 
 different conditions and a number of genes with comparable expression levels, of which we expect only a minority
-to be influenced by the condition, we may take the variance estimated from comparing their count rates \emph{across}
+to be influenced by the condition, we may take the dispersion estimated from comparing their counts \emph{across}
 conditions as ersatz for a proper estimate of the variance across replicates. After all,
 we assume most genes to behave the same within replicates as across conditions, and hence, the estimated variance 
-should not change too much due to the influence of the hopefully few differentially expressed genes. Furthermore,
-the differentially expressed genes will only cause the variance estimate to be too high, so that the test will err to the
-side of being too conservative, i.e., we only lose power.
+should not be affected too much by the influence of the hopefully few differentially expressed genes. Furthermore,
+the differentially expressed genes will only cause the dispersion estimate to be too high, so that the test will err to the
+side of being too conservative.
 
-We shall now see how well this works for our example data, even though it has rather many differentially expressed genes.
-
+We shall now see how well this works for our example data.
 We reduce our count data set to just two columns, one ``untreated'' and one ``treated'' sample:
 <<subset2>>=
 cds2 <- cds[ ,c(  "untreated3fb", "treated3fb"   ) ]
