@@ -10,13 +10,13 @@ exportMethods(
    counts, "counts<-",
    sizeFactors, "sizeFactors<-",
    conditions,  "conditions<-",
-   dispTable, "dispTable"
+   dispTable, "dispTable",
+   estimateSizeFactors,
+   estimateDispersions
 )
 
 export( 
    newCountDataSet,
-   estimateSizeFactors,
-   estimateDispersions,
    estimateVarianceFunctions,  # removed; only stub with error msg left
    varianceFitDiagnostics,     # removed; only stub with error msg left
    residualsEcdfPlot,          # removed; only stub with error msg left
@@ -34,4 +34,3 @@ export(
    nbinomGLMTest,
    dispTable 
 )
-

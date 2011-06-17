@@ -1,14 +1,14 @@
-estimateSizeFactors <- function( cds, locfunc=median )
-{
-   stopifnot( is( cds, "CountDataSet" ) )
-   sizeFactors(cds) <- estimateSizeFactorsForMatrix( counts(cds), locfunc )
-   cds
-}
+setMethod("estimateSizeFactors", signature(cds="CountDataSet"),
+  function( cds, locfunc=median, ... ) {
+    sizeFactors(cds) <- estimateSizeFactorsForMatrix( counts(cds), locfunc )
+    cds
+  })
 
-estimateDispersions <- function( cds, method = c( "per-condition", "pooled", "blind" ), 
-   sharingMode = c( "maximum", "fit-only", "gene-est-only" ),
-   fitType = c( "parametric", "local" ),
-   locfit_extra_args=list(), lp_extra_args=list(), modelFrame = NULL )
+setMethod("estimateDispersions", signature(cds="CountDataSet"),
+  function( cds, method = c( "per-condition", "pooled", "blind" ), 
+    sharingMode = c( "maximum", "fit-only", "gene-est-only" ),
+    fitType = c( "parametric", "local" ),
+    locfit_extra_args=list(), lp_extra_args=list(), modelFrame = NULL, ... )
 {
    stopifnot( is( cds, "CountDataSet" ) )   
    if( any( is.na( sizeFactors(cds) ) ) )
@@ -117,7 +117,7 @@ estimateDispersions <- function( cds, method = c( "per-condition", "pooled", "bl
         
    validObject( cds )
    cds
-}
+})
 
 estimateVarianceFunctions <- function( ... )
 {
