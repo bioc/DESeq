@@ -2,6 +2,8 @@
 \Rdversion{1.1}
 \alias{sizeFactors}
 \alias{sizeFactors<-}
+\alias{sizeFactors,CountDataSet-method}
+\alias{sizeFactors<-,CountDataSet-method}
 \title{
     Accessor functions for the sizeFactors information in a CountDataSet
 }

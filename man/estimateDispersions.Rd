@@ -17,6 +17,7 @@
 estimateDispersions( cds, 
    method = c( "per-condition", "pooled", "blind" ), 
    sharingMode = c( "maximum", "fit-only", "gene-est-only" ),
+   fitType = c("parametric", "local"),
    locfit_extra_args=list(), lp_extra_args=list(), modelFrame = NULL )}
 \arguments{
   \item{cds}{
@@ -82,7 +83,25 @@ estimateDispersions( cds,
      }
   }
 
+  \item{fitType}{
+
+     \itemize{
+     \item \code{parametric} - Fit a dispersion-mean relation of the
+     form \code{dispersion = asymptDisp + extraPois / mean} via a robust
+     gamma-family GLM. The coefficients \code{asymptDisp} and \code{extraPois}
+     are given in the attribute \code{coefficients} of the \code{dispFunc}
+     in the \code{fitInfo} (see below).
+     }
+
+     \itemize{
+     \item \code{local} - Use the locfit package to fit a dispersion-mean 
+     relation, as described in the DESeq paper.
+     }
+
+  }
+
   \item{locfit_extra_args, lp_extra_args}{
+      (only for \code{fitType=local})
       Options to be passed to the \code{locfit} and to the \code{lp}
       function of the locfit package. Use this to adjust the local
       fitting. For example, you may pass a value for \code{nn} different

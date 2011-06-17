@@ -1,6 +1,7 @@
 \name{counts}
 \Rdversion{1.1}
 \alias{counts}
+\alias{counts,CountDataSet-method}
 \title{
    Accessor for the 'counts' slot of a CountDataSet object.
 }

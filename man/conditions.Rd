@@ -1,6 +1,7 @@
 \name{conditions}
 \Rdversion{1.1}
 \alias{conditions}
+\alias{conditions,CountDataSet-method}
 \title{
     Accessor function for the conditions information in a CountDataSet
 }
