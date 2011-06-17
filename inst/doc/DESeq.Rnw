@@ -742,12 +742,12 @@ calling differentially expressed genes. For each gene,
 \Rpackage{DESeq} reports a (logarithm base 2) fold change estimate and a
 $p$ value, as shown for instance in the dataframe \Robject{res} in the
 beginning of that section.  When the involved counts are small, the
-(log) fold-change estimate can be highly variable, and can even be
+(logarithmic) fold-change estimate can be highly variable, and can even be
 infinite.
 
 For some purposes, such as the clustering of samples (or genes)
 according to their overall profiles, or for visualisation of the data,
-the (log) fold changes may thus not be useful: the random variability
+the (logarithmic) fold changes may thus not be useful: the random variability
 associated with fold changes computed from ratios between low counts
 might drown informative, systematic signal in other parts of the data.
 We would like to \emph{moderate} the fold change estimates in some
@@ -787,17 +787,16 @@ mod_lfc = (rowMeans( vsd[, conditions(cds)=="treated", drop=FALSE] ) -
            rowMeans( vsd[, conditions(cds)=="untreated", drop=FALSE] ))
 @ 
 
-Now let us compare these to the original (log) fold changes. First we find that many of the latter
+Now let us compare these to the original ($\log_2$) fold changes. First we find that many of the latter
 are infinite (resulting from division of a finite value by 0) or \emph{not a number} (NaN,
 resulting from division of 0 by 0).
-% FIXME: Simon, please check this - if you could please define 0/0 := 1 in the 
-% appropriate place in the code, then the NaN can go away.
 
 <<dah>>=
 lfc = res$log2FoldChange
 finite = is.finite(lfc)
 table(as.character(lfc[!finite]), useNA="always")
 @ 
+\fixme{Define 0/0 := 1 in the  appropriate place in the code, then the \texttt{NaN} can go away.}
 
 For plotting (Figure~\ref{figmodlr}), we replace the infinite values by an arbitrary fixed large number:
 <<repl>>=
@@ -805,34 +804,27 @@ largeNumber = 10
 lfc = ifelse(finite, lfc, sign(lfc) * largeNumber)
 @ 
 
-<<figscp1, eval=FALSE>>=
+<<figmodlr, fig=TRUE>>=
 plot( lfc, mod_lfc, pch=16, 
       col = ifelse( finite, "#80808040", "red" ) )
 abline( a=0, b=1, col="#40404040" )
 @ 
-<<figscp2, eval=TRUE, echo=FALSE, results=hide>>=
-png(file="DESeq-figmodlr.png", width=800, height=800, pointsize=24)
-plot( lfc, mod_lfc, pch=16, 
-      col = ifelse(finite, "#80808040", "red"))
-abline(a=0, b=1, col="#40404040")
-dev.off()
-@ 
-% FIXME: why does  abs(lfc)>abs(mod_lfc)   not hold ??
+\fixme{why does  abs(lfc)>abs(mod\_lfc) not hold ?}
 
 \begin{figure}
 \centering
-\includegraphics[width=.7\textwidth]{DESeq-figmodlr.png}
-\caption{Scatterplot of direct (\Robject{lfc}) versus \emph{moderated} log-ratios (\Robject{moderated\_lfc}).
+\includegraphics[width=.6\textwidth]{DESeq-figmodlr}
+\caption{Scatterplot of direct (\Robject{lfc}) versus \emph{moderated} log-ratios (\Robject{mod\_lfc}).
   The moderation criterion used is variance stabilisation.
   The red points correspond to values that were infinite in \Robject{lfc}
-  and were abitrarily set to \Sexpr{largeNumber} for the purpose of plotting.
-  These values vary in a finite range (as shown in the plot) in \Robject{moderated\_lfc}.}
+  and were abitrarily set to $\pm\Sexpr{largeNumber}$ for the purpose of plotting.
+  These values vary in a finite range (as shown in the plot) in \Robject{mod\_lfc}.}
 \label{figmodlr}
 \end{figure}
 
 \begin{figure}
 \centering
-\includegraphics[width=.49\textwidth]{DESeq-figHeatmap1}
+\includegraphics[width=.6\textwidth]{DESeq-figHeatmap1}
 \caption{Heatmap showing the Euclidean distances between the samples
   as calculated from the variance-stabilising transformation of the
   count data.}
@@ -847,17 +839,17 @@ dists <- dist( t( vsd ) )
 @
 %
 which we can visualize as a heatmap in Figure~\ref{figHeatmap1}.
-<<figHeatmap1,fig=TRUE>>=
+<<figHeatmap1,fig=TRUE,width=7,height=7>>=
 heatmap(as.matrix( dists ), 
         symm=TRUE,
-        scale="none",
+        scale="none", margins=10*c(1,1),
         col = colorRampPalette(c("darkblue","white"))(100))
 @
 
-We can also visualise the expression data of, say, the top 100 differentially expressed genes.
+We can also visualise the expression data of, say, the top 40 differentially expressed genes.
 %
-<<figHeatmap2a,fig=TRUE>>=
-select = order(res$pval)[1:100]
+<<figHeatmap2a,fig=TRUE,width=7,height=10>>=
+select = order(res$pval)[seq_len(40)]
 colors = colorRampPalette(c("white","darkblue"))(100)
 heatmap( vsd[select,], 
          col = colors, scale = "none")
@@ -865,7 +857,7 @@ heatmap( vsd[select,],
 %
 For comparison, let us also try the same with the untransformed counts.
 %
-<<figHeatmap2b,fig=TRUE>>=
+<<figHeatmap2b,fig=TRUE,width=7,height=10>>=
 heatmap( counts(cds)[select,], 
          col = colors, scale = "none")
 @
