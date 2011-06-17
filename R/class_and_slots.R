@@ -87,9 +87,20 @@ setMethod("counts", signature(cds="CountDataSet"),
     if(!normalized) {
       assayData(cds)[["counts"]]
     } else {
-      t( t( assayData(cds)[["counts"]] ) / sizeFactors(cds) )
+      if(any(is.na( sizeFactors(cds)))) {
+        stop( "Please first calculate size factors or set normalized=FALSE")
+      } else {
+        t(t( assayData(cds)[["counts"]] ) / sizeFactors(cds) )
+      }
     }
   })   
+
+setMethod("counts<-", signature(cds="CountDataSet"),
+  function( cds, value ) {
+   assayData(cds)[[ "counts" ]] <- value
+   validObject(cds)
+   cds
+})   
    
 setMethod("sizeFactors", signature(cds="CountDataSet"),
   function(cds) {
