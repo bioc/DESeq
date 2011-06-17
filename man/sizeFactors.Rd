@@ -1,11 +1,11 @@
 \name{sizeFactors}
 \Rdversion{1.1}
-\alias{sizeFactors}
-\alias{sizeFactors<-}
+\docType{methods}
 \alias{sizeFactors,CountDataSet-method}
-\alias{sizeFactors<-,CountDataSet-method}
+\alias{sizeFactors<-,CountDataSet,numeric-method}
 \title{
-    Accessor functions for the sizeFactors information in a CountDataSet
+    Accessor functions for the 'sizeFactors' information in a
+    CountDataSet object.
 }
 \description{
     The sizeFactors vector assigns to each column of the count data
@@ -13,16 +13,12 @@
     a common scale by dividing by the corresponding size factor.
 }
 \usage{
-sizeFactors(cds)
-sizeFactors(cds) <- value
+\S4method{sizeFactors}{CountDataSet}(cds)
+\S4method{sizeFactors}{CountDataSet,numeric}(cds) <- value
 }
 \arguments{
-  \item{cds}{
-      a CountDataSet
-}
-  \item{value}{
-      a vector of number, one size factor for each column in the count data
-}
+  \item{cds}{a \code{CountDataSet} object.}
+  \item{value}{a numeric vector, one size factor for each column in the count data.}
 }
 
 \seealso{

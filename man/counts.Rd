@@ -1,23 +1,30 @@
 \name{counts}
 \Rdversion{1.1}
-\alias{counts}
+\docType{methods}
 \alias{counts,CountDataSet-method}
+\alias{counts<-,CountDataSet,matrix-method}
 \title{
    Accessor for the 'counts' slot of a CountDataSet object.
 }
+
 \description{
    The counts slot holds the count data as a matrix of non-negative integer
    count values, one row for each observational unit (gene or the like), and
    one column for each sample.
 }
+
 \usage{
-counts(cds, normalized=FALSE)
+\S4method{counts}{CountDataSet}(cds, normalized=FALSE)
+\S4method{counts}{CountDataSet,matrix}(cds) <- value
 }
+
 \arguments{
-  \item{cds}{a CountDataSet object.}
+  \item{cds}{a \code{CountDataSet} object.}
   \item{normalized}{logical indicating whether or not to divide the
     counts by the size factors before returning.}
+  \item{value}{integer matrix.}
 }
+
 \author{
    Simon Anders, sanders@fs.tum.de
 }

@@ -1,9 +1,11 @@
 \name{conditions}
 \Rdversion{1.1}
-\alias{conditions}
+\docType{methods}
 \alias{conditions,CountDataSet-method}
+\alias{conditions<-,CountDataSet-method}
 \title{
-    Accessor function for the conditions information in a CountDataSet
+    Accessor functions for the 'conditions' information in a
+    CountDataSet object.
 }
 \description{
     The conditions vector is a factor that assigns to each column of the count data
@@ -11,13 +13,16 @@
     in the CountDataSet's "phenoData" slot as a row named "condition".
 }
 \usage{
-conditions(cds)
+\S4method{conditions}{CountDataSet}(cds, ...)
+\S4method{conditions}{CountDataSet}(cds) <- value
+
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{cds}{
-      a CountDataSet
-}
+  \item{cds}{a CountDataSet}
+  \item{value}{a vector of suitable length, i.e. with as many elements as
+    \code{cds} has samples.}
+  \item{...}{should not be used for this method.}
 }
 \author{
    Simon Anders, sanders@fs.tum.de

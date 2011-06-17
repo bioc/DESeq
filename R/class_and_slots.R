@@ -95,7 +95,7 @@ setMethod("counts", signature(cds="CountDataSet"),
     }
   })   
 
-setMethod("counts<-", signature(cds="CountDataSet"),
+setReplaceMethod("counts", signature(cds="CountDataSet", value="matrix"),
   function( cds, value ) {
    assayData(cds)[[ "counts" ]] <- value
    validObject(cds)
@@ -109,7 +109,7 @@ setMethod("sizeFactors", signature(cds="CountDataSet"),
    sf
  })   
 
-setMethod("sizeFactors<-", signature(cds="CountDataSet"),
+setReplaceMethod("sizeFactors", signature(cds="CountDataSet", value="numeric"),
   function( cds, value ) {
    pData(cds)$sizeFactor <- value
    validObject( cds )
@@ -117,18 +117,20 @@ setMethod("sizeFactors<-", signature(cds="CountDataSet"),
 })   
 
 setMethod("conditions", signature(cds="CountDataSet"),
-  function( cds ) {
+  function( cds, ... ) {
+   if(length(list(...))!=0)
+     warning("Ignoring second and/or further arguments.")
    if( cds@multivariateConditions )
-      stop( "The 'conditions' accessor is only for simple single-factor conditions, but you have specified multivariate conditions. Access them via 'pData'." )
+     stop( "The 'conditions' accessor is only for simple single-factor conditions, but you have specified multivariate conditions. Access them via 'pData'." )
    conds <- pData(cds)$`condition`
    names( conds ) <- colnames( counts(cds) )
    conds
 })   
    
-setMethod("conditions<-", signature(cds="CountDataSet"),
+setReplaceMethod("conditions", signature(cds="CountDataSet"),
   function( cds, value ) {
    if( cds@multivariateConditions )
-      stop( "The 'conditions' accessor is only for simple single-factor conditions, but you have specified multivariate conditions. Access them via 'pData'." )
+      stop( "The 'conditions<-' accessor is only for simple single-factor conditions, but you have specified multivariate conditions. Access them via 'pData<-'." )
    pData(cds)$`condition` <- factor( value )
    validObject( cds )
    cds
@@ -139,7 +141,7 @@ setMethod("dispTable", signature(cds="CountDataSet"),
     cds@dispTable
 })   
 
-setMethod("dispTable<-", signature(cds="CountDataSet"),
+setReplaceMethod("dispTable", signature(cds="CountDataSet"),
  function( cds, value ) {
     cds@dispTable <- value
     validObject( cds )

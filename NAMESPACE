@@ -1,11 +1,20 @@
+import( Biobase )
+importFrom( genefilter, rowVars )
+importFrom( geneplotter, multiecdf )
+
+useDynLib( DESeq, calc_pvals )
+
 exportClasses( "CountDataSet" )
+
+exportMethods(
+   counts, "counts<-",
+   sizeFactors, "sizeFactors<-",
+   conditions,  "conditions<-",
+   dispTable, "dispTable"
+)
 
 export( 
    newCountDataSet,
-   counts,
-   sizeFactors,
-   "sizeFactors<-",
-   conditions,
    estimateSizeFactors,
    estimateDispersions,
    estimateVarianceFunctions,  # removed; only stub with error msg left
@@ -25,9 +34,4 @@ export(
    nbinomGLMTest,
    dispTable 
 )
-  
-import( Biobase )
-importFrom( genefilter, rowVars )
-importFrom( geneplotter, multiecdf )
 
-useDynLib( DESeq, calc_pvals )
