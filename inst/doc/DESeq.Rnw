@@ -808,11 +808,11 @@ lfc = ifelse(finite, lfc, sign(lfc) * largeNumber)
 @ 
 
 <<figmodlr, fig=TRUE>>=
-plot( lfc, mod_lfc, pch=16, 
+plot( lfc, mod_lfc, pch=20, cex=.3,
       col = ifelse( finite, "#80808040", "red" ) )
 abline( a=0, b=1, col="#40404040" )
 @ 
-\fixme{why does  abs(lfc)>abs(mod\_lfc) not hold ?}
+
 
 \begin{figure}
 \centering
@@ -871,9 +871,9 @@ The result is shown in Figure~\ref{figHeatmap2}.
 \includegraphics[width=.49\textwidth]{DESeq-figHeatmap2a}
 \includegraphics[width=.49\textwidth]{DESeq-figHeatmap2b}
 \caption{Heatmaps showing the expression data of the top \Sexpr{length(select)}
-  differentially expressed genes. Left: on a colour scale proportional 
-  to the variance stabilisation transformed scale (\Robject{vsd}),
-  right: colour scale proportional to the original count scale (\Robject{counts{cds}}).
+  differentially expressed genes. Left: clustering of the variance stabilisation 
+  transformed data (\Robject{vsd}),
+  right: clustering of the original count data (\Robject{counts{cds}}).
   The right plot is dominated by a small number of data points with large values.}
 \label{figHeatmap2}
 \end{figure}

@@ -1,10 +1,3 @@
-cat( "Note to DESeq users:\n\n",
-   "You have just loaded the development version of DESeq, which\n",
-   "is currently undergoing a major overhaul and hence will likely\n",
-   "not work as expected.\n\n",
-   "Until further notice, please only use the released version of DESeq\n",
-   "(i.e., not this one, but version 1.4.x from Bioconductor release 2.8.)\n" )
-
 setClass( "CountDataSet", 
    contains = "eSet",
    representation = representation( 

@@ -197,7 +197,7 @@ getVarianceStabilizedData <- function( cds ) {
    if( attr( fitInfo$dispFunc, "fitType" ) == "parametric" ) {
       coefs <- attr( fitInfo$dispFunc, "coefficients" )
       vst <- function( q )
-         2 * log( coefs["asymptDisp"] * sqrt(q) + 
+         2/log(2) * log( coefs["asymptDisp"] * sqrt(q) + 
             coefs["asymptDisp"] * sqrt( 1 + coefs["extraPois"] + coefs["asymptDisp"] * q ) )
       vst( ncounts )
    } else {  

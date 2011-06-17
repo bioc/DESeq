@@ -31,13 +31,17 @@ getVarianceStabilizedData(cds)
    the following variance stabilizing transformation is used on the normalized
    count data, using the coefficients \code{asymptDisp} and \code{extraPois} from the dispersion fit:
    
-   \code{vst( q ) = 2 * log( asymptDisp * sqrt(q) + asymptDisp * sqrt( 1 + extraPois + asymptDisp * q ) )}
+   \code{vst( q ) = 2/log(2) * log( asymptDisp * sqrt(q) + asymptDisp * sqrt( 1 + extraPois + asymptDisp * q ) )}
+
+   This transformation is scaled such that for large counts, it become asymptotically
+   equal to log2.
 
    If \code{\link{estimateDispersions}} was called with \code{fitType="locfit"},
    the reciprocal of the square root of the variance of the normalized counts, as derived
    from the dispersion fit, is then numerically
    integrated up, and the integral (approximated by a spline function) evaluated for each
-   count value in the column, yielding a transformed value.
+   count value in the column, yielding a transformed value. Note that the asymptotic 
+   property mentioned above does not hold in this case.
    
    Limitations: In order to preserve normalization, the same transformation has to be used
    for all samples. This results in the variance stabilizition to be only approximate. The
