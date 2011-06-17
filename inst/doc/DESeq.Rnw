@@ -158,7 +158,7 @@ The \Rclass{CountDataSet} class is derived from \Rpackage{Biobase}'s
 Bioconductor class. Furthermore, accessors are provided for its data
 slots\footnote{In fact, the objects \Robject{pasillaGenes} and \Robject{cds}
   from the \Rpackage{pasilla} are also of class \Rclass{CountDataSet};
-  here we re-created \Robject{cds} from elementary datatypes, a matrix and a factor,
+  here we re-created \Robject{cds} from elementary data types, a matrix and a factor,
   for pedagogic effect.}.  For example, the counts can be accessed with the
 \Rfunction{counts} function.
 %
@@ -600,7 +600,7 @@ cdsFull <- newCountDataSet( fullCountsTable, design )
 we have only recreated it for demonstration.
 
 As before, we estimate the size factors and then the dispersions. For the latter,
-we specify the method ``pooled''. Then, only one dispersion is for each gene, 
+we specify the method ``pooled''. Then, only one dispersion is computed for each gene, 
 an average over all cells (weighted by the number of samples for each cells), where
 the term \emph{cell} denotes any of the four combinations of factor levels of
 the design.
@@ -638,11 +638,14 @@ lines( xg, cdsFull@fitInfo[[cond]]$dispFunc( xg ) * qchisq( .95, df )/df,
    col="blue", lty="dashed" )
 @ %$
 
+\fixme{do this by calling \Rfunction{plotFitInfo} instead; use \Robject{df} that is stored 
+  in the attributes of \Robject{fitInfo}.}
+
 For inference, we now specify two \emph{models} by formulas. The \emph{full model}
-specifies that the genes' expression is influenced by both the library type and
-the treatment condition, the \emph{reduced model} assumes that only the library
-type has influence. For each gene, we fit generalized linear models (GLMs)
-according to the two models, and then compare in orderto infer whether
+regresses the genes' expression on both the library type and
+the treatment condition, the \emph{reduced model} regresses them only on the library
+type. For each gene, we fit generalized linear models (GLMs)
+according to the two models, and then compare them in order to infer whether
 the additional specification of the treatment improves the fit and hence, whether 
 the treatment has significant effect.
 
@@ -650,35 +653,41 @@ the treatment has significant effect.
 fit1 <- fitNbinomGLMs( cdsFull, count ~ type + condition )
 fit0 <- fitNbinomGLMs( cdsFull, count ~ type  )
 @
-(These commands take a while to execute.)
+These commands take a while to execute.
 
-For the actual test, we call
+To perform the test, we call
 <<pvalsGLM,cache=TRUE>>=
 pvalsGLM <- nbinomGLMTest( fit1, fit0 )
 padjGLM <- p.adjust( pvalsGLM, method="BH" )
 @
 
-The function \Rfunction{nbinomTestGLM} returned simply vector of $p$ values which 
+The function \Rfunction{nbinomTestGLM} returned simply a vector of $p$ values which 
 we handed to the standard R function \Rfunction{p.adjust} to adjust for multiple
 testing using the Benjamini-Hochberg (BH) method.
 
 \begin{figure}
 \centering
 \includegraphics[width=.7\textwidth]{DESeq-figPval}
-\caption{Comparison of p values (unadjusted) from the test using only the
-four paired-end samples and
-the test using all seven samples.}
+\caption{Comparison of $p$ values (unadjusted) from the test using only the
+four paired-end samples and the test using all seven samples. We can see that 
+the latter tend to be smaller, as expected from the higher power of the test with all samples.}
 \label{figPval}
 \end{figure}
 
 Let's compare with the result from the four-samples test:
 <<addmarg2>>=
-addmargins( table( `paired-end-only` = res$padj < .1, `all-samples` = padjGLM < .1 ) )
+tab = table( "paired end only" = res$padj < .1, "all samples" = padjGLM < .1 )
+addmargins( tab )
 @
-
-A more informative comparison might be a scatter plot of p values:
+We see that the analyses find \Sexpr{tab[2,2]} genes in common, while 
+\Sexpr{tab[1,2]} were only found in the analysis using all samples and
+\Sexpr{tab[2,1]} were specific for the \emph{paired end only} analysis.
+A more informative comparison might be a scatter plot of $p$ values:
+%
 <<figPval,fig=TRUE>>=
-plot( res$pval, pvalsGLM, log="xy", xlim=c(1e-17,1), ylim=c(1e-17,1), pch=20, cex=.3 )
+bottom = function(x, theta=1e-12) pmax(x, theta)
+plot( bottom(res$pval), bottom(pvalsGLM), log="xy", pch=20, cex=.3 )
+abline(a=0, b=1, col="blue")
 @
 The result is shown in Fig.~\ref{figPval}.
 
@@ -689,20 +698,24 @@ To see the corresponding fold changes, we have a closer look at the object
 head(fit1)
 @
 
-The first three columns show the fitted coefficients, converted to a log2 scale.
+The first three columns show the fitted coefficients, converted to a logarithm base 2 scale.
 The log2 fold change due to the condition is shown in the third column. As indicated
 by the column name, it is the effect of ``untreated'', i.e., the log ratio of
 ``untreated'' versus ``treated''. (This is unfortunately the other way round as 
-before, due to the peculiarities of contrast coding in R.) Note that the library type also
+before, due to the peculiarities of contrast coding.) Note that the library type also
 had noticeable influence on the expression, and hence would have increased the dispersion
 estimates (and so reduced power) if we had not fitted an effect for it.
 
 The column \emph{deviance} 
 is the deviance of the fit. (Comparing the deviances with a $\chi^2$ likelihood ratio test is
-how \Rfunction{nbinomGLMTest} calculates the p values.) The last column, \emph{converged},
+how \Rfunction{nbinomGLMTest} calculates the $p$ values.) The last column, \emph{converged},
 indicates whether the calculation of coefficients and deviance has fully converged.
-(If it is false to often, you can try to change the GLM control parameters, as 
+(If it is false too often, you can try to change the GLM control parameters, as 
 explained in the help page to \Rfunction{fitNbinomGLMs}.)
+% FIXME: not urgent - this is a bit vague, 'too often' should be specified and ideally
+%   the remedy be automated.
+
+
 \medskip
 
 Finally, we show that taking the library type into account was important to have
@@ -712,10 +725,12 @@ as outlined earlier, and without informing \Rpackage{DESeq} of the library types
 <<fullAnalysisSimple,cache=TRUE>>=
 cdsFullB <- newCountDataSet( fullCountsTable, design$condition )
 cdsFullB <- estimateSizeFactors( cdsFullB )
-cdsFullB <- estimateDispersions( cdsFullB, method="pooled", sharingMode="maximum" )
+cdsFullB <- estimateDispersions( cdsFullB, method="pooled", 
+                                 sharingMode="maximum" )
 resFullB <- nbinomTest( cdsFullB, "untreated", "treated" )
-
-table( `all-samples-simple` = resFullB$padj < .1, `all-samples-GLM` = padjGLM < .1 )
+<<table>>=
+table( "all-samples-simple" = resFullB$padj < 0.1, 
+       "all-samples-GLM"    = padjGLM < 0.1 )
 @ %$
 
 
@@ -724,8 +739,8 @@ table( `all-samples-simple` = resFullB$padj < .1, `all-samples-GLM` = padjGLM < 
 %-------------------------------------------------------------------------------------------------
 In Section~\ref{sec:DE} we have seen how to use \Rpackage{DESeq} for
 calling differentially expressed genes. For each gene,
-\Rpackage{DESeq} reports a (log2) fold change estimate and a
-$p$-value, as shown for instance in the dataframe \Robject{res} in the
+\Rpackage{DESeq} reports a (logarithm base 2) fold change estimate and a
+$p$ value, as shown for instance in the dataframe \Robject{res} in the
 beginning of that section.  When the involved counts are small, the
 (log) fold-change estimate can be highly variable, and can even be
 infinite.
