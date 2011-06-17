@@ -14,12 +14,10 @@
     argument.
 }
 \usage{
-estimateDispersions( cds,
-   method      = c( "normal", "blind", "pooled" ), 
-   sharingMode = c( "fit-only", "maximum", "gene-est-only" ),
-   locfit_extra_args = list(),
-   lp_extra_args = list(),
-   modelFrame = NULL )}
+estimateDispersions( cds, 
+   method = c( "per-condition", "pooled", "blind" ), 
+   sharingMode = c( "maximum", "fit-only", "gene-est-only" ),
+   locfit_extra_args=list(), lp_extra_args=list(), modelFrame = NULL )}
 \arguments{
   \item{cds}{
       a \code{CountDataSet} with size factors.
@@ -28,24 +26,26 @@ estimateDispersions( cds,
      There are three ways how the empirical dispersion can be computed:
      
      \itemize{
-     \item \code{normal} - For each condition with replicates, compute
+     \item \code{per-condition} - For each condition with replicates, compute
      a gene's empirical dispersion value by considering the data from samples for this
      condition.  For samples of unreplicated conditions, the maximum
      of empirical dispersion values from the other conditions is used.  If \code{cds} has a
      multivariate design (i.e., if a data frame was passed instead of a
      factor for the \code{condition} argument in
-     \code{\link{newCountDataSet}}), this method is not available.
+     \code{\link{newCountDataSet}}), this method is not available. (Note: This method was called ``normal'' in
+        previous versions.)
      
+     \item \code{pooled} - Use the samples from all conditions with
+     replicates to estimate a single pooled empirical dispersion value, 
+     called "pooled", and assign it to all samples.
+
      \item \code{blind} - Ignore the sample labels and compute a 
      gene's empirical dispersion value as if all samples were replicates of a
      single condition. This can be done even if there are no biological
      replicates. This method can lead to loss of power; see
      the vignette for details. The single estimated dispersion condition
      is called "blind" and used for all samples.
-     
-     \item \code{pooled} - Use the samples from all conditions with
-     replicates to estimate a single pooled empirical dispersion value, 
-     called "pooled", and assign it to all samples.
+    
      } }
 
    \item{sharingMode}{
@@ -67,9 +67,11 @@ estimateDispersions( cds,
      ignored. Use this only with very \emph{few} replicates, and when
      you are not too concerned about false positives from dispersion outliers, i.e. genes
      with an unusually high variability.
+
      \item \code{maximum} - take the maximum of the two values. This is
      the conservative or prudent choice, recommended once you have at
      least three or four replicates and maybe even with only two replicates.
+
      \item \code{gene-est-only} - No fitting or sharing, use only the
      empirical value. This method is preferable when the number of
      replicates is large and the empirical dispersion values are
@@ -102,7 +104,7 @@ estimateDispersions( cds,
       
 }
 \details{
-   Behaviour for \code{method="normal"}: For each replicated condition, a list, named
+   Behaviour for \code{method="per-condition"}: For each replicated condition, a list, named
    with the condition's name, is placed in the environment \code{cds@fitInfo}. This list
    has three elements: The vector \code{perGeneDispEsts} contains the
    empirical dispersions. The function \code{dispFunc}
@@ -121,9 +123,18 @@ estimateDispersions( cds,
    \code{featureData} data frame, in a column 
    named with the same name, prefixed with "\code{disp_}".
    
-   Then, the \code{\link{dispTable}} (q.v.) is filled to assign to each
+   Then, the \code{\link{dispTable}} (see there) is filled to assign to each
    condition the appropriate dispersion column in the phenoData frame.
+   
+   Note: Up to DESeq version 1.4.x (Bioconductor release 2.8), this function was
+   called \code{estimateVarianceFunctions}, stored its result differently and had
+   did not yet have the arguments \code{sharingMode} and \code{fitType}.
+   \code{estimatevarianceFunction}'s behaviour corresponded
+   to the settings \code{sharingMode="fit-only"} and \code{fitType="local"}. Note that
+   these are not the default, because the new functionalities sharingMode="maximum"
+   and fitType="local" tend to give better results in standard cases as they are more robust.
    }
+
 \value{
    The \code{CountDataSet} cds, with the slots \code{fitInfo} and
    \code{featureData} updated as described in Details.
