@@ -48,32 +48,71 @@ getBaseMeansAndPooledVariances <- function( counts, sizeFactors, conditions ) {
 }
 
 estimateDispersionFunctionFromBaseMeansAndVariances <- function( means, 
-   variances, sizeFactors, locfit_extra_args=list(), lp_extra_args=list(), adjustForBias=TRUE ) {
+   variances, sizeFactors, fitType = c( "parametric", "local" ),
+   locfit_extra_args=list(), lp_extra_args=list(), adjustForBias=TRUE ) {
+   
+   fitType <- match.arg( fitType )
    
    variances <- variances[ means > 0 ]
    means <- means[ means > 0 ]
-   
-   fit <- do.call( "locfit", c( 
-      list( 
-         variances ~ do.call( "lp", c( list( log(means) ), lp_extra_args ) ),
-         family = "gamma" ), 
-      locfit_extra_args ) )
-   
-   rm( means )
-   rm( variances )
    xim <- mean( 1/sizeFactors )
    
-   if( adjustForBias )
-      function( q )
-         adjustScvForBias( 
-            pmax( ( safepredict( fit, log(q) ) - xim * q ) / q^2, 1e-8 ),
-            length(sizeFactors) )
-   else
-      function( q )
-         pmax( ( safepredict( fit, log(q) ) - xim * q ) / q^2, 1e-8 )
-         
-   # Note: The 'pmax' construct above serves to limit the overdispersion to a minimum
-   # of 10^-8, which should be indistinguishable from 0 but ensures numerical stability.
+   if( fitType == "local" ) {
+   
+      fit <- do.call( "locfit", c( 
+         list( 
+            variances ~ do.call( "lp", c( list( log(means) ), lp_extra_args ) ),
+            family = "gamma" ), 
+         locfit_extra_args ) )
+      
+      rm( means )
+      rm( variances )
+      
+      if( adjustForBias )
+         ans <- function( q )
+            adjustScvForBias( 
+               pmax( ( safepredict( fit, log(q) ) - xim * q ) / q^2, 1e-8 ),
+               length(sizeFactors) )
+      else
+         ans <- function( q )
+            pmax( ( safepredict( fit, log(q) ) - xim * q ) / q^2, 1e-8 )
+            
+      # Note: The 'pmax' construct above serves to limit the overdispersion to a minimum
+      # of 10^-8, which should be indistinguishable from 0 but ensures numerical stability.
+
+   } else if( fitType == "parametric" ) {
+
+      disps <- ( variances - xim * means ) / means^2
+      if( adjustForBias )
+         disps <- adjustScvForBias( disps, length( sizeFactors ) )
+
+      coefs <- c( .1, 1 )
+      iter <- 0   
+      while(TRUE) {
+         residuals <- disps / ( coefs[1] + coefs[2] / means )
+         good <- (residuals > 1e-4) & (residuals < 15)
+         fit <- glm( disps[good] ~ I(1/means[good]), 
+            family=Gamma(link="identity"), start=coefs )
+         oldcoefs <- coefs   
+         coefs <- coefficients(fit)
+         if( sum( log( coefs / oldcoefs )^2 ) < 1e-6 )
+            break
+         iter <- iter + 1
+         if( iter > 10 ) {
+            warning( "Dispersion fit did not converge." )
+            break }
+      }
+
+      names( coefs ) <- c( "asymptDisp", "extraPois" )
+      ans <- function( q )
+         coefs[1] + coefs[2] / q
+      attr( ans, "coefficients" ) <- coefs
+   
+   } else
+      stop( "Unkknown fitType." )
+   
+   attr( ans, "fitType" ) <- fitType
+   ans   
 }   
       
    
@@ -169,7 +208,9 @@ adjustScvForBias <- function( scv, nsamples ) {
    if( nsamples - 1 > length( scvBiasCorrectionFits ) )
       scv
    else
-      pmax( safepredict( scvBiasCorrectionFits[[ nsamples-1 ]], scv ), 1e-8 * scv )
+      ifelse( scv > .02,
+         pmax( safepredict( scvBiasCorrectionFits[[ nsamples-1 ]], scv ), 1e-8 * scv ),
+         scv )   # For scv < .02, our fit is too coarse, but no correction seems necessary anyway
 }      
 
 nbkd.sf <- function( r, sf ) {
@@ -213,7 +254,7 @@ fitNbinomGLMsForMatrix <- function( counts, sizeFactors, rawScv, modelFormula,
    if( as.character( modelFormula[[2]] ) != "count" )  
       stop( "Left-hand side of model formula must be 'count'." )
    
-   goodRows <- !is.na( rawScv ) & rowSums(counts) >= 0 
+   goodRows <- is.finite( rawScv ) & rowSums(counts) > 0 
    
    res <- 
    t( sapply( which(goodRows), function(i) {

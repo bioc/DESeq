@@ -5,8 +5,9 @@ estimateSizeFactors <- function( cds, locfunc=median )
    cds
 }
 
-estimateDispersions <- function( cds, method = c( "normal", "blind", "pooled" ), 
-   sharingMode = c( "fit-only", "maximum", "gene-est-only" ),
+estimateDispersions <- function( cds, method = c( "per-condition", "pooled", "blind" ), 
+   sharingMode = c( "maximum", "fit-only", "gene-est-only" ),
+   fitType = c( "parametric", "local" ),
    locfit_extra_args=list(), lp_extra_args=list(), modelFrame = NULL )
 {
    stopifnot( is( cds, "CountDataSet" ) )   
@@ -14,12 +15,16 @@ estimateDispersions <- function( cds, method = c( "normal", "blind", "pooled" ),
       stop( "NAs found in size factors. Have you called already 'estimateSizeFactors'?" )
    method <- match.arg( method )
    sharingMode <- match.arg( sharingMode )
+   fitType <- match.arg( fitType )
    if( cds@multivariateConditions && ! method %in% c( "blind", "pooled" ) )
       stop( "You have specified multivariate conditions (i.e., passed a data frame with conditions). In this case, you need to specify method 'pooled' or 'blind'." )
    if( sharingMode == "gene-est-only" )
       warning( "sharingMode=='gene-est-only' will cause inflated numbers of false positives unless you have many replicates." )
    ## FIXME this warning should only be emitted when the number of replicates is indeed small.
    
+   # Remove results from previous fits
+   fData(cds) <- fData(cds)[ , ! colnames(fData(cds)) %in% paste( "disp", cds@dispTable, sep="_" ), drop=FALSE ]
+   cds@dispTable <- character()
    cds@fitInfo = new.env( hash=TRUE )
    
    switch( method,
@@ -27,12 +32,13 @@ estimateDispersions <- function( cds, method = c( "normal", "blind", "pooled" ),
 
       bmv <- getBaseMeansAndVariances( counts(cds), sizeFactors(cds) )
       dispFunc <- estimateDispersionFunctionFromBaseMeansAndVariances( bmv$baseMean,
-         bmv$baseVar, sizeFactors(cds), locfit_extra_args, lp_extra_args )   
+         bmv$baseVar, sizeFactors(cds), fitType, locfit_extra_args, lp_extra_args )   
       cds@fitInfo[[ "blind" ]] <- list( 
          perGeneDispEsts = adjustScvForBias( 
             pmax( 0, ( bmv$baseVar - bmv$baseMean * mean(sizeFactors(cds)) ) / bmv$baseMean^2 ), ncol(counts(cds)) ),
          dispFunc = dispFunc,
-         fittedDispEsts = dispFunc( bmv$baseMean ) )
+         fittedDispEsts = dispFunc( bmv$baseMean ),
+         df = ncol(counts(cds)) - 1 )
       
       if( cds@multivariateConditions )
          dispTable(cds) <- c( "_all" = "blind" )
@@ -42,7 +48,7 @@ estimateDispersions <- function( cds, method = c( "normal", "blind", "pooled" ),
          cds@dispTable <- a }
       
    },
-   "normal" = {
+   "per-condition" = {
    
       replicated <- names( which( tapply( conditions(cds), conditions(cds), length ) > 1 ) )
       if( length( replicated ) < 1 )
@@ -54,12 +60,13 @@ estimateDispersions <- function( cds, method = c( "normal", "blind", "pooled" ),
          cols <- conditions(cds)==cond
          bmv <- getBaseMeansAndVariances( counts(cds)[ , cols ], sizeFactors(cds)[ cols ] )
          dispFunc <- estimateDispersionFunctionFromBaseMeansAndVariances( bmv$baseMean,
-            bmv$baseVar, sizeFactors(cds)[cols], locfit_extra_args, lp_extra_args )   
+            bmv$baseVar, sizeFactors(cds)[cols], fitType, locfit_extra_args, lp_extra_args )   
          cds@fitInfo[[ cond ]] <- list( 
             perGeneDispEsts = adjustScvForBias( 
                pmax( 0, ( bmv$baseVar - bmv$baseMean * mean(sizeFactors(cds)[cols]) ) / bmv$baseMean^2 ), sum(cols) ),
             dispFunc = dispFunc,
-            fittedDispEsts = dispFunc( overall_basemeans ) ) }   # Note that we do not use bmv$baseMean here
+            fittedDispEsts = dispFunc( overall_basemeans ),     # Note that we do not use bmv$baseMean here
+            df = sum(cols) - 1 ) }
          
       cds@dispTable <- sapply( levels(conditions(cds)), function( cond )
             ifelse( cond %in% replicated, cond, "max" ) ) 
@@ -76,12 +83,13 @@ estimateDispersions <- function( cds, method = c( "normal", "blind", "pooled" ),
    
       bmv <- getBaseMeansAndPooledVariances( counts(cds), sizeFactors(cds), conds )
       dispFunc <- estimateDispersionFunctionFromBaseMeansAndVariances( bmv$baseMean,
-         bmv$baseVar, sizeFactors(cds), locfit_extra_args, lp_extra_args )   
+         bmv$baseVar, sizeFactors(cds), fitType, locfit_extra_args, lp_extra_args )   
       cds@fitInfo[[ "pooled" ]] <- list( 
          perGeneDispEsts = adjustScvForBias( 
             pmax( 0, ( bmv$baseVar - bmv$baseMean * mean(sizeFactors(cds)) ) / bmv$baseMean^2 ), length(sizeFactors(cds)) ),
          dispFunc = dispFunc,
-         fittedDispEsts = dispFunc( bmv$baseMean ) )
+         fittedDispEsts = dispFunc( bmv$baseMean ),
+         df = ncol(counts(cds)) - length(unique(conds)) )
 
       if( cds@multivariateConditions )
          dispTable(cds) <- c( "_all" = "pooled" )
@@ -179,22 +187,35 @@ scvPlot <- function( ... )
 
 getVarianceStabilizedData <- function( cds ) {
    stopifnot( is( cds, "CountDataSet" ) )
-   if( ! "blind" %in% ls(cds@fitInfo) )
-      stop( "Use 'estimateDispersions' with 'method=\"blind\"' before calling 'getVaraianceStabilizedData'" )
+   if( "blind" %in% ls(cds@fitInfo) )
+      fitInfo <- cds@fitInfo[["blind"]]
+   else if( "pooled" %in% ls(cds@fitInfo) ) 
+      fitInfo <- cds@fitInfo[["pooled"]]
+   else
+      stop( "Use 'estimateDispersions' with 'method=\"blind\"' (or \"pooled\") before calling 'getVarianceStabilizedData'" )
    ncounts <- t( t(counts(cds)) / sizeFactors(cds) )
-   xg <- sinh( seq( asinh(0), asinh(max(ncounts)), length.out=1000 ) )[-1]
-   xim <- mean( 1/sizeFactors(cds) )
-   baseVarsAtGrid <- cds@fitInfo[["blind"]]$dispFunc( xg ) * xg^2 + xim * xg 
-   integrand <- 1 / sqrt( baseVarsAtGrid )
-   splf <- splinefun( 
-      asinh( ( xg[-1] + xg[-length(xg)] )/2 ), 
-      cumsum( 
-         ( xg[-1] - xg[-length(xg)] ) * 
-         ( integrand[-1] + integrand[-length(integrand)] )/2 ) )
-   tc <- sapply( colnames(counts(cds)), function(clm)
-      splf( asinh( ncounts[,clm] ) ) )
-   rownames( tc ) <- rownames( counts(cds) )
-   tc
+   if( attr( fitInfo$dispFunc, "fitType" ) == "parametric" ) {
+      coefs <- attr( fitInfo$dispFunc, "coefficients" )
+      vst <- function( q )
+         2 * log( coefs["asymptDisp"] * sqrt(q) + 
+            coefs["asymptDisp"] * sqrt( 1 + coefs["extraPois"] + coefs["asymptDisp"] * q ) )
+      vst( ncounts )
+   } else {  
+      # non-parametric fit -> numerical integration
+      xg <- sinh( seq( asinh(0), asinh(max(ncounts)), length.out=1000 ) )[-1]
+      xim <- mean( 1/sizeFactors(cds) )
+      baseVarsAtGrid <- cds@fitInfo[["blind"]]$dispFunc( xg ) * xg^2 + xim * xg 
+      integrand <- 1 / sqrt( baseVarsAtGrid )
+      splf <- splinefun( 
+         asinh( ( xg[-1] + xg[-length(xg)] )/2 ), 
+         cumsum( 
+            ( xg[-1] - xg[-length(xg)] ) * 
+            ( integrand[-1] + integrand[-length(integrand)] )/2 ) )
+      tc <- sapply( colnames(counts(cds)), function(clm)
+         splf( asinh( ncounts[,clm] ) ) )
+      rownames( tc ) <- rownames( counts(cds) )
+      tc
+   }
 }
 
 makeExampleCountDataSet <- function( ) 

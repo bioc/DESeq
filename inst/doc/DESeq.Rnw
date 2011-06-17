@@ -209,9 +209,15 @@ a concentration by counting reads. The latter, known as shot noise or Poisson
 noise, is the dominating noise source for lowly expressed genes. 
 The sum of both, shot noise and dispersion, is considered in the differential expression inference.
 
+Hence, the variance $v$ of count values is modelled as
+\[ v = s \mu + \alpha s^2\mu^2, \]
+where $\mu$ is the expected normalized count value (estimated by the average normalized count value),
+$s$ is the size factor for the sample under consideration, and $\alpha$ is the dispersion
+value for the gene under consideration.
+
 To estimate the dispersions, use this command.
 <<estimateDispersions,cache=TRUE>>=
-cds <- estimateDispersions( cds , lp_extra_args=list(deg=1))
+cds <- estimateDispersions( cds )
 @
 
 We could now proceed straight to the testing for differetial
@@ -219,9 +225,11 @@ expression in Section~\ref{sec:DE}.  However, it is prudent to check
 the dispersion estimates and to make sure that the data quality is as
 expected.
 
-The function \Rfunction{estimateDispersions} performs two steps. First, it estimates,
+The function \Rfunction{estimateDispersions} performs three steps. First, it estimates,
 for each gene and each (replicated) condition, a dispersion value, then, it fits,
-for each condition, a curve through the estimates. To allow the user to inspect the
+for each condition, a curve through the estimates. Finally, it assigns to each gene
+a dispersion value, using either the estimated or the fitted value.
+To allow the user to inspect the
 intermediate steps, a ``fit info'' object is stored for each condition:
 
 <<ls>>=
@@ -237,48 +245,52 @@ str( cds@fitInfo[["untreated"]] )
 @
 
 To visualize these, we plot the per-gene estimates against the normalized mean 
-expressions per gene, and then overlay the fitted values in red. We do this for both
-conditions.
+expressions per gene, and then overlay the fitted curve in red. The following 
+function does this.
 
-\fixme{\begin{enumerate}
-  \item Move the function definition below into the package.
-  \item Double check the factor \texttt{qchisq( .99, df )/df} - is it correct?
-  \item The boundary effects of the smoothing line look awful - change to parametric fit?
-  \end{enumerate}
+<<fitUntr, fig=TRUE>>=
+plotDispEsts <- function( cds, cond )
+{
+   plot( 
+      rowMeans( counts( cds, normalized=TRUE ) ),
+      cds@fitInfo[[cond]]$perGeneDispEsts,
+      pch = '.', log="xy" )
+   xg <- 10^seq( -.5, 5, length.out=300 )
+   lines( xg, cds@fitInfo[[cond]]$dispFun( xg ), col="red" )   
 }
+@
 
-<<plotFitInfo>>=
-plotFitInfo = function(cds, conds = ls(cds@fitInfo), probs = 0.99) {
-  means = rowMeans( counts( cds, normalized=TRUE ) )
-  ## xrange = log10(quantile( means[means>1], probs=c(0.025, 0.975)))
-  xrange = log10(quantile( means[means>1], probs=c(0, 1)))
-  xg = 10^seq( xrange[1], xrange[2], length.out=100 )
-  for(cond in conds){
-    df = sum( conditions(cds) == cond ) - 1
-    matplot(xg,
-      cds@fitInfo[[cond]]$dispFunc( xg ) %*% rbind(c(1, qchisq( probs, df )/df)),
-      xlim = c(1, max(means, na.rm=TRUE)),
-      col=c("red","blue"), lty=1, type="l", log="xy", 
-      main=cond, ylab="dispersions", xlab="normalized average mean")
-    points(means, cds@fitInfo[[cond]][["perGeneDispEsts"]], pch=".")
-  }
-}
-@   
+%<<plotFitInfo>>=
+%plotFitInfo <- function(cds, cond = NULL, probs = c( .01, .05, .95, .99) ) {
+%  means <- rowMeans( counts( cds, normalized=TRUE ) )
+%  xg <- 10^seq( log10(min(means[means>0])), log10(max(means)), length.out=300 )
+%  df <- cds@fitInfo[[cond]]$df
+%  qvals <- cds@fitInfo[[cond]]$dispFunc( xg ) %*% rbind(c(1, qchisq( probs, df )/df))
+%  pge <- cds@fitInfo[[cond]][["perGeneDispEsts"]]
+%  matplot(xg,
+%    qvals,
+%    col = c( "red", rep( "blue", length(probs) ) ), 
+%    lty = 1, type = "l", log = "xy", ylim = range( c( qvals, pge ), na.rm=TRUE ),
+%    main = cond, ylab = "dispersions", xlab= "average normalized count" )
+%  points(means, pge, pch=".")
+%}
+%@   
   
 \begin{figure}
 \centering
-\includegraphics[width=\textwidth]{DESeq-Figfit}
+\includegraphics[width=\textwidth]{DESeq-figFit}
 \caption{Empirical (black dots) and fitted (red lines) dispersion values 
 plotted against mean expression strength; left: for condition ``untreated'',
-right: for condition ``treated''.
-The blue lines indicate the \Sexpr{100*(formals(plotFitInfo)$probs)}-percentile of the theoretical sampling
-distribution of the empiricial dispersion if the true dispersion is given by the red line.}
+right: for condition ``treated''.}
 \label{figFit}
 \end{figure}
 
-<<Figfit,fig=TRUE,width=11,height=5.5>>=
+We call it for both conditions (Fig.\ \ref{figFit})
+
+<<figFit,fig=TRUE,width=11,height=5.5>>=
 par( mfrow=c(1,2) )
-plotFitInfo(cds)
+plotDispEsts( cds, "untreated" )
+plotDispEsts( cds, "treated" )
 @
 
 % check a claim made in the paragraph below.
@@ -288,36 +300,46 @@ all(table(conditions(cds))==2)
 
 The plot in Figure~\ref{figFit} is doubly logarithmic; this may be
 helpful or misleading, and it is worth experimenting with other
-plotting styles.  As we estimated the
+plotting styles.  
+
+As we estimated the
 dispersion from only two samples, we should expect the estimates to
 scatter with quite some sampling variance around their true values.
-However, can we really assume that the genes with extremely large empirical
-dispersion values in Figure~\ref{figFit} have the same true, underlying dispersion as the
-other genes with similar expression? To quantify this, we compare the
-scatter of the empirical dispersion values around the fitted value
-with a scaled $\chi^2$ distribution with the appropriate number of degrees
-of freedom.  The 99-percentile of this distribution is shown by the
-blue lines in Figure~\ref{figFit}).  There are a substantial number of
-genes above these lines, definitely more than 1\%. Hence, it may be
-imprudent to assume that for these genes, the fitted values (red
-lines) are good estimates of their true, underlying dispersion.
-However, we also do not want to ignore the fit lines -- as we the wide
-sampling distribution shows, for many genes the empirical dispersions
-will be much lower than the plausible true value, and naively using
-them would lead to avoidable false positives.  A simple solution is to
-use whichever is the more conservative of the two numbers, i.e., for each gene to
-use the \textit{maximum} of the fitted values (red line) and the empirical value (black dot).
-
-Hence, we redo the dispersion estimation, this time as follows:
-
-<<estimateDispersions2,cache=TRUE>>=
-cds <- estimateDispersions( cds, sharingMode="maximum" )
-@
-
-The argument \texttt{sharingMode} controls how information is shared across genes.
-It can take the values \texttt{fit-only} (the default; use only the fitted values),
-\texttt{maximum} (the compromise just described) and \texttt{gene-est-only} (ignore
-the fit, directly use the per-gene estimates).
+%However, can we really assume that the genes with extremely large empirical
+%dispersion values in Figure~\ref{figFit} have the same true, underlying dispersion as the
+%other genes with similar expression? To quantify this, we compare the
+%scatter of the empirical dispersion values around the fitted value
+%with a scaled $\chi^2$ distribution with the appropriate number of degrees
+%of freedom.  The 99-percentile of this distribution is shown by the
+%blue lines in Figure~\ref{figFit}).  There are a substantial number of
+%genes above these lines, definitely more than 1\%. Hence, it may be
+%imprudent to assume that for these genes, the fitted values (red
+%lines) are good estimates of their true, underlying dispersion.
+%However, we also do not want to ignore the fit lines -- as we the wide
+%sampling distribution shows, for many genes the empirical dispersions
+%will be much lower than the plausible true value, and naively using
+%them would lead to avoidable false positives.
+Hence, we \Rpackage{DESeq} should not use the per-gene estimates directly in the test,
+because using too low dispersion values leads to false positives.
+Many of the values below the red line are likely to be underestimates of the
+true dispersions, and hence, it is prudent to instead rather use the fitted value.
+On the othe hand, not all of he values above the red line are overestimations, and
+hence, the conservative choice is to keep them instead of replacing them with
+their fitted values. If you do not like this default behaviour, you can change it
+with the option \texttt{sharingMode} of \Rfunction{estimateDispersions}. Note that
+DESeq orginally (as described in the DESeq paper \cite{Anders:2010:GB}) only 
+used the fitted values (\texttt{sharingMode="fit-only"}). The
+current default (\texttt{sharingMode="maximum"}) is more conservative. 
+  
+Another difference of the current DESeq version to the original method described in the 
+paper is the way how the mean-dispersion relation is fitted. By default,
+\Rfunction{estimateDispersion} now performs a parametric fit: Using a gamma-family
+GLM, two coefficients $\alpha_0, \alpha_1$ are found to
+parametrize the fit as $\alpha = \alpha_0 + \alpha_1/\mu$. (The values of the two
+coefficients can be found in the \texttt{fitInfo} object, as attribute \texttt{coefficients}
+to \texttt{dispFunc}.) For some data sets, the parametric fit may give bad results, in
+which case one should try a local fit (the method described in the paper), which
+is available via the option \texttt{fitType="local"} to \Rfunction{estimateDispersions}.
 
 In any case, the dispersion values which finally should be used by the subsequent testing are stored in
 the feature data slot of \texttt{cds}:
@@ -326,7 +348,7 @@ the feature data slot of \texttt{cds}:
 head( fData(cds) )
 @
 
-You can verify that \texttt{disp\_untreated} indeed contains the maximum of the two value vectors 
+You can verify that \texttt{disp\_untreated} indeed contains the maximum of the two value vectors
 we looked at before, namely 
 
 <<str>>=
@@ -349,7 +371,7 @@ versus ``treated''.}
 \label{figDE}
 \end{figure}
 
-\subsection{Comparison between two experimental conditions}
+\subsection{Standard comparison between two experimental conditions}
 
 Having estimated the dispersion for each gene, it is now straight-forward to look for
 differentially expressed genes. To contrast two conditions, e.g., to see whether there is differential
@@ -369,9 +391,7 @@ the first to the second condition, the logarithm (to basis 2) of the fold change
 $p$ value for the statistical significance of this change. The \texttt{padj} column contains the 
 $p$ values, adjusted for multiple testing with the Benjamini-Hochberg procedure (see the R function
 \Rfunction{p.adjust}), which controls false discovery 
-rate (FDR). The last two columns show the ratio of the single gene estimates for the base
-variance to the fitted value. This may help to notice false hits due to ``variance outliers''. Any hit
-that has a very large value in one these two columns should be checked carefully. \fixme{Do we still need this?}
+rate (FDR). 
 
 Let us first plot the $\log_2$ fold changes against the base means, colouring in red those genes
 that are significant at 10\% FDR.
@@ -388,7 +408,7 @@ plotDE( res )
 See Figure~\ref{figDE} for the plot. As we will use this plot more often, we have
 stored its code in a function.
 
-We can filter for significant genes, according to some chosen threshold,
+We can filter for significant genes, according to some chosen threshold for the false dicovery rate (FDR),
 <<ressig1>>=
 resSig <- res[ res$padj < 0.1, ]
 @
@@ -490,7 +510,6 @@ as in Fig.~\ref{figDE} but a certain asymmetry in the boundary line for signific
 has an easy explanation: low counts suffer from proportionally stronger shot noise than high 
 counts, and since there is only one ``untreated'' sample versus two ``treated'' ones, 
 a stronger downward fold-change is required to be called significant than for the upward direction.
-\fixme{Please double check if this is still correct, after the dataset change.}
 
 %--------------------------------------------------
 \subsection{Working without any replicates}
@@ -607,39 +626,23 @@ the design.
 
 <<estsfdisp,cache=TRUE>>=
 cdsFull <- estimateSizeFactors( cdsFull )
-cdsFull <- estimateDispersions( cdsFull, method="pooled", sharingMode="maximum" )
+cdsFull <- estimateDispersions( cdsFull, method="pooled" )
 @
 
 \begin{figure}
 \centering
-\includegraphics[width=.7\textwidth]{DESeq-figFitTwithQuantilesFull}
+\includegraphics[width=.7\textwidth]{DESeq-figFitPooled}
 \caption{Estimated (black) pooled dispersion values for all seven samples, with
-regression curve and 5- and 95-percentiles of theoretical sampling
-distribution for dispersion estimates.}
-\label{figFitTwithQuantilesFull}
+regression curve (red).}
+\label{figFitPooled}
 \end{figure}
 
 
-As we now have more samples to estimate variance, we get better estimates. Comparing
-with our previous results using only four samples, we can see the effect of
-the additional degrees of freedom (Fig.~\ref{figFitTwithQuantilesFull}).
+We check the fit (Fig.~\ref{figFitTwithQuantilesFull}):
 
-<<figFitTwithQuantilesFull,fig=TRUE>>=
-cond <- "pooled"
-means = rowMeans( counts( cds, normalized=TRUE ) )
-plot( means, cdsFull@fitInfo[[cond]]$perGeneDispEsts, log="xy", pch=".", ylim=c(1e-4,1e2) )
-xg <- 10^seq( min(log10(means[means>0])), max(log10(means)), length.out=1000 )
-lines( xg, cdsFull@fitInfo[[cond]]$dispFunc( xg ), col="blue" )
-df <- 7 - 2  # seven samples and 2 design factors
-lines( xg, cdsFull@fitInfo[[cond]]$dispFunc( xg ), col="blue" )
-lines( xg, cdsFull@fitInfo[[cond]]$dispFunc( xg ) * qchisq( .05, df )/df, 
-   col="blue", lty="dashed" )
-lines( xg, cdsFull@fitInfo[[cond]]$dispFunc( xg ) * qchisq( .95, df )/df, 
-   col="blue", lty="dashed" )
+<<figFitPooled,fig=TRUE>>=
+plotDispEsts( cds, "untreated" )
 @ %$
-
-\fixme{do this by calling \Rfunction{plotFitInfo} instead; use \Robject{df} that is stored 
-  in the attributes of \Robject{fitInfo}.}
 
 For inference, we now specify two \emph{models} by formulas. The \emph{full model}
 regresses the genes' expression on both the library type and
@@ -796,7 +799,7 @@ lfc = res$log2FoldChange
 finite = is.finite(lfc)
 table(as.character(lfc[!finite]), useNA="always")
 @ 
-\fixme{Define 0/0 := 1 in the  appropriate place in the code, then the \texttt{NaN} can go away.}
+% \fixme{Define 0/0 := 1 in the  appropriate place in the code, then the \texttt{NaN} can go away.}
 
 For plotting (Figure~\ref{figmodlr}), we replace the infinite values by an arbitrary fixed large number:
 <<repl>>=
@@ -880,7 +883,11 @@ We note that the \Rfunction{heatmap} function that we have used here is rather b
 options exist, for instance the \Rfunction{heatmap.2} function from the package \Rpackage{gplots}
 or the manual page for \Rfunction{dendrogramGrob} in the package \Rpackage{latticeExtra}.
 
+\section{Further reading}
 
+For more information on the statistical method, see our paper~\cite{Anders:2010:GB}. For
+more information on how to customize the \Rpackage{DESeq} work flow, see the package
+help pages, especially the help page for \Rfunction{estimateDispersions}.
 
 \section{Session Info}
 <<sessi>>=

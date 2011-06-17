@@ -125,13 +125,15 @@ estimateDispersions( cds,
 \details{
    Behaviour for \code{method="per-condition"}: For each replicated condition, a list, named
    with the condition's name, is placed in the environment \code{cds@fitInfo}. This list
-   has three elements: The vector \code{perGeneDispEsts} contains the
+   has four named elements: The vector \code{perGeneDispEsts} contains the
    empirical dispersions. The function \code{dispFunc}
    is the fitted function, i.e., it takes as its argument a normalized
    mean expression value and returns the corresponding
    fitted dispersion. The values fitted according to this function are
    in the third element \code{fittedDispEst}, a vector of the same
-   length as \code{perGeneDispEsts}.
+   length as \code{perGeneDispEsts}. The fourt element, \code{df},
+   is an integer, indicating the number of degrees of freedom of
+   the per-gene estimation.
 
    Behaviour for \code{method="blind"} and \code{method="pooled"}: Only one list is produced,
    named \code{"blind"} or \code{"pooled"} and placed in \code{cds@fitInfo}.
