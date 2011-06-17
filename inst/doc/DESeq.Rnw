@@ -267,7 +267,7 @@ plotFitInfo = function(cds, conds = ls(cds@fitInfo), probs = 0.99) {
   
 \begin{figure}
 \centering
-\includegraphics[width=\textwidth]{DESeq-figFit}
+\includegraphics[width=\textwidth]{DESeq-Figfit}
 \caption{Empirical (black dots) and fitted (red lines) dispersion values 
 plotted against mean expression strength; left: for condition ``untreated'',
 right: for condition ``treated''.
