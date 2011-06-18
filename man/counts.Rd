@@ -5,7 +5,7 @@
 \alias{counts<-,CountDataSet,matrix-method}
 \alias{counts}
 \title{
-   Accessor for the 'counts' slot of a CountDataSet object.
+   Accessors for the 'counts' slot of a CountDataSet object.
 }
 
 \description{
