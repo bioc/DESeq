@@ -3,6 +3,7 @@
 \docType{methods}
 \alias{conditions,CountDataSet-method}
 \alias{conditions<-,CountDataSet-method}
+\alias{conditions}
 \title{
     Accessor functions for the 'conditions' information in a
     CountDataSet object.

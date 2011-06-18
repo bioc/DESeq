@@ -3,6 +3,7 @@
 \docType{methods}
 \alias{counts,CountDataSet-method}
 \alias{counts<-,CountDataSet,matrix-method}
+\alias{counts}
 \title{
    Accessor for the 'counts' slot of a CountDataSet object.
 }

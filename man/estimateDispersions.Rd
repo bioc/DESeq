@@ -1,5 +1,6 @@
 \name{estimateDispersions}
 \Rdversion{1.1}
+\alias{estimateDispersions,CountDataSet-method}
 \alias{estimateDispersions}
 \title{
     Estimate and fit dispersions for a CountDataSet.
@@ -14,11 +15,12 @@
     argument.
 }
 \usage{
-estimateDispersions( cds, 
+\S4method{estimateDispersions}{CountDataSet}( cds, 
    method = c( "per-condition", "pooled", "blind" ), 
    sharingMode = c( "maximum", "fit-only", "gene-est-only" ),
    fitType = c("parametric", "local"),
-   locfit_extra_args=list(), lp_extra_args=list(), modelFrame = NULL )}
+   locfit_extra_args=list(), lp_extra_args=list(), modelFrame = NULL, ... )
+}
 \arguments{
   \item{cds}{
       a \code{CountDataSet} with size factors.
@@ -120,7 +122,9 @@ estimateDispersions( cds,
       here, and all rows that are identical in this data frame are considered
       to indicate replicate samples in \code{cds}.
    }
-      
+
+   \item{...}{extra arguments are ignored}
+
 }
 \details{
    Behaviour for \code{method="per-condition"}: For each replicated condition, a list, named
@@ -153,8 +157,8 @@ estimateDispersions( cds,
    \code{estimatevarianceFunction}'s behaviour corresponded
    to the settings \code{sharingMode="fit-only"} and \code{fitType="local"}. Note that
    these are not the default, because the new functionalities sharingMode="maximum"
-   and fitType="local" tend to give better results in standard cases as they are more robust.
-   }
+   and fitType="local" tend to give better results in standard cases as they are more robust
+}
 
 \value{
    The \code{CountDataSet} cds, with the slots \code{fitInfo} and

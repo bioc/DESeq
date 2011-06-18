@@ -3,6 +3,7 @@
 \docType{methods}
 \alias{sizeFactors,CountDataSet-method}
 \alias{sizeFactors<-,CountDataSet,numeric-method}
+\alias{sizeFactors}
 \title{
     Accessor functions for the 'sizeFactors' information in a
     CountDataSet object.

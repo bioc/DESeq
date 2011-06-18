@@ -1,5 +1,7 @@
 \name{estimateSizeFactors}
 \Rdversion{1.1}
+\docType{methods}
+\alias{estimateSizeFactors,CountDataSet-method}
 \alias{estimateSizeFactors}
 
 \title{
@@ -9,7 +11,7 @@
    Estimate the size factors for a CountDataSet
 }
 \usage{
-estimateSizeFactors( cds, locfunc=median )
+\S4method{estimateSizeFactors}{CountDataSet}( cds, locfunc=median, ... )
 }
 \arguments{
   \item{cds}{
@@ -18,7 +20,8 @@ estimateSizeFactors( cds, locfunc=median )
   \item{locfunc}{
       a function to compute a location for a sample. By default, the median is used. However,
       especially for low counts, the \code{\link[genefilter]{shorth}} may give better results.
-}
+}   
+   \item{...}{extra arguments are ignored}
 }
 \details{
    You need to call this function right after \code{\link{newCountDataSet}} unless
