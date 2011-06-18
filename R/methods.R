@@ -1,5 +1,7 @@
 setMethod("estimateSizeFactors", signature(cds="CountDataSet"),
   function( cds, locfunc=median, ... ) {
+    if( length(list(...)) != 0 )
+       warning( "in estimateSizeFactors: Ignoring extra argument(s)." )
     sizeFactors(cds) <- estimateSizeFactorsForMatrix( counts(cds), locfunc )
     cds
   })
@@ -16,10 +18,12 @@ setMethod("estimateDispersions", signature(cds="CountDataSet"),
    method <- match.arg( method )
    sharingMode <- match.arg( sharingMode )
    fitType <- match.arg( fitType )
+   if( length(list(...)) != 0 )
+      warning( "in estimateDispersions: Ignoring extra argument(s)." )
    if( cds@multivariateConditions && ! method %in% c( "blind", "pooled" ) )
       stop( "You have specified multivariate conditions (i.e., passed a data frame with conditions). In this case, you need to specify method 'pooled' or 'blind'." )
    if( sharingMode == "gene-est-only" )
-      warning( "sharingMode=='gene-est-only' will cause inflated numbers of false positives unless you have many replicates." )
+      warning( "in estimateDispersions: sharingMode=='gene-est-only' will cause inflated numbers of false positives unless you have many replicates." )
    ## FIXME this warning should only be emitted when the number of replicates is indeed small.
    
    # Remove results from previous fits

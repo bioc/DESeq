@@ -119,7 +119,7 @@ setReplaceMethod("sizeFactors", signature(cds="CountDataSet", value="numeric"),
 setMethod("conditions", signature(cds="CountDataSet"),
   function( cds, ... ) {
    if(length(list(...))!=0)
-     warning("Ignoring second and/or further arguments.")
+     warning("in conditions: Ignoring second and/or further arguments.")
    if( cds@multivariateConditions )
      stop( "The 'conditions' accessor is only for simple single-factor conditions, but you have specified multivariate conditions. Access them via 'pData'." )
    conds <- pData(cds)$`condition`
