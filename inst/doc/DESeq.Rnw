@@ -786,8 +786,8 @@ The data are now on a logarithm-like scale, and we can compute
 \emph{moderated log fold changes}.
 
 <<modlr>>=
-mod_lfc = (rowMeans( vsd[, conditions(cds)=="treated", drop=FALSE] ) - 
-           rowMeans( vsd[, conditions(cds)=="untreated", drop=FALSE] ))
+mod_lfc <- (rowMeans( vsd[, conditions(cds)=="treated", drop=FALSE] ) - 
+            rowMeans( vsd[, conditions(cds)=="untreated", drop=FALSE] ))
 @ 
 
 Now let us compare these to the original ($\log_2$) fold changes. First we find that many of the latter
@@ -795,16 +795,16 @@ are infinite (resulting from division of a finite value by 0) or \emph{not a num
 resulting from division of 0 by 0).
 
 <<dah>>=
-lfc = res$log2FoldChange
-finite = is.finite(lfc)
+lfc <- res$log2FoldChange
+finite <- is.finite(lfc)
 table(as.character(lfc[!finite]), useNA="always")
 @ 
 % \fixme{Define 0/0 := 1 in the  appropriate place in the code, then the \texttt{NaN} can go away.}
 
 For plotting (Figure~\ref{figmodlr}), we replace the infinite values by an arbitrary fixed large number:
 <<repl>>=
-largeNumber = 10
-lfc = ifelse(finite, lfc, sign(lfc) * largeNumber)
+largeNumber <- 10
+lfc <- ifelse(finite, lfc, sign(lfc) * largeNumber)
 @ 
 
 <<figmodlr, fig=TRUE>>=
@@ -825,46 +825,16 @@ abline( a=0, b=1, col="#40404040" )
 \label{figmodlr}
 \end{figure}
 
-\begin{figure}
-\centering
-\includegraphics[width=.6\textwidth]{DESeq-figHeatmap1}
-\caption{Heatmap showing the Euclidean distances between the samples
-  as calculated from the variance-stabilising transformation of the
-  count data.}
-\label{figHeatmap1}
-\end{figure}
-
 These data are now approximately homoscedastic and hence suitable as input to 
-a sample to sample distance calculation,
-%
-<<dists>>=
-dists <- dist( t( vsd ) )
-@
-%
-which we can visualize as a heatmap in Figure~\ref{figHeatmap1}.
-<<figHeatmap1,fig=TRUE,width=7,height=7>>=
-heatmap(as.matrix( dists ), 
-        symm=TRUE,
-        scale="none", margins=10*c(1,1),
-        col = colorRampPalette(c("darkblue","white"))(100))
-@
-
-We can also visualise the expression data of, say, the top 40 differentially expressed genes.
+a distance calculation. This can be useful, e.g., to visualise the expression 
+data of, say, the top 40 differentially expressed genes.
 %
 <<figHeatmap2a,fig=TRUE,width=7,height=10>>=
-select = order(res$pval)[seq_len(40)]
-colors = colorRampPalette(c("white","darkblue"))(100)
+select <- order(res$pval)[1:40]
+colors <- colorRampPalette(c("white","darkblue"))(100)
 heatmap( vsd[select,], 
          col = colors, scale = "none")
 @
-%
-For comparison, let us also try the same with the untransformed counts.
-%
-<<figHeatmap2b,fig=TRUE,width=7,height=10>>=
-heatmap( counts(cds)[select,], 
-         col = colors, scale = "none")
-@
-The result is shown in Figure~\ref{figHeatmap2}.
 
 \begin{figure}
 \centering
@@ -879,9 +849,57 @@ The result is shown in Figure~\ref{figHeatmap2}.
 \end{figure}
 
 
+For comparison, let us also try the same with the untransformed counts.
+%
+<<figHeatmap2b,fig=TRUE,width=7,height=10>>=
+heatmap( counts(cds)[select,], 
+         col = colors, scale = "none")
+@
+The result is shown in Figure~\ref{figHeatmap2}.
+
 We note that the \Rfunction{heatmap} function that we have used here is rather basic, and that better
 options exist, for instance the \Rfunction{heatmap.2} function from the package \Rpackage{gplots}
 or the manual page for \Rfunction{dendrogramGrob} in the package \Rpackage{latticeExtra}.
+
+\begin{figure}
+\centering
+\includegraphics[width=.6\textwidth]{DESeq-figHeatmapSamples}
+\caption{Heatmap showing the Euclidean distances between the samples
+  as calculated from the variance-stabilising transformation of the
+  count data.}
+\label{figHeatmapSamples}
+\end{figure}
+
+Another use of variance stabilized data is sample clustering. Here, we apply the 
+\Rfunction{dist} function to the transpose of the \Robject{vsd} matrix to get
+sample-to-sample distances. We demonstrate this with the full data set with all 
+seven samples.
+
+<<sampleClust>>=
+cdsFullBlind <- estimateDispersions( cdsFull, method = "blind" )
+vsdFull <- getVarianceStabilizedData( cdsFullBlind )
+dists <- dist( t( vsdFull ) )
+@
+
+A heatmap of this dstance matrix now shows us, which samples 
+are similar (Figure \ref{figHeatmapSamples}):
+
+<<figHeatmapSamples,fig=TRUE,width=7,height=7>>=
+heatmap( as.matrix( dists ), 
+   symm=TRUE, scale="none", margins=c(10,10),
+   col = colorRampPalette(c("darkblue","white"))(100),
+   labRow = paste( pData(cdsFullBlind)$condition, pData(cdsFullBlind)$type ) )
+@
+
+The clustering correctly reflects our experimental design, i.e., samples are
+more similar when they have the same treatment or the same library type.
+(To make this conclusion, it was important to re-estimate e dispersion with
+mode ``blind'' (in the calculation for \Robject{cdsFullBlind} above, as only then,
+the variance stabilizing transformation is not informed about the design and
+hence not biased towards a result supporting it.) Such an analysis is useful
+for quality control, and (even though we finish our vignette with it), it may 
+be useful to this first in any analysis.
+
 
 \section{Further reading}
 
