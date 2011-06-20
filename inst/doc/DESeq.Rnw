@@ -638,7 +638,7 @@ regression curve (red).}
 \end{figure}
 
 
-We check the fit (Fig.~\ref{figFitTwithQuantilesFull}):
+We check the fit (Fig.~\ref{figFitPooled}):
 
 <<figFitPooled,fig=TRUE>>=
 plotDispEsts( cds, "untreated" )
