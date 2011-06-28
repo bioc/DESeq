@@ -16,10 +16,11 @@
 }
 \usage{
 \S4method{estimateDispersions}{CountDataSet}( cds, 
-   method = c( "per-condition", "pooled", "blind" ), 
+   method = c( "per-condition", "pooled", "pooled-CR", "blind" ), 
    sharingMode = c( "maximum", "fit-only", "gene-est-only" ),
    fitType = c("parametric", "local"),
-   locfit_extra_args=list(), lp_extra_args=list(), modelFrame = NULL, ... )
+   locfit_extra_args=list(), lp_extra_args=list(), 
+   modelFrame = NULL, modelFormula = count ~ condition, ... )
 }
 \arguments{
   \item{cds}{
@@ -41,6 +42,14 @@
      \item \code{pooled} - Use the samples from all conditions with
      replicates to estimate a single pooled empirical dispersion value, 
      called "pooled", and assign it to all samples.
+
+     \item \code{pooled-CR} - Fit models according to \code{modelFormula} and
+     estimate the dispersion using Cox-Reid dispersion estimation. This method
+     is much slower than \code{method=="pooled"} but works also with crossed
+     factors (as may occur, e.g., in designs with paired samples). (Note: 
+     The idea to use Cox-Reid estimation for this application is due to
+     Robinson, McCarthy and Smyth, who added this feature to edgeR first (in
+     2010), and we follow their implementation here.)
 
      \item \code{blind} - Ignore the sample labels and compute a 
      gene's empirical dispersion value as if all samples were replicates of a
@@ -118,9 +127,16 @@
    \item{modelFrame}{
       By default, the information in \code{conditions(cds)} or \code{pData(cds)} is used to 
       determine which samples are replicates (see \code{\link{newCountDataSet}}).
-      Alternatively (and only for \code{method="pooled"}), a data frame can be passed 
+      For \code{method="pooled"}, a data frame can be passed 
       here, and all rows that are identical in this data frame are considered
-      to indicate replicate samples in \code{cds}.
+      to indicate replicate samples in \code{cds}. For \code{method="pooled-CR"},
+      the data frame is used in the fits. For the other methods, this argument is
+      ignored.
+   }
+
+   \item{modelFormula}{
+      For \code{method="pooled-CR"}, this is the formual used for the dispersion fits.
+      For all other methods, this argument is ignored.
    }
 
    \item{...}{extra arguments are ignored}

@@ -47,15 +47,47 @@ getBaseMeansAndPooledVariances <- function( counts, sizeFactors, conditions ) {
                identity ) ) / df )
 }
 
-estimateDispersionFunctionFromBaseMeansAndVariances <- function( means, 
+parametricDispersionFit <- function( means, disps ) 
+{
+   coefs <- c( .1, 1 )
+   iter <- 0   
+   while(TRUE) {
+      residuals <- disps / ( coefs[1] + coefs[2] / means )
+      good <- (residuals > 1e-4) & (residuals < 15)
+      fit <- glm( disps[good] ~ I(1/means[good]), 
+         family=Gamma(link="identity"), start=coefs )
+      oldcoefs <- coefs   
+      coefs <- coefficients(fit)
+      if( sum( log( coefs / oldcoefs )^2 ) < 1e-6 )
+         break
+      iter <- iter + 1
+      if( iter > 10 ) {
+         warning( "Dispersion fit did not converge." )
+         break }
+   }
+
+   names( coefs ) <- c( "asymptDisp", "extraPois" )
+   ans <- function( q )
+      coefs[1] + coefs[2] / q
+   attr( ans, "coefficients" ) <- coefs
+   ans
+}   
+
+estimateAndFitDispersionsFromBaseMeansAndVariances <- function( means, 
    variances, sizeFactors, fitType = c( "parametric", "local" ),
    locfit_extra_args=list(), lp_extra_args=list(), adjustForBias=TRUE ) {
    
    fitType <- match.arg( fitType )
+
+   xim <- mean( 1/sizeFactors )
+   dispsAll <- ( variances - xim * means ) / means^2
    
    variances <- variances[ means > 0 ]
+   disps <- dispsAll[ means > 0 ]
    means <- means[ means > 0 ]
-   xim <- mean( 1/sizeFactors )
+
+   if( adjustForBias )
+      disps <- adjustScvForBias( disps, length( sizeFactors ) )
    
    if( fitType == "local" ) {
    
@@ -82,39 +114,100 @@ estimateDispersionFunctionFromBaseMeansAndVariances <- function( means,
 
    } else if( fitType == "parametric" ) {
 
-      disps <- ( variances - xim * means ) / means^2
-      if( adjustForBias )
-         disps <- adjustScvForBias( disps, length( sizeFactors ) )
-
-      coefs <- c( .1, 1 )
-      iter <- 0   
-      while(TRUE) {
-         residuals <- disps / ( coefs[1] + coefs[2] / means )
-         good <- (residuals > 1e-4) & (residuals < 15)
-         fit <- glm( disps[good] ~ I(1/means[good]), 
-            family=Gamma(link="identity"), start=coefs )
-         oldcoefs <- coefs   
-         coefs <- coefficients(fit)
-         if( sum( log( coefs / oldcoefs )^2 ) < 1e-6 )
-            break
-         iter <- iter + 1
-         if( iter > 10 ) {
-            warning( "Dispersion fit did not converge." )
-            break }
-      }
-
-      names( coefs ) <- c( "asymptDisp", "extraPois" )
-      ans <- function( q )
-         coefs[1] + coefs[2] / q
-      attr( ans, "coefficients" ) <- coefs
+      ans <- parametricDispersionFit( means, disps )
    
    } else
       stop( "Unkknown fitType." )
    
    attr( ans, "fitType" ) <- fitType
-   ans   
+   list( disps=dispsAll, dispFunc=ans )
 }   
+
+profileLogLikelihood <- function( disp, mm, y, muhat )
+{
+   # calculate the log likelihood:
+   if(length(disp) != length(y)){
+      disp <- rep(disp, length(y))
+   }
+
+   ll <- sum( sapply( 1:length(y), function(i) 
+      dnbinom( y[i], mu=muhat[i], size=1/disp[i], log=TRUE ) ) )
+
+   # transform the residuals, i.e., y - muhat, to the linear
+   # predictor scale by multiplying them with the derivative
+   # of the link function, i.e., by 1/muhat, and add this to the
+   # linear predictors, log(muhat), to get the predictors that
+   # are used in the IWLS regression
+   z <- log(muhat) + ( y - muhat ) / muhat
+
+   # the variance function of the NB is as follows
+   v0 <- muhat + disp * muhat^2 
+
+   # transform the variance vector to linear predictor scale by
+   # multiplying with the squared derivative of the link to
+   # get the (reciprocal) weights for the IWLS
+   w <- 1 / ( ( 1 / muhat )^2 * v0 )
+
+   # All we need from the IRLS run is the QR decomposition of
+   # its matrix
+   qrres <- qr( mm*sqrt(w) )
+
+   # from it, we extract we leverages and calculate the Cox-Reid
+   # term:
+   cr <- sum( log( abs( diag( qrres$qr )[ 1:qrres$rank ] ) ) )  
+
+   # return the profile log likelihood:
+   ll - cr 
+}
+
+     
+estimateAndFitDispersionsWithCoxReid <- function( counts, modelFormula, modelFrame,
+   sizeFactors, fitType = c( "parametric", "local" ),
+   locfit_extra_args=list(), lp_extra_args=list(), initialGuess=.1 ) 
+{
+   if( as.character(modelFormula[2]) == "count" )
+      modelFormula <- modelFormula[-2]   # the '[-2]' removes the lhs, i.e., the response
+   mm <- model.matrix( modelFormula, modelFrame )  
+   disps <- apply( counts, 1, function( y ) {
+      fit <- glm.fit( mm, y, family=MASS::negative.binomial( initialGuess ), offset=log(sizeFactors) )
+      exp(
+         optimize( 
+            function(logalpha)
+               profileLogLikelihood( exp(logalpha), mm, y, fitted.values(fit) ),
+            log( c( 1e-11, 1e5 ) ),
+            maximum=TRUE 
+         )$maximum ) } )
+
+   means <- colMeans( t(counts) / sizeFactors )
+   xim <- mean( 1/sizeFactors )
+
+   if( fitType == "local" ) {
+         
+      fit <- do.call( "locfit", c( 
+         list( 
+            disps[means>0] ~ do.call( "lp", c( list( log(means[means>0]) ), lp_extra_args ) ),
+            family = "gamma" ), 
+         locfit_extra_args ) )
       
+      rm( means )
+      
+      ans <- function( q )
+         pmax( ( safepredict( fit, log(q) ) - xim * q ) / q^2, 1e-8 )
+            
+      # Note: The 'pmax' construct above serves to limit the overdispersion to a minimum
+      # of 10^-8, which should be indistinguishable from 0 but ensures numerical stability.
+
+   } else if( fitType == "parametric" )
+
+      ans <- parametricDispersionFit( means, disps )
+   
+   else
+      stop( "Unkknown fitType." )
+   
+   attr( ans, "fitType" ) <- fitType
+   list( disps=disps, dispFunc=ans )   
+   
+}      
    
 safepredict <- function( fit, x )
 {
