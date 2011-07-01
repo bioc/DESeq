@@ -371,6 +371,16 @@ versus ``treated''.}
 \label{figDE}
 \end{figure}
 
+\begin{figure}
+\centering
+\includegraphics[width=.6\textwidth]{DESeq-histp}
+\caption{Histogram of $p$-values from the call to nbinomTest.}
+\label{fighistp}
+\end{figure}
+
+\fixme{Some of the function calls below produce warnings: \texttt{glm.fit: algorithm did not converge}.
+Either modify code so that they do not occur, or explain to the users when they should worry about this and when not.}
+
 \subsection{Standard comparison between two experimental conditions}
 
 Having estimated the dispersion for each gene, it is now straight-forward to look for
@@ -407,6 +417,14 @@ plotDE( res )
 @ %$
 See Figure~\ref{figDE} for the plot. As we will use this plot more often, we have
 stored its code in a function.
+
+It is also instructive to look at the histogram of $p$ values (Figure~\ref{fighistp}).
+\fixme{Explain the bins with exceptionally large counts, in particular those at 1 and $\sim$0.45.}
+%
+<<histp,fig=TRUE>>=
+hist(res$pval, breaks=100, col="skyblue", border="slateblue", main="")
+@ 
+
 
 We can filter for significant genes, according to some chosen threshold for the false dicovery rate (FDR),
 <<ressig1>>=
@@ -652,7 +670,7 @@ according to the two models, and then compare them in order to infer whether
 the additional specification of the treatment improves the fit and hence, whether 
 the treatment has significant effect.
 
-<<fit1,cache=TRUE>>=
+<<fit1,cache=TRUE,results=hide>>=
 fit1 <- fitNbinomGLMs( cdsFull, count ~ type + condition )
 fit0 <- fitNbinomGLMs( cdsFull, count ~ type  )
 @
