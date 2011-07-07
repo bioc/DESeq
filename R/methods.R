@@ -218,7 +218,7 @@ getVarianceStabilizedData <- function( cds ) {
       # non-parametric fit -> numerical integration
       xg <- sinh( seq( asinh(0), asinh(max(ncounts)), length.out=1000 ) )[-1]
       xim <- mean( 1/sizeFactors(cds) )
-      baseVarsAtGrid <- cds@fitInfo[["blind"]]$dispFunc( xg ) * xg^2 + xim * xg 
+      baseVarsAtGrid <- fitInfo$dispFunc( xg ) * xg^2 + xim * xg 
       integrand <- 1 / sqrt( baseVarsAtGrid )
       splf <- splinefun( 
          asinh( ( xg[-1] + xg[-length(xg)] )/2 ), 

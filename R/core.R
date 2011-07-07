@@ -58,6 +58,8 @@ parametricDispersionFit <- function( means, disps )
          family=Gamma(link="identity"), start=coefs )
       oldcoefs <- coefs   
       coefs <- coefficients(fit)
+      if( !all( coefs > 0 ) )
+         stop( "Parametric dispersion fit failed. Try a local fit and/or a pooled estimation. (See '?estimateDispersions')" )
       if( sum( log( coefs / oldcoefs )^2 ) < 1e-6 )
          break
       iter <- iter + 1

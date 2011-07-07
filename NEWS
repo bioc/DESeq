@@ -1,3 +1,31 @@
+2011-07-07: version 1.5.20
+
+- fixed bug in 'getVarianceStabilizedData'
+
+- more informative error message if parametric fit fails
+
+2011-06 / 2011-07: versions 1.5.1 to 1.5.19
+
+refactorized the way how dispersion estimation is handled, overhauled the vignette
+
+- vignette now uses data from 'pasilla' package as example
+
+- GLMs explained in vignette
+
+- 'estimateVarianceFunctions' renamed to 'estimateDispersions'
+
+- estimateDispersions now stores intermediate results in 'fitInfo' slot
+
+- new functionality for 'estimateDispersion': 'sharingMode' option with new
+  sharing modes 'maximum' and 'gene-est-only'; 'fitType' with new
+  fitting type 'parametric'; changed defaults for these; new method
+  'pooled-CR' to do edgeR-style CR estimation etc.
+  
+- several diagnostic functions removed
+
+- lots of further small changes  
+
+
 2011-03-08: version 1.3.3
 
 - added 'locfunc' argument to 'estimateSizeFactor' and 'estimateSizeFactorForMatrix'
