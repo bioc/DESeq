@@ -378,9 +378,6 @@ versus ``treated''.}
 \label{fighistp}
 \end{figure}
 
-\fixme{Some of the function calls below produce warnings: \texttt{glm.fit: algorithm did not converge}.
-Either modify code so that they do not occur, or explain to the users when they should worry about this and when not.}
-
 \subsection{Standard comparison between two experimental conditions}
 
 Having estimated the dispersion for each gene, it is now straight-forward to look for
@@ -419,7 +416,10 @@ See Figure~\ref{figDE} for the plot. As we will use this plot more often, we hav
 stored its code in a function.
 
 It is also instructive to look at the histogram of $p$ values (Figure~\ref{fighistp}).
-\fixme{Explain the bins with exceptionally large counts, in particular those at 1 and $\sim$0.45.}
+The enrichment of low po values stems from the differentially expressed genes,
+while those not differebtially expressed are spread uniformly over the range
+from zero to one (except for the $p$ values from genes with very low counts, which
+take discrete values and so give rise to higher bins at the right and in the middle.)
 %
 <<histp,fig=TRUE>>=
 hist(res$pval, breaks=100, col="skyblue", border="slateblue", main="")
@@ -659,7 +659,7 @@ regression curve (red).}
 We check the fit (Fig.~\ref{figFitPooled}):
 
 <<figFitPooled,fig=TRUE>>=
-plotDispEsts( cds, "untreated" )
+plotDispEsts( cdsFull, "pooled" )
 @ %$
 
 For inference, we now specify two \emph{models} by formulas. The \emph{full model}
@@ -674,7 +674,14 @@ the treatment has significant effect.
 fit1 <- fitNbinomGLMs( cdsFull, count ~ type + condition )
 fit0 <- fitNbinomGLMs( cdsFull, count ~ type  )
 @
-These commands take a while to execute.
+These commands take a while to execute. Also, they may produce a few warnings,
+informing you that the GLM fit failed to converge (and the results from these
+genes should be interpreted with care). The ``fit'' objects are
+data frames with three columns:
+
+<<fitstr>>=
+str(fit1)
+@
 
 To perform the test, we call
 <<pvalsGLM,cache=TRUE>>=

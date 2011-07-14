@@ -1,3 +1,7 @@
+2011-07-14: version 1.5.21
+
+- minor changes to vignette
+
 2011-07-07: version 1.5.20
 
 - fixed bug in 'getVarianceStabilizedData'

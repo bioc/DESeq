@@ -47,7 +47,7 @@
      estimate the dispersion using Cox-Reid dispersion estimation. This method
      is much slower than \code{method=="pooled"} but works also with crossed
      factors (as may occur, e.g., in designs with paired samples). (Note: 
-     The idea to use Cox-Reid estimation for this application is due to
+     The method of using Cox-Reid estimation for this application is due to
      Robinson, McCarthy and Smyth, who added this feature to edgeR first (in
      2010), and we follow their implementation here.)
 
