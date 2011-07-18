@@ -148,13 +148,15 @@ residualsEcdfPlot <- function( ... )
    stop( "This function has been removed. Please do not use it anymore. See the vignette for our current suggestions to check fit quality." )
 }
 
-nbinomTest <- function( cds, condA, condB, pvals_only=FALSE, eps=1e-4 )
+nbinomTest <- function( cds, condA, condB, pvals_only=FALSE, eps=NULL )
 {
    stopifnot( is( cds, "CountDataSet" ) )   
    if( cds@multivariateConditions )
       stop( "For CountDataSets with multivariate conditions, only the GLM-based test can be used." )
    stopifnot( condA %in% levels(conditions(cds)) )  
    stopifnot( condB %in% levels(conditions(cds)) )     
+   if( !is.null(eps) )
+      warning( "The 'eps' argument is defunct and hence ignored." )
    
    colA <- conditions(cds)==condA
    colB <- conditions(cds)==condB
@@ -171,8 +173,7 @@ nbinomTest <- function( cds, condA, condB, pvals_only=FALSE, eps=1e-4 )
       sizeFactors(cds)[colA], 
       sizeFactors(cds)[colB], 
       rawScvA, 
-      rawScvB,
-      eps )
+      rawScvB )
       
    if( pvals_only )
       pval

@@ -9,7 +9,7 @@
    if the S4 interface is unsuitable for your task.
 }
 \usage{
-nbinomTestForMatrices(countsA, countsB, sizeFactorsA, sizeFactorsB, rawScvA, rawScvB, eps = 0.0001)
+nbinomTestForMatrices(countsA, countsB, sizeFactorsA, sizeFactorsB, dispsA, dispsB )
 }
 \arguments{
   \item{countsA}{ 
@@ -23,19 +23,15 @@ nbinomTestForMatrices(countsA, countsB, sizeFactorsA, sizeFactorsB, rawScvA, raw
   \item{sizeFactorsB}{
      Size factors for the columns of the matrix 'countsB'
 }
-  \item{rawScvA}{
-     Raw squared coefficient of variantion (SCV) for 'countsA', a vector with one value per gene
+  \item{dispsA}{
+     The dispersions for 'countsA', a vector with one value per gene
 }
-  \item{rawScvB}{
+  \item{dispsB}{
      The same for 'countsB'
-}
-  \item{eps}{
-     Precision goal for the p value. This is only a rough guidance with no guarantee
-     of adherence.
 }
 }
 \details{
-   See the paper for an exact description of the null hypothesis tested.
+   See the vignette for an exact description of the null hypothesis tested.
 }
 \value{
    A vector of unadjusted p values, one for each row in the counts matrices.

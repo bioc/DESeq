@@ -11,7 +11,7 @@
    RNA-Seq). 
 }
 \usage{
-nbinomTest(cds, condA, condB, pvals_only = FALSE, eps=1e-4)
+nbinomTest(cds, condA, condB, pvals_only = FALSE, eps=NULL )
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -28,8 +28,7 @@ nbinomTest(cds, condA, condB, pvals_only = FALSE, eps=1e-4)
       return only a vector of (unadjusted) p values instead of the data frame described below.
 }
   \item{eps}{
-     Precision goal for the p value. This is only a rough guidance with no guarantee
-     of adherence.
+     This argument is no longer used. Do not use it.
 }
 }
 \details{

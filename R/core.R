@@ -256,7 +256,7 @@ nbinomTestForMatricesRaw <- function( kA, kB, muA, vA, muB, vB, eps=0 )
 }
 
 
-nbinomTestForMatrices <- function( countsA, countsB, sizeFactorsA, sizeFactorsB, 
+nbinomTestForMatricesOLD <- function( countsA, countsB, sizeFactorsA, sizeFactorsB, 
    rawScvA, rawScvB, eps=1e-4 )
 {
    kAs <- rowSums( cbind(countsA) )
@@ -273,6 +273,68 @@ nbinomTestForMatrices <- function( countsA, countsB, sizeFactorsA, sizeFactorsB,
    
    sapply( 1:nrow(cbind(countsA)), function(i) {
       nbinomTestForMatricesRaw( kAs[i], kBs[i], muAs[i], fullVarA[i], muBs[i], fullVarB[i], eps )
+   } )
+}
+
+nbinomTestForMatrices <- function( countsA, countsB, sizeFactorsA, sizeFactorsB, 
+   dispsA, dispsB )
+{
+
+   kAs <- rowSums( cbind(countsA) )
+   kBs <- rowSums( cbind(countsB) )
+   
+   mus <- rowMeans( cbind(      
+      t( t( countsA ) / sizeFactorsA ),
+      t( t( countsB ) / sizeFactorsB ) ) )      
+
+   fullVarsA <- pmax( mus * sum( sizeFactorsA ) + dispsA * mus^2 * sum(sizeFactorsA^2), 
+      mus * sum( sizeFactorsA ) * (1+1e-8) )
+   fullVarsB <- pmax( mus * sum( sizeFactorsB ) + dispsB * mus^2 * sum(sizeFactorsB^2), 
+      mus * sum( sizeFactorsB ) * (1+1e-8) )
+   
+   sumDispsA <- ( fullVarsA - mus * sum( sizeFactorsA ) ) / ( mus * sum( sizeFactorsA ) )^2
+   sumDispsB <- ( fullVarsB - mus * sum( sizeFactorsB ) ) / ( mus * sum( sizeFactorsB ) )^2
+
+   sapply( 1:length(kAs), function(i) {
+   
+      if( kAs[i] == 0 & kBs[i] == 0 )
+         return( NA )
+      
+      # probability of observed count sums:
+      pobs <- dnbinom( kAs[i], mu = mus[i] * sum( sizeFactorsA ), size = 1/sumDispsA[i] ) * 
+              dnbinom( kBs[i], mu = mus[i] * sum( sizeFactorsB ), size = 1/sumDispsB[i] )
+      # probability of all other possible counts sums with the same total count:
+      ks <- 0 : ( kAs[i] + kBs[i] )
+      ps <- dnbinom(                   ks, mu = mus[i] * sum( sizeFactorsA ), size = 1/sumDispsA[i] ) * 
+            dnbinom( kAs[i] + kBs[i] - ks, mu = mus[i] * sum( sizeFactorsB ), size = 1/sumDispsB[i] )
+      # Calculate boundaries:
+      if( ps[1] <= ps[2] )
+         leftBoundary <- min(which( ps >= pobs ))
+      else
+         leftBoundary <- min(which( ps <= pobs ))
+      if( abs( ( ps[leftBoundary] - pobs ) / pobs ) > 1e-8 )
+         leftBoundary <- leftBoundary - 1
+      if( ps[length(ps)] <= ps[length(ps)-1] )
+         rightBoundary <- max(which( ps >= pobs))
+      else
+         rightBoundary <- max(which( ps <= pobs))
+      if( abs( ( ps[rightBoundary] - pobs ) / pobs ) > 1e-8 )
+         rightBoundary <- rightBoundary + 1
+      # Calculate p value
+      if( leftBoundary == rightBoundary )
+          return( 1.0 )
+      if( leftBoundary > rightBoundary )          
+         stop( "Internal error in p value calculation." )
+      if( leftBoundary >= 1 )
+         pleft <- sum( ps[ 1 : leftBoundary ] )
+      else
+         pleft <- 0   
+      if( rightBoundary <= length(ps) )
+         pright <- sum( ps[ rightBoundary : length(ps) ] )
+      else
+         pright <- 0   
+      ( pleft + pright ) / sum(ps)
+
    } )
 }
 
