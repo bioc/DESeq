@@ -25,7 +25,9 @@ setMethod("estimateDispersions", signature(cds="CountDataSet"),
       stop( "You have specified multivariate conditions (i.e., passed a data frame with conditions). In this case, you cannot use method 'per-condition'." )
    if( sharingMode == "gene-est-only" )
       warning( "in estimateDispersions: sharingMode=='gene-est-only' will cause inflated numbers of false positives unless you have many replicates." )
-   ## FIXME this warning should only be emitted when the number of replicates is indeed small.
+   ## FIXME this warning should only be emitted when the number of replicates is indeed small. 
+   if( method == "blind" && sharingMode != "fit-only" )
+      warning( 'When specifying method="blind", also set sharingMode="fit-only".' )
    
    # Remove results from previous fits
    fData(cds) <- fData(cds)[ , ! colnames(fData(cds)) %in% paste( "disp", cds@dispTable, sep="_" ), drop=FALSE ]
@@ -167,7 +169,7 @@ nbinomTest <- function( cds, condA, condB, pvals_only=FALSE, eps=NULL )
    rawScvA <- fData(cds)[ , paste( "disp", dispTable(cds)[condA], sep="_" ) ]
    rawScvB <- fData(cds)[ , paste( "disp", dispTable(cds)[condB], sep="_" ) ]
 
-   pval <- nbinomTestForMatrices( 
+   pval <- nbinomTestForMatrices(
       counts(cds)[,colA], 
       counts(cds)[,colB], 
       sizeFactors(cds)[colA], 

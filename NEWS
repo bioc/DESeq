@@ -1,3 +1,11 @@
+2011-07-14: version 1.5.23
+
+- fixed bug in 'nbinomTest' again; now using a symmetric two-tailed test (i.e.,
+  the one-tailed p value is doubled)
+  
+- added warning in case of method='blind'  if not used together with
+  sharingMode='fit-only'
+
 2011-07-14: version 1.5.22
 
 - fixed bug in 'nbinomTest' that led to wrong p values for dispersions larger than 1

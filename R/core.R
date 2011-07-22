@@ -221,61 +221,6 @@ safepredict <- function( fit, x )
    res   
 }
 
-nbinomTestForMatricesRaw <- function( kA, kB, muA, vA, muB, vB, eps=0 )
-{
-   # Let kA and kB be two count observations from two random variables, for
-   # which the null hypothesis assumes negative binomial distributions with
-   # means muA, muB and vA and vB. Calculate the probability that kA and kB
-   # or as or more extreme counts are observed, conditioned to the sum of the 
-   # counts being kA+kB. "As or more extreme" means having conditional probability 
-   # at most 
-   #                     fNB( kA, muA, vA ) fNB( kA, muA, vA )
-   #       -------------------------------------------------------------------
-   #        sum of fNB( k, muA, vA ) fNB( kA+kB-k, muA, vA ) for k=0,..,kA+kB
-   #
-   # 'eps' is a roughly followed guidance on the required presision
-   
-   if( kA == 0 & kB == 0 )
-      return( NA )
-   
-   if( !all( is.finite( c( kA, kB, muA, vA, muB, vB, eps ) ) ) )
-      return( NA )
-
-   pobs <- dnbinom( kA, prob = muA/vA, size = muA^2/(vA-muA) ) * 
-           dnbinom( kB, prob = muB/vB, size = muB^2/(vB-muB) )
-           
-   stopifnot( is.finite( pobs ) )
-   
-   pobs <- pobs * ( 1 + 1e-7 )
-   # This is to avoid rounding errors in checking for p <= pobs
-
-   totals <- .Call( "calc_pvals", as.integer(kA+kB), pobs, muA, vA, muB, vB, eps )
-   min( unname( totals[2] / totals[1] ), 1 )
-   # The 'min' is to avoid p values slightly exceeding 1 due to
-   # approximation errors
-}
-
-
-nbinomTestForMatricesOLD <- function( countsA, countsB, sizeFactorsA, sizeFactorsB, 
-   rawScvA, rawScvB, eps=1e-4 )
-{
-   kAs <- rowSums( cbind(countsA) )
-   kBs <- rowSums( cbind(countsB) )
-   
-   baseMeans <- rowMeans( cbind(      
-      t( t( countsA ) / sizeFactorsA ),
-      t( t( countsB ) / sizeFactorsB ) ) )      
-   muAs <- baseMeans * sum( sizeFactorsA )
-   muBs <- baseMeans * sum( sizeFactorsB )
-
-   fullVarA <- pmax( muAs + rawScvA * baseMeans^2 * sum(sizeFactorsA^2), muAs * (1+1e-8) )
-   fullVarB <- pmax( muBs + rawScvB * baseMeans^2 * sum(sizeFactorsB^2), muBs * (1+1e-8) )
-   
-   sapply( 1:nrow(cbind(countsA)), function(i) {
-      nbinomTestForMatricesRaw( kAs[i], kBs[i], muAs[i], fullVarA[i], muBs[i], fullVarB[i], eps )
-   } )
-}
-
 nbinomTestForMatrices <- function( countsA, countsB, sizeFactorsA, sizeFactorsB, 
    dispsA, dispsB )
 {
@@ -300,44 +245,23 @@ nbinomTestForMatrices <- function( countsA, countsB, sizeFactorsA, sizeFactorsB,
       if( kAs[i] == 0 & kBs[i] == 0 )
          return( NA )
       
-      # probability of observed count sums:
-      pobs <- dnbinom( kAs[i], mu = mus[i] * sum( sizeFactorsA ), size = 1/sumDispsA[i] ) * 
-              dnbinom( kBs[i], mu = mus[i] * sum( sizeFactorsB ), size = 1/sumDispsB[i] )
-      # probability of all other possible counts sums with the same total count:
+      # probability of all possible counts sums with the same total count:
       ks <- 0 : ( kAs[i] + kBs[i] )
       ps <- dnbinom(                   ks, mu = mus[i] * sum( sizeFactorsA ), size = 1/sumDispsA[i] ) * 
             dnbinom( kAs[i] + kBs[i] - ks, mu = mus[i] * sum( sizeFactorsB ), size = 1/sumDispsB[i] )
-      # Calculate boundaries:
-      if( ps[1] <= ps[2] )
-         leftBoundary <- min(which( ps >= pobs ))
-      else
-         leftBoundary <- min(which( ps <= pobs ))
-      if( abs( ( ps[leftBoundary] - pobs ) / pobs ) > 1e-8 )
-         leftBoundary <- leftBoundary - 1
-      if( ps[length(ps)] <= ps[length(ps)-1] )
-         rightBoundary <- max(which( ps >= pobs))
-      else
-         rightBoundary <- max(which( ps <= pobs))
-      if( abs( ( ps[rightBoundary] - pobs ) / pobs ) > 1e-8 )
-         rightBoundary <- rightBoundary + 1
-      # Calculate p value
-      if( leftBoundary == rightBoundary )
-          return( 1.0 )
-      if( leftBoundary > rightBoundary )          
-         stop( "Internal error in p value calculation." )
-      if( leftBoundary >= 1 )
-         pleft <- sum( ps[ 1 : leftBoundary ] )
-      else
-         pleft <- 0   
-      if( rightBoundary <= length(ps) )
-         pright <- sum( ps[ rightBoundary : length(ps) ] )
-      else
-         pright <- 0   
-      ( pleft + pright ) / sum(ps)
-
+            
+      # probability of observed count sums:
+      pobs <- dnbinom( kAs[i], mu = mus[i] * sum( sizeFactorsA ), size = 1/sumDispsA[i] ) * 
+              dnbinom( kBs[i], mu = mus[i] * sum( sizeFactorsB ), size = 1/sumDispsB[i] )
+              
+      stopifnot( pobs == ps[ kAs[i]+1 ] )
+      if( kAs[i] * sum( sizeFactorsB ) < kBs[i] * sum( sizeFactorsA ) )
+         numer <- ps[ 1 : (kAs[i]+1) ]
+      else 
+         numer <- ps[ (kAs[i]+1) : length(ps) ]
+      min( 1, 2 * sum(numer) / sum(ps) )
    } )
 }
-
 
 
 # Note: The following function is never called; it is here only for
