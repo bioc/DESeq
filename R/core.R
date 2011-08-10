@@ -337,24 +337,34 @@ fitNbinomGLMsForMatrix <- function( counts, sizeFactors, rawScv, modelFormula,
    
    goodRows <- is.finite( rawScv ) & rowSums(counts) > 0 
    
+   modelMatrix <- model.matrix( modelFormula[c(1,3)], modelFrame )
    res <- 
    t( sapply( which(goodRows), function(i) {
       if( !quiet & i %% 1000 == 0 )
          cat( '.' ) 
       nbfam <- nbkd.sf( 1 / rawScv[i], sizeFactors )      
-      fit <- glm( modelFormula, cbind( count=counts[i,], modelFrame ), 
-         family=nbfam, control = glmControl )
-      c( 
-         coefficients(fit), 
-         deviance = deviance(fit), 
-         df.residual = fit$df.residual,
-         converged = fit$converged ) } ) )
+      fit <- try( glm.fit( modelMatrix, counts[i,], family=nbfam, control = glmControl ) )
+      if( !is( fit, "try-error" ) )
+         c( 
+            coefficients(fit), 
+            deviance = deviance(fit), 
+            df.residual = fit$df.residual,
+            converged = fit$converged ) 
+      else {
+         coefs <- rep( NA, ncol(modelMatrix ) )
+         names(coefs)  <- colnames(modelMatrix) 
+         warning( as.character( fit ) )
+         c( 
+            coefs, 
+            deviance = NA, 
+            df.residual = NA,
+            converged = FALSE ) } } ) )
       
    if( !quiet )
       cat( "\n" ) 
 
-   df.residual <- res[ 1, "df.residual" ]
-   stopifnot( all( res[ , "df.residual" ] == df.residual ) )
+   df.residual <- na.omit( res[ , "df.residual" ] )[1]
+   stopifnot( all( na.omit( res[ , "df.residual" ] == df.residual ) ) )
 
    # Put in the NAs
    res2 <- data.frame(
