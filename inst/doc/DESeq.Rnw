@@ -34,10 +34,10 @@ A basic task in the analysis of count data from RNA-Seq is the detection of diff
 The count data are presented as a table which reports, for each sample, the number of reads that have been 
 assigned to a gene. Analogous analyses also arise for other assay types, such as comparative ChIP-Seq.
 The package \Rpackage{DESeq} provides a method to test for differential 
-expression by use of a shrinkage estimtor for the variance\footnote{Other Bioconductor packages 
-  for this use case are \Rpackage{edgeR} and \Rpackage{baySeq}.}. 
+expression by use of the negative binonial distribution and a shrinkage estimator for the distribution's
+ variance\footnote{Other Bioconductor packages with similar aims are \Rpackage{edgeR} and \Rpackage{baySeq}.}. 
 This vignette explains the use of the package. For an exposition of 
-the statistical method employed, please see our paper~\cite{Anders:2010:GB}.
+the statistical method, please see our paper~\cite{Anders:2010:GB}.
 \end{abstract}
 
 \tableofcontents
