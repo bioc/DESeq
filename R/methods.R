@@ -7,7 +7,7 @@ setMethod("estimateSizeFactors", signature(cds="CountDataSet"),
   })
 
 setMethod("estimateDispersions", signature(cds="CountDataSet"),
-  function( cds, method = c( "per-condition", "pooled", "pooled-CR", "blind" ), 
+  function( cds, method = c( "per-condition", "pooled", "blind" ), 
     sharingMode = c( "maximum", "fit-only", "gene-est-only" ),
     fitType = c( "parametric", "local" ),
     locfit_extra_args=list(), lp_extra_args=list(), 
@@ -74,10 +74,8 @@ setMethod("estimateDispersions", signature(cds="CountDataSet"),
       cds@dispTable <- sapply( levels(conditions(cds)), function( cond )
             ifelse( cond %in% replicated, cond, "max" ) ) 
                         
-   } else if( method == "pooled" || method == "pooled-CR" ) { 
+   } else if( method == "pooled" ) { 
    
-      if( method == "pooled" ) {
-
          if( cds@multivariateConditions ) {
             if( is.null( modelFrame ) )
                modelFrame <- pData(cds)[ , colnames(pData(cds)) != "sizeFactor" ]
@@ -89,16 +87,6 @@ setMethod("estimateDispersions", signature(cds="CountDataSet"),
          dispsAndFunc <- estimateAndFitDispersionsFromBaseMeansAndVariances( bmv$baseMean,
             bmv$baseVar, sizeFactors(cds), fitType, locfit_extra_args, lp_extra_args )
          df <- ncol(counts(cds)) - length(unique(conds))
-      
-      } else {  # method == "pooled-CR"
-         if( is.null( modelFrame ) )
-            modelFrame <- pData(cds)[ , colnames(pData(cds)) != "sizeFactor", drop=FALSE ]
-         baseMeans <- rowMeans( counts( cds, normalized=TRUE ) )
-         
-         dispsAndFunc <- estimateAndFitDispersionsWithCoxReid( counts(cds), modelFormula, modelFrame,
-            sizeFactors(cds), fitType, locfit_extra_args, lp_extra_args )      
-         df <- NA
-      }
       
       cds@fitInfo[[ "pooled" ]] <- list( 
          perGeneDispEsts = dispsAndFunc$disps,
@@ -155,6 +143,9 @@ nbinomTest <- function( cds, condA, condB, pvals_only=FALSE, eps=NULL )
    stopifnot( is( cds, "CountDataSet" ) )   
    if( cds@multivariateConditions )
       stop( "For CountDataSets with multivariate conditions, only the GLM-based test can be used." )
+   if( all( is.na( dispTable(cds) ) ) )
+      stop( "Call 'estimateDispersions' first." )
+
    stopifnot( condA %in% levels(conditions(cds)) )  
    stopifnot( condB %in% levels(conditions(cds)) )     
    if( !is.null(eps) )
