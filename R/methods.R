@@ -1,27 +1,27 @@
-setMethod("estimateSizeFactors", signature(cds="CountDataSet"),
-  function( cds, locfunc=median, ... ) {
+setMethod("estimateSizeFactors", signature(object="CountDataSet"),
+  function( object, locfunc=median, ... ) {
     if( length(list(...)) != 0 )
        warning( "in estimateSizeFactors: Ignoring extra argument(s)." )
-    sizeFactors(cds) <- estimateSizeFactorsForMatrix( counts(cds), locfunc )
-    cds
+    sizeFactors(object) <- estimateSizeFactorsForMatrix( counts(object), locfunc )
+    object
   })
 
-setMethod("estimateDispersions", signature(cds="CountDataSet"),
-  function( cds, method = c( "per-condition", "pooled", "blind" ), 
+setMethod("estimateDispersions", signature(object="CountDataSet"),
+  function( object, method = c( "per-condition", "pooled", "blind" ), 
     sharingMode = c( "maximum", "fit-only", "gene-est-only" ),
     fitType = c( "parametric", "local" ),
     locfit_extra_args=list(), lp_extra_args=list(), 
     modelFrame = NULL, modelFormula = count ~ condition, ... )
 {
-   stopifnot( is( cds, "CountDataSet" ) )   
-   if( any( is.na( sizeFactors(cds) ) ) )
+   stopifnot( is( object, "CountDataSet" ) )   
+   if( any( is.na( sizeFactors(object) ) ) )
       stop( "NAs found in size factors. Have you called already 'estimateSizeFactors'?" )
    method <- match.arg( method )
    sharingMode <- match.arg( sharingMode )
    fitType <- match.arg( fitType )
    if( length(list(...)) != 0 )
       warning( "in estimateDispersions: Ignoring extra argument(s)." )
-   if( cds@multivariateConditions && ! method %in% c( "blind", "pooled", "pooled-CR" ) )
+   if( object@multivariateConditions && ! method %in% c( "blind", "pooled", "pooled-CR" ) )
       stop( "You have specified multivariate conditions (i.e., passed a data frame with conditions). In this case, you cannot use method 'per-condition'." )
    if( sharingMode == "gene-est-only" )
       warning( "in estimateDispersions: sharingMode=='gene-est-only' will cause inflated numbers of false positives unless you have many replicates." )
@@ -30,97 +30,97 @@ setMethod("estimateDispersions", signature(cds="CountDataSet"),
       warning( 'When specifying method="blind", also set sharingMode="fit-only".' )
    
    # Remove results from previous fits
-   fData(cds) <- fData(cds)[ , ! colnames(fData(cds)) %in% paste( "disp", cds@dispTable, sep="_" ), drop=FALSE ]
-   cds@dispTable <- character()
-   cds@fitInfo = new.env( hash=TRUE )
+   fData(object) <- fData(object)[ , ! colnames(fData(object)) %in% paste( "disp", object@dispTable, sep="_" ), drop=FALSE ]
+   object@dispTable <- character()
+   object@fitInfo = new.env( hash=TRUE )
    
    if( method == "blind" ) {
 
-      bmv <- getBaseMeansAndVariances( counts(cds), sizeFactors(cds) )
+      bmv <- getBaseMeansAndVariances( counts(object), sizeFactors(object) )
       dispsAndFunc <- estimateAndFitDispersionsFromBaseMeansAndVariances( bmv$baseMean,
-         bmv$baseVar, sizeFactors(cds), fitType, locfit_extra_args, lp_extra_args )   
-      cds@fitInfo[[ "blind" ]] <- list( 
+         bmv$baseVar, sizeFactors(object), fitType, locfit_extra_args, lp_extra_args )   
+      object@fitInfo[[ "blind" ]] <- list( 
          perGeneDispEsts = dispsAndFunc$disps,
          dispFunc = dispsAndFunc$dispFunc,
          fittedDispEsts = dispsAndFunc$dispFunc( bmv$baseMean ),
-         df = ncol(counts(cds)) - 1 )
+         df = ncol(counts(object)) - 1 )
       
-      if( cds@multivariateConditions )
-         dispTable(cds) <- c( "_all" = "blind" )
+      if( object@multivariateConditions )
+         dispTable(object) <- c( "_all" = "blind" )
       else {
-         a <- rep( "blind", length( levels( conditions(cds) ) ) )
-         names(a) <- levels( conditions(cds) )
-         cds@dispTable <- a }
+         a <- rep( "blind", length( levels( conditions(object) ) ) )
+         names(a) <- levels( conditions(object) )
+         object@dispTable <- a }
       
    } else if( method == "per-condition" ) {
    
-      replicated <- names( which( tapply( conditions(cds), conditions(cds), length ) > 1 ) )
+      replicated <- names( which( tapply( conditions(object), conditions(object), length ) > 1 ) )
       if( length( replicated ) < 1 )
          stop( "None of your conditions is replicated. Use method='blind' to estimate across conditions, or 'pooled-CR', if you have crossed factors." )
-      nonreplicated <- names( which( tapply( conditions(cds), conditions(cds), length ) == 1 ) )
-      overall_basemeans <- rowMeans( counts( cds, normalized=TRUE ) )
+      nonreplicated <- names( which( tapply( conditions(object), conditions(object), length ) == 1 ) )
+      overall_basemeans <- rowMeans( counts( object, normalized=TRUE ) )
 
       for( cond in replicated ) {
-         cols <- conditions(cds)==cond
-         bmv <- getBaseMeansAndVariances( counts(cds)[ , cols ], sizeFactors(cds)[ cols ] )
+         cols <- conditions(object)==cond
+         bmv <- getBaseMeansAndVariances( counts(object)[ , cols ], sizeFactors(object)[ cols ] )
          dispsAndFunc <- estimateAndFitDispersionsFromBaseMeansAndVariances( bmv$baseMean,
-            bmv$baseVar, sizeFactors(cds)[cols], fitType, locfit_extra_args, lp_extra_args )   
-         cds@fitInfo[[ cond ]] <- list( 
+            bmv$baseVar, sizeFactors(object)[cols], fitType, locfit_extra_args, lp_extra_args )   
+         object@fitInfo[[ cond ]] <- list( 
             perGeneDispEsts = dispsAndFunc$disps,
             dispFunc = dispsAndFunc$dispFunc,
             fittedDispEsts = dispsAndFunc$dispFunc( overall_basemeans ),     # Note that we do not use bmv$baseMean here
             df = sum(cols) - 1 ) }
          
-      cds@dispTable <- sapply( levels(conditions(cds)), function( cond )
+      object@dispTable <- sapply( levels(conditions(object)), function( cond )
             ifelse( cond %in% replicated, cond, "max" ) ) 
                         
    } else if( method == "pooled" ) { 
    
-         if( cds@multivariateConditions ) {
+         if( object@multivariateConditions ) {
             if( is.null( modelFrame ) )
-               modelFrame <- pData(cds)[ , colnames(pData(cds)) != "sizeFactor" ]
+               modelFrame <- pData(object)[ , colnames(pData(object)) != "sizeFactor" ]
             conds <- modelMatrixToConditionFactor( modelFrame ) }
          else
-            conds <- conditions(cds)
-         bmv <- getBaseMeansAndPooledVariances( counts(cds), sizeFactors(cds), conds )
+            conds <- conditions(object)
+         bmv <- getBaseMeansAndPooledVariances( counts(object), sizeFactors(object), conds )
          baseMeans <- bmv$baseMean
          dispsAndFunc <- estimateAndFitDispersionsFromBaseMeansAndVariances( bmv$baseMean,
-            bmv$baseVar, sizeFactors(cds), fitType, locfit_extra_args, lp_extra_args )
-         df <- ncol(counts(cds)) - length(unique(conds))
+            bmv$baseVar, sizeFactors(object), fitType, locfit_extra_args, lp_extra_args )
+         df <- ncol(counts(object)) - length(unique(conds))
       
-      cds@fitInfo[[ "pooled" ]] <- list( 
+      object@fitInfo[[ "pooled" ]] <- list( 
          perGeneDispEsts = dispsAndFunc$disps,
          dispFunc = dispsAndFunc$dispFunc,
          fittedDispEsts = dispsAndFunc$dispFunc( baseMeans ),
          df = df )
 
-      if( cds@multivariateConditions )
-         dispTable(cds) <- c( "_all" = "pooled" )
+      if( object@multivariateConditions )
+         dispTable(object) <- c( "_all" = "pooled" )
       else {
-         a <- rep( "pooled", length( levels( conditions(cds) ) ) )
-         names(a) <- levels( conditions(cds) )
-         cds@dispTable <- a }
+         a <- rep( "pooled", length( levels( conditions(object) ) ) )
+         names(a) <- levels( conditions(object) )
+         object@dispTable <- a }
    
    } else
    
       stop(sprintf("Invalid method '%s'.", method))
    
-   for( n in ls(cds@fitInfo) )
-      fData(cds)[[ paste( "disp", n, sep="_" ) ]] <- 
+   for( n in ls(object@fitInfo) )
+      fData(object)[[ paste( "disp", n, sep="_" ) ]] <- 
          switch( sharingMode, 
-            `fit-only`      = cds@fitInfo[[ n ]]$fittedDispEsts,
-            `gene-est-only` = cds@fitInfo[[ n ]]$perGeneDispEsts,
-            `maximum`       = pmax( cds@fitInfo[[ n ]]$fittedDispEsts, cds@fitInfo[[ n ]]$perGeneDispEsts, na.rm=TRUE ),
+            `fit-only`      = object@fitInfo[[ n ]]$fittedDispEsts,
+            `gene-est-only` = object@fitInfo[[ n ]]$perGeneDispEsts,
+            `maximum`       = pmax( object@fitInfo[[ n ]]$fittedDispEsts, object@fitInfo[[ n ]]$perGeneDispEsts, na.rm=TRUE ),
             stop(sprintf("Invalid sharingMode '%s'.", sharingMode))
          ) ## switch
         
-   if( "max" %in% cds@dispTable )
-      fData(cds)[["disp_max"]] <- do.call( pmax, 
-         c( fData(cds)[ , colnames(fData(cds)) %in% paste( "disp", cds@dispTable, sep="_" ), drop=FALSE ], na.rm=TRUE ) )
+   if( "max" %in% object@dispTable )
+      fData(object)[["disp_max"]] <- do.call( pmax, 
+         c( fData(object)[ , colnames(fData(object)) %in% paste( "disp", object@dispTable, sep="_" ), drop=FALSE ], na.rm=TRUE ) )
         
         
-   validObject( cds )
-   cds
+   validObject( object )
+   object
 })
 
 estimateVarianceFunctions <- function( ... )

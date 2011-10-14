@@ -82,69 +82,69 @@ setValidity( "CountDataSet", function( object ) {
    TRUE
 } )
 
-setMethod("counts", signature(cds="CountDataSet"),
-  function(cds, normalized=FALSE ) {
+setMethod("counts", signature(object="CountDataSet"),
+  function(object, normalized=FALSE ) {
     if(!normalized) {
-      assayData(cds)[["counts"]]
+      assayData(object)[["counts"]]
     } else {
-      if(any(is.na( sizeFactors(cds)))) {
+      if(any(is.na( sizeFactors(object)))) {
         stop( "Please first calculate size factors or set normalized=FALSE")
       } else {
-        t(t( assayData(cds)[["counts"]] ) / sizeFactors(cds) )
+        t(t( assayData(object)[["counts"]] ) / sizeFactors(object) )
       }
     }
   })   
 
-setReplaceMethod("counts", signature(cds="CountDataSet", value="matrix"),
-  function( cds, value ) {
-   assayData(cds)[[ "counts" ]] <- value
-   validObject(cds)
-   cds
+setReplaceMethod("counts", signature(object="CountDataSet", value="matrix"),
+  function( object, value ) {
+   assayData(object)[[ "counts" ]] <- value
+   validObject(object)
+   object
 })   
    
-setMethod("sizeFactors", signature(cds="CountDataSet"),
-  function(cds) {
-   sf <- pData(cds)$sizeFactor
-   names( sf ) <- colnames( counts(cds) )
+setMethod("sizeFactors", signature(object="CountDataSet"),
+  function(object) {
+   sf <- pData(object)$sizeFactor
+   names( sf ) <- colnames( counts(object) )
    sf
  })   
 
-setReplaceMethod("sizeFactors", signature(cds="CountDataSet", value="numeric"),
-  function( cds, value ) {
-   pData(cds)$sizeFactor <- value
-   validObject( cds )
-   cds
+setReplaceMethod("sizeFactors", signature(object="CountDataSet", value="numeric"),
+  function( object, value ) {
+   pData(object)$sizeFactor <- value
+   validObject( object )
+   object
 })   
 
-setMethod("conditions", signature(cds="CountDataSet"),
-  function( cds, ... ) {
+setMethod("conditions", signature(object="CountDataSet"),
+  function( object, ... ) {
    if(length(list(...))!=0)
      warning("in conditions: Ignoring second and/or further arguments.")
-   if( cds@multivariateConditions )
+   if( object@multivariateConditions )
      stop( "The 'conditions' accessor is only for simple single-factor conditions, but you have specified multivariate conditions. Access them via 'pData'." )
-   conds <- pData(cds)$`condition`
-   names( conds ) <- colnames( counts(cds) )
+   conds <- pData(object)$`condition`
+   names( conds ) <- colnames( counts(object) )
    conds
 })   
    
-setReplaceMethod("conditions", signature(cds="CountDataSet"),
-  function( cds, value ) {
-   if( cds@multivariateConditions )
+setReplaceMethod("conditions", signature(object="CountDataSet"),
+  function( object, value ) {
+   if( object@multivariateConditions )
       stop( "The 'conditions<-' accessor is only for simple single-factor conditions, but you have specified multivariate conditions. Access them via 'pData<-'." )
-   pData(cds)$`condition` <- factor( value )
-   validObject( cds )
-   cds
+   pData(object)$`condition` <- factor( value )
+   validObject( object )
+   object
 })
 
-setMethod("dispTable", signature(cds="CountDataSet"),
- function( cds ) {
-    cds@dispTable
+setMethod("dispTable", signature(object="CountDataSet"),
+ function( object ) {
+    object@dispTable
 })   
 
-setReplaceMethod("dispTable", signature(cds="CountDataSet"),
- function( cds, value ) {
-    cds@dispTable <- value
-    validObject( cds )
-    cds
+setReplaceMethod("dispTable", signature(object="CountDataSet"),
+ function( object, value ) {
+    object@dispTable <- value
+    validObject( object )
+    object
 })   
 

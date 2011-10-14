@@ -11,16 +11,19 @@
    is called to compare two conditions, say "A" and "B", DESeq looks up in the dispTable,
    which dispersion columns to use. In the standard case (see example), these
    are just the dispersions for "A" and "B", i.e., the columns \code{disp_A}
-   and \code{disp_B} in \code{fData(cds)}. If the "pooled" or "blind" variance
+   and \code{disp_B} in \code{fData(object)}. If the "pooled" or "blind" variance
    estimation is used, all conditions are assigned the same column. 
 }
 \usage{
-dispTable(cds)
+dispTable(object,...)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{cds}{
+  \item{object}{
       a CountDataSet
+}
+  \item{...}{
+      further argumnts are ignored
 }
 }
 \seealso{\code{\link{estimateDispersions}}, \code{\link{nbinomTest}} }

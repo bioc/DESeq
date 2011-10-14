@@ -14,15 +14,15 @@
     in the CountDataSet's "phenoData" slot as a row named "condition".
 }
 \usage{
-\S4method{conditions}{CountDataSet}(cds, ...)
-\S4method{conditions}{CountDataSet}(cds) <- value
+\S4method{conditions}{CountDataSet}(object, ...)
+\S4method{conditions}{CountDataSet}(object) <- value
 
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{cds}{a CountDataSet}
+  \item{object}{a CountDataSet}
   \item{value}{a vector of suitable length, i.e. with as many elements as
-    \code{cds} has samples.}
+    \code{object} has samples.}
   \item{...}{should not be used for this method.}
 }
 \author{

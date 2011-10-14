@@ -11,10 +11,10 @@
    Estimate the size factors for a CountDataSet
 }
 \usage{
-\S4method{estimateSizeFactors}{CountDataSet}( cds, locfunc=median, ... )
+\S4method{estimateSizeFactors}{CountDataSet}( object, locfunc=median, ... )
 }
 \arguments{
-  \item{cds}{
+  \item{object}{
      a CountDataSet
 }
   \item{locfunc}{

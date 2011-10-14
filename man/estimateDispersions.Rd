@@ -15,7 +15,7 @@
     argument.
 }
 \usage{
-\S4method{estimateDispersions}{CountDataSet}( cds, 
+\S4method{estimateDispersions}{CountDataSet}( object, 
    method = c( "per-condition", "pooled", "blind" ), 
    sharingMode = c( "maximum", "fit-only", "gene-est-only" ),
    fitType = c("parametric", "local"),
@@ -23,7 +23,7 @@
    modelFrame = NULL, modelFormula = count ~ condition, ... )
 }
 \arguments{
-  \item{cds}{
+  \item{object}{
       a \code{CountDataSet} with size factors.
   }
   \item{method}{
@@ -33,7 +33,7 @@
      \item \code{per-condition} - For each condition with replicates, compute
      a gene's empirical dispersion value by considering the data from samples for this
      condition.  For samples of unreplicated conditions, the maximum
-     of empirical dispersion values from the other conditions is used.  If \code{cds} has a
+     of empirical dispersion values from the other conditions is used.  If \code{object} has a
      multivariate design (i.e., if a data frame was passed instead of a
      factor for the \code{condition} argument in
      \code{\link{newCountDataSet}}), this method is not available. (Note: This method was called ``normal'' in
@@ -117,11 +117,11 @@
       quite well.}
       
    \item{modelFrame}{
-      By default, the information in \code{conditions(cds)} or \code{pData(cds)} is used to 
+      By default, the information in \code{conditions(object)} or \code{pData(object)} is used to 
       determine which samples are replicates (see \code{\link{newCountDataSet}}).
       For \code{method="pooled"}, a data frame can be passed 
       here, and all rows that are identical in this data frame are considered
-      to indicate replicate samples in \code{cds}. For \code{method="pooled-CR"},
+      to indicate replicate samples in \code{object}. For \code{method="pooled-CR"},
       the data frame is used in the fits. For the other methods, this argument is
       ignored.
    }
@@ -136,7 +136,7 @@
 }
 \details{
    Behaviour for \code{method="per-condition"}: For each replicated condition, a list, named
-   with the condition's name, is placed in the environment \code{cds@fitInfo}. This list
+   with the condition's name, is placed in the environment \code{object@fitInfo}. This list
    has four named elements: The vector \code{perGeneDispEsts} contains the
    empirical dispersions. The function \code{dispFunc}
    is the fitted function, i.e., it takes as its argument a normalized
@@ -148,7 +148,7 @@
    the per-gene estimation.
 
    Behaviour for \code{method="blind"} and \code{method="pooled"}: Only one list is produced,
-   named \code{"blind"} or \code{"pooled"} and placed in \code{cds@fitInfo}.
+   named \code{"blind"} or \code{"pooled"} and placed in \code{object@fitInfo}.
    
    For each list in the \code{fitInfo} environment, the dispersion
    values that are intended to be used in subsequent testing are computed according to

@@ -15,12 +15,12 @@
 }
 
 \usage{
-\S4method{counts}{CountDataSet}(cds, normalized=FALSE)
-\S4method{counts}{CountDataSet,matrix}(cds) <- value
+\S4method{counts}{CountDataSet}(object, normalized=FALSE)
+\S4method{counts}{CountDataSet,matrix}(object) <- value
 }
 
 \arguments{
-  \item{cds}{a \code{CountDataSet} object.}
+  \item{object}{a \code{CountDataSet} object.}
   \item{normalized}{logical indicating whether or not to divide the
     counts by the size factors before returning.}
   \item{value}{integer matrix.}

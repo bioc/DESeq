@@ -14,11 +14,11 @@
     a common scale by dividing by the corresponding size factor.
 }
 \usage{
-\S4method{sizeFactors}{CountDataSet}(cds)
-\S4method{sizeFactors}{CountDataSet,numeric}(cds) <- value
+\S4method{sizeFactors}{CountDataSet}(object)
+\S4method{sizeFactors}{CountDataSet,numeric}(object) <- value
 }
 \arguments{
-  \item{cds}{a \code{CountDataSet} object.}
+  \item{object}{a \code{CountDataSet} object.}
   \item{value}{a numeric vector, one size factor for each column in the count data.}
 }
 
