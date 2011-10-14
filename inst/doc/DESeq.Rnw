@@ -11,15 +11,15 @@
 \usepackage{hyperref,graphicx}
 \usepackage{color}
 
-\SweaveOpts{keep.source=TRUE,eps=FALSE,include=FALSE,width=4,height=4.5} 
+\SweaveOpts{keep.source=TRUE,eps=FALSE,include=FALSE,width=4,height=4.5}
 \newcommand{\Robject}[1]{\texttt{#1}}
 \newcommand{\Rpackage}[1]{\textit{#1}}
 \newcommand{\Rclass}[1]{\textit{#1}}
 \newcommand{\Rfunction}[1]{{\small\texttt{#1}}}
 \newcommand{\fixme}[1]{{\textbf{Fixme:} \textit{\textcolor{blue}{#1}}}}
 
-\renewcommand{\floatpagefraction}{0.7}	
-  
+\renewcommand{\floatpagefraction}{0.7}
+
 \author{Simon Anders\\[1em]European Molecular Biology Laboratory (EMBL),\\ Heidelberg, Germany\\[1em]
 \texttt{sanders@fs.tum.de}}
 
@@ -29,14 +29,14 @@
 
 \maketitle
 
-\begin{abstract} 
-A basic task in the analysis of count data from RNA-Seq is the detection of differentially expressed genes.  
-The count data are presented as a table which reports, for each sample, the number of reads that have been 
+\begin{abstract}
+A basic task in the analysis of count data from RNA-Seq is the detection of differentially expressed genes.
+The count data are presented as a table which reports, for each sample, the number of reads that have been
 assigned to a gene. Analogous analyses also arise for other assay types, such as comparative ChIP-Seq.
-The package \Rpackage{DESeq} provides a method to test for differential 
+The package \Rpackage{DESeq} provides a method to test for differential
 expression by use of the negative binonial distribution and a shrinkage estimator for the distribution's
- variance\footnote{Other Bioconductor packages with similar aims are \Rpackage{edgeR} and \Rpackage{baySeq}.}. 
-This vignette explains the use of the package. For an exposition of 
+ variance\footnote{Other Bioconductor packages with similar aims are \Rpackage{edgeR} and \Rpackage{baySeq}.}.
+This vignette explains the use of the package. For an exposition of
 the statistical method, please see our paper~\cite{Anders:2010:GB}.
 \end{abstract}
 
@@ -50,11 +50,11 @@ The \Rpackage{DESeq} package expects count data, as obtained, e.g.,
 from an RNA-Seq or other high-throughput sequencing (HTS) experiment,
 in the form of a matrix of integer values. Each column corresponds to
 a sample, e.g., one library preparation or one lane.
-The rows correspond to the entities for which you want to compare coverage, 
-e.\,g.\ to a gene, to a binding region in a ChIP-Seq dataset, 
+The rows correspond to the entities for which you want to compare coverage,
+e.\,g.\ to a gene, to a binding region in a ChIP-Seq dataset,
 a window in CNV-Seq or the like. So, for a typical RNA-Seq experiment, each
 element in the table tells how many reads have been mapped in a given sample
-to a given gene. 
+to a given gene.
 
 To obtain such a count table for your own data, you will need
 to create it from the sequence alignments by use of tools outside of the
@@ -62,7 +62,7 @@ to create it from the sequence alignments by use of tools outside of the
 available on the Bioconductor web page, there are examples for how to
 do this with the \Rpackage{ShortRead} and \Rpackage{IRanges}
 packages. The Bioconductor package \Rpackage{easyrnaseq} (by
-Nicolas Delhomme; in preparation, available soon; package name may change) 
+Nicolas Delhomme; in preparation, available soon; package name may change)
 will offer this functionality in a convenient manner.
 
 Another easy way to produce such a table from the output
@@ -101,7 +101,7 @@ follows.
 
 <<options,results=hide,echo=FALSE>>=
 options(digits=3)
-@  
+@
 
 <<pasilla2,results=hide>>=
 library( "DESeq" )
@@ -117,11 +117,11 @@ pData( pasillaGenes )
 @
 
 As you can see, the samples differ by experimental condition (untreated or treated, i.\,e., with
-pasilla knocked down) and by library type. To keep things simple, we will only 
-look at the paired-end data for now. In Section \ref{sec:GLM}, we will see how to deal 
+pasilla knocked down) and by library type. To keep things simple, we will only
+look at the paired-end data for now. In Section \ref{sec:GLM}, we will see how to deal
 with more than one factor.
 
-For your own analysis, you will start form a count table, so we ``unpack'' the 
+For your own analysis, you will start form a count table, so we ``unpack'' the
 \Rclass{countDataSet} object and build a new one ``from scratch'' to demonstrate how this is done.
 
 <<pairedSamples>>=
@@ -132,7 +132,7 @@ conds <- pData(pasillaGenes)$condition[ pairedSamples ]
 
 Now, we have a count table, as described above, of integer count data. For your own data,
 use R's \Rfunction{read.table} or \Rfunction{read.csv} function to read your count data
-from a text file. 
+from a text file.
 
 We also need a description of the samples, which is here simply a factor:
 
@@ -140,7 +140,7 @@ We also need a description of the samples, which is here simply a factor:
 conds
 @
 
-For your own data, create such a factor simply with 
+For your own data, create such a factor simply with
 <<conds,eval=FALSE>>=
 #not run
 conds <- factor( c( "treated", "treated", "untreated", "untreated" ) )
@@ -170,7 +170,7 @@ head( counts(cds) )
 As first processing step, we need to estimate the effective library
 size. This information is called the ``size factors'' vector, as the
 package only needs to know the relative library sizes. So, if the counts
-of non-differentially expressed genes in one sample are, on average, twice as high 
+of non-differentially expressed genes in one sample are, on average, twice as high
 as in another, the size factor for the first sample should be
 twice as large as the one for the other sample. The function
 \Rfunction{estimateSizeFactors} estimates the size factors from the
@@ -200,13 +200,13 @@ The inference in \Rpackage{DESeq} relies on an estimation of the typical
 relationship between the data's variance and their mean, or, equivalently,
 between the data's dispersion and their mean.
 
-The \emph{dispersion} can be understood as the square of the coefficient 
-of biological variation. So, if a gene's expression typically differs 
+The \emph{dispersion} can be understood as the square of the coefficient
+of biological variation. So, if a gene's expression typically differs
 from replicate to replicate sample by 20\%, this gene's dispersion is $.20^2=.04$.
 Note that the variance seen between counts is the sum of two components: the
 sample-to-sample variation just mentioned, and the uncertainty in measuring
 a concentration by counting reads. The latter, known as shot noise or Poisson
-noise, is the dominating noise source for lowly expressed genes. 
+noise, is the dominating noise source for lowly expressed genes.
 The sum of both, shot noise and dispersion, is considered in the differential expression inference.
 
 Hence, the variance $v$ of count values is modelled as
@@ -244,19 +244,19 @@ and the fitted values that will be used in the test.
 str( cds@fitInfo[["untreated"]] )
 @
 
-To visualize these, we plot the per-gene estimates against the normalized mean 
-expressions per gene, and then overlay the fitted curve in red. The following 
+To visualize these, we plot the per-gene estimates against the normalized mean
+expressions per gene, and then overlay the fitted curve in red. The following
 function does this.
 
 <<fitUntr, fig=TRUE>>=
 plotDispEsts <- function( cds, cond )
 {
-   plot( 
+   plot(
       rowMeans( counts( cds, normalized=TRUE ) ),
       cds@fitInfo[[cond]]$perGeneDispEsts,
       pch = '.', log="xy" )
    xg <- 10^seq( -.5, 5, length.out=300 )
-   lines( xg, cds@fitInfo[[cond]]$dispFun( xg ), col="red" )   
+   lines( xg, cds@fitInfo[[cond]]$dispFun( xg ), col="red" )
 }
 @
 
@@ -269,17 +269,17 @@ plotDispEsts <- function( cds, cond )
 %  pge <- cds@fitInfo[[cond]][["perGeneDispEsts"]]
 %  matplot(xg,
 %    qvals,
-%    col = c( "red", rep( "blue", length(probs) ) ), 
+%    col = c( "red", rep( "blue", length(probs) ) ),
 %    lty = 1, type = "l", log = "xy", ylim = range( c( qvals, pge ), na.rm=TRUE ),
 %    main = cond, ylab = "dispersions", xlab= "average normalized count" )
 %  points(means, pge, pch=".")
 %}
-%@   
-  
+%@
+
 \begin{figure}
 \centering
 \includegraphics[width=\textwidth]{DESeq-figFit}
-\caption{Empirical (black dots) and fitted (red lines) dispersion values 
+\caption{Empirical (black dots) and fitted (red lines) dispersion values
 plotted against mean expression strength; left: for condition ``untreated'',
 right: for condition ``treated''.}
 \label{figFit}
@@ -296,11 +296,11 @@ plotDispEsts( cds, "treated" )
 % check a claim made in the paragraph below.
 <<echo=FALSE, results=hide>>=
 all(table(conditions(cds))==2)
-@ 
+@
 
 The plot in Figure~\ref{figFit} is doubly logarithmic; this may be
 helpful or misleading, and it is worth experimenting with other
-plotting styles.  
+plotting styles.
 
 As we estimated the
 dispersion from only two samples, we should expect the estimates to
@@ -327,11 +327,11 @@ On the othe hand, not all of he values above the red line are overestimations, a
 hence, the conservative choice is to keep them instead of replacing them with
 their fitted values. If you do not like this default behaviour, you can change it
 with the option \texttt{sharingMode} of \Rfunction{estimateDispersions}. Note that
-DESeq orginally (as described in the DESeq paper \cite{Anders:2010:GB}) only 
+DESeq orginally (as described in the DESeq paper \cite{Anders:2010:GB}) only
 used the fitted values (\texttt{sharingMode="fit-only"}). The
-current default (\texttt{sharingMode="maximum"}) is more conservative. 
-  
-Another difference of the current DESeq version to the original method described in the 
+current default (\texttt{sharingMode="maximum"}) is more conservative.
+
+Another difference of the current DESeq version to the original method described in the
 paper is the way how the mean-dispersion relation is fitted. By default,
 \Rfunction{estimateDispersion} now performs a parametric fit: Using a gamma-family
 GLM, two coefficients $\alpha_0, \alpha_1$ are found to
@@ -349,7 +349,7 @@ head( fData(cds) )
 @
 
 You can verify that \texttt{disp\_untreated} indeed contains the maximum of the two value vectors
-we looked at before, namely 
+we looked at before, namely
 
 <<str>>=
 str( cds@fitInfo[["untreated"]] )
@@ -365,8 +365,8 @@ in \texttt{fData(cds)} prior to calling the testing function.
 \begin{figure}
 \centering
 \includegraphics[width=.6\textwidth]{DESeq-figDE}
-\caption{Plot of normalised mean versus $log_2$ fold change 
-(this plot is sometimes also called the ``MA-plot'') for the contrast ``untreated'' 
+\caption{Plot of normalised mean versus $log_2$ fold change
+(this plot is sometimes also called the ``MA-plot'') for the contrast ``untreated''
 versus ``treated''.}
 \label{figDE}
 \end{figure}
@@ -395,19 +395,19 @@ head(res)
 For each gene, we get its mean expression level (at the base scale) as a joint estimate from both conditions, and
 estimated separately for each  condition, the fold change from
 the first to the second condition, the logarithm (to basis 2) of the fold change, and the
-$p$ value for the statistical significance of this change. The \texttt{padj} column contains the 
+$p$ value for the statistical significance of this change. The \texttt{padj} column contains the
 $p$ values, adjusted for multiple testing with the Benjamini-Hochberg procedure (see the R function
-\Rfunction{p.adjust}), which controls false discovery 
-rate (FDR). 
+\Rfunction{p.adjust}), which controls false discovery
+rate (FDR).
 
 Let us first plot the $\log_2$ fold changes against the base means, colouring in red those genes
 that are significant at 10\% FDR.
 <<figDE,fig=TRUE>>=
 plotDE <- function( res )
-   plot( 
-      res$baseMean, 
-      res$log2FoldChange, 
-      log="x", pch=20, cex=.3, 
+   plot(
+      res$baseMean,
+      res$log2FoldChange,
+      log="x", pch=20, cex=.3,
       col = ifelse( res$padj < .1, "red", "black" ) )
 
 plotDE( res )
@@ -423,7 +423,7 @@ take discrete values and so give rise to higher bins at the right and in the mid
 %
 <<histp,fig=TRUE>>=
 hist(res$pval, breaks=100, col="skyblue", border="slateblue", main="")
-@ 
+@
 
 
 We can filter for significant genes, according to some chosen threshold for the false dicovery rate (FDR),
@@ -457,28 +457,28 @@ write.table( res, file="results.txt" )
 \begin{figure}
 \centering
 \includegraphics[width=.6\textwidth]{DESeq-MArepl}
-\caption{Plot of the log2 fold change between the untreated replicates 
+\caption{Plot of the log2 fold change between the untreated replicates
 versus average expression strength.}
 \label{figMArepl}
 \end{figure}
 
 Note in Fig.~\ref{figDE} how the power to detect significant differential expression depends on
-the expression strength. For weakly expressed genes, stronger changes are 
+the expression strength. For weakly expressed genes, stronger changes are
 required for the gene to be called significantly expressed. To understand the reason for
 this let, us compare the normalized counts between two replicate samples, here
 taking the two untreated samples as an example:
 %
 <<ncu>>=
 ncu <- counts( cds, normalized=TRUE )[ , conditions(cds)=="untreated" ]
-@ 
+@
 \Robject{ncu} is now a matrix with two columns.
-%   
+%
 <<MArepl,fig=TRUE>>=
 plot( rowMeans(ncu), log2( ncu[,2] / ncu[,1] ), pch=".", log="x" )
 @
 %
-As one can see in Figure~\ref{figMArepl}, the log fold changes between replicates 
-are stronger for lowly expressed genes than for highly expressed ones. We 
+As one can see in Figure~\ref{figMArepl}, the log fold changes between replicates
+are stronger for lowly expressed genes than for highly expressed ones. We
 ought to conclude that a gene's expression is influenced by the treatment only
 if the change between treated and untreated samples is stronger than
 what we see between replicates, and hence, the dividing line between red and black in
@@ -499,7 +499,7 @@ dispersion in different conditions is not that different.
 To demonstrate, we subset our data object to only three samples:
 
 <<subset>>=
-cdsTTU <- cds[ , 1:3] 
+cdsTTU <- cds[ , 1:3]
 pData( cdsTTU )
 @
 
@@ -525,8 +525,8 @@ plotDE( resTTU )
 @ %$
 Figure~\ref{figDE_Tb} shows the same symmetry in up- and down-regulation
 as in Fig.~\ref{figDE} but a certain asymmetry in the boundary line for significance. This
-has an easy explanation: low counts suffer from proportionally stronger shot noise than high 
-counts, and since there is only one ``untreated'' sample versus two ``treated'' ones, 
+has an easy explanation: low counts suffer from proportionally stronger shot noise than high
+counts, and since there is only one ``untreated'' sample versus two ``treated'' ones,
 a stronger downward fold-change is required to be called significant than for the upward direction.
 
 %--------------------------------------------------
@@ -541,12 +541,12 @@ replicates will lead to conclusions of very limited reliability.
 Nevertheless, such experiments are sometimes undertaken, and the \Rpackage{DESeq} package
 can deal with them, even though the soundness of the results may depend much on the circumstances.
 
-Our primary assumption is still that the mean is a good predictor for the dispersion. 
-Once we accept this assumption, we may argue as follows: Given two samples from 
+Our primary assumption is still that the mean is a good predictor for the dispersion.
+Once we accept this assumption, we may argue as follows: Given two samples from
 different conditions and a number of genes with comparable expression levels, of which we expect only a minority
 to be influenced by the condition, we may take the dispersion estimated from comparing their counts \emph{across}
 conditions as ersatz for a proper estimate of the variance across replicates. After all,
-we assume most genes to behave the same within replicates as across conditions, and hence, the estimated variance 
+we assume most genes to behave the same within replicates as across conditions, and hence, the estimated variance
 should not be affected too much by the influence of the hopefully few differentially expressed genes. Furthermore,
 the differentially expressed genes will only cause the dispersion estimate to be too high, so that the test will err to the
 side of being too conservative.
@@ -557,7 +557,7 @@ We reduce our count data set to just two columns, one ``untreated'' and one ``tr
 cds2 <- cds[ ,c(  "untreated3fb", "treated3fb"   ) ]
 @
 
-Now, without any replicates at all, the \Rfunction{estimateDispersions} function will refuse to proceed unless we 
+Now, without any replicates at all, the \Rfunction{estimateDispersions} function will refuse to proceed unless we
 instruct it to ignore the condition labels and estimate the variance by treating all
 samples as if they were replicates of the same condition:
 <<cds2,cache=TRUE>>=
@@ -584,12 +584,12 @@ and from this table, tallying the number of significant hits in our previous and
 <<addmarg>>=
 addmargins( table( res_sig = res$padj < .1, res2_sig = res2$padj < .1 ) )
 @
-%As can be seen, we have still found about 1/5 of the hits, and only a reassuringly small number of 
+%As can be seen, we have still found about 1/5 of the hits, and only a reassuringly small number of
 %new (and potentially false) hits. \textsl{TODO: pdate discussion!}
 
 %One may finally ask whether the reduction of discoveries to a quarter is due to the higher variance
 %estimate, or due to the lower confidence in the base mean estimates, which is due to the reduced
-%sample size. To see this, we run the original analysis again, but now using the new, worse variance function. 
+%sample size. To see this, we run the original analysis again, but now using the new, worse variance function.
 
 %To do so, we just copy the dispersion values from the feature data of \texttt{cds2}
 %to a copy of \texttt{cds}:
@@ -599,8 +599,8 @@ addmargins( table( res_sig = res$padj < .1, res2_sig = res2$padj < .1 ) )
 %fData(cdsB) <- fData(cds2)
 %resB <- nbinomTest( cdsB, "untreated", "treated" )
 
-%addmargins( table( 
-%   res_sig = res$padj < .1, 
+%addmargins( table(
+%   res_sig = res$padj < .1,
 %   resB_sig = resB$padj < .1 ) )
 %@
 
@@ -637,7 +637,7 @@ cdsFull <- newCountDataSet( fullCountsTable, design )
 we have only recreated it for demonstration.
 
 As before, we estimate the size factors and then the dispersions. For the latter,
-we specify the method ``pooled''. Then, only one dispersion is computed for each gene, 
+we specify the method ``pooled''. Then, only one dispersion is computed for each gene,
 an average over all cells (weighted by the number of samples for each cells), where
 the term \emph{cell} denotes any of the four combinations of factor levels of
 the design.
@@ -667,7 +667,7 @@ regresses the genes' expression on both the library type and
 the treatment condition, the \emph{reduced model} regresses them only on the library
 type. For each gene, we fit generalized linear models (GLMs)
 according to the two models, and then compare them in order to infer whether
-the additional specification of the treatment improves the fit and hence, whether 
+the additional specification of the treatment improves the fit and hence, whether
 the treatment has significant effect.
 
 <<fit1,cache=TRUE,results=hide>>=
@@ -689,7 +689,7 @@ pvalsGLM <- nbinomGLMTest( fit1, fit0 )
 padjGLM <- p.adjust( pvalsGLM, method="BH" )
 @
 
-The function \Rfunction{nbinomTestGLM} returned simply a vector of $p$ values which 
+The function \Rfunction{nbinomTestGLM} returned simply a vector of $p$ values which
 we handed to the standard R function \Rfunction{p.adjust} to adjust for multiple
 testing using the Benjamini-Hochberg (BH) method.
 
@@ -697,7 +697,7 @@ testing using the Benjamini-Hochberg (BH) method.
 \centering
 \includegraphics[width=.7\textwidth]{DESeq-figPval}
 \caption{Comparison of $p$ values (unadjusted) from the test using only the
-four paired-end samples and the test using all seven samples. We can see that 
+four paired-end samples and the test using all seven samples. We can see that
 the latter tend to be smaller, as expected from the higher power of the test with all samples.}
 \label{figPval}
 \end{figure}
@@ -707,7 +707,7 @@ Let's compare with the result from the four-samples test:
 tab = table( "paired end only" = res$padj < .1, "all samples" = padjGLM < .1 )
 addmargins( tab )
 @
-We see that the analyses find \Sexpr{tab[2,2]} genes in common, while 
+We see that the analyses find \Sexpr{tab[2,2]} genes in common, while
 \Sexpr{tab[1,2]} were only found in the analysis using all samples and
 \Sexpr{tab[2,1]} were specific for the \emph{paired end only} analysis.
 A more informative comparison might be a scatter plot of $p$ values:
@@ -729,16 +729,16 @@ head(fit1)
 The first three columns show the fitted coefficients, converted to a logarithm base 2 scale.
 The log2 fold change due to the condition is shown in the third column. As indicated
 by the column name, it is the effect of ``untreated'', i.e., the log ratio of
-``untreated'' versus ``treated''. (This is unfortunately the other way round as 
+``untreated'' versus ``treated''. (This is unfortunately the other way round as
 before, due to the peculiarities of contrast coding.) Note that the library type also
 had noticeable influence on the expression, and hence would have increased the dispersion
 estimates (and so reduced power) if we had not fitted an effect for it.
 
-The column \emph{deviance} 
+The column \emph{deviance}
 is the deviance of the fit. (Comparing the deviances with a $\chi^2$ likelihood ratio test is
 how \Rfunction{nbinomGLMTest} calculates the $p$ values.) The last column, \emph{converged},
 indicates whether the calculation of coefficients and deviance has fully converged.
-(If it is false too often, you can try to change the GLM control parameters, as 
+(If it is false too often, you can try to change the GLM control parameters, as
 explained in the help page to \Rfunction{fitNbinomGLMs}.)
 % FIXME: not urgent - this is a bit vague, 'too often' should be specified and ideally
 %   the remedy be automated.
@@ -747,17 +747,17 @@ explained in the help page to \Rfunction{fitNbinomGLMs}.)
 \medskip
 
 Finally, we show that taking the library type into account was important to have
-good detection power by doing the analysis again using the standard workflow, 
+good detection power by doing the analysis again using the standard workflow,
 as outlined earlier, and without informing \Rpackage{DESeq} of the library types:
 
 <<fullAnalysisSimple,cache=TRUE>>=
 cdsFullB <- newCountDataSet( fullCountsTable, design$condition )
 cdsFullB <- estimateSizeFactors( cdsFullB )
-cdsFullB <- estimateDispersions( cdsFullB, method="pooled", 
+cdsFullB <- estimateDispersions( cdsFullB, method="pooled",
                                  sharingMode="maximum" )
 resFullB <- nbinomTest( cdsFullB, "untreated", "treated" )
 <<table>>=
-table( "all-samples-simple" = resFullB$padj < 0.1, 
+table( "all-samples-simple" = resFullB$padj < 0.1,
        "all-samples-GLM"    = padjGLM < 0.1 )
 @ %$
 
@@ -797,9 +797,9 @@ are large enough, but still behaves gracefully when they become
 small. If we interpret \emph{graceful} as having the same variance
 throughout, then we arrive at variance stabilising transformations
 (VST)~\cite{Anders:2010:GB}. An advantage is that the parameters of
-this function are chosen automatically based on the 
+this function are chosen automatically based on the
 variability of the data, and no \emph{ad hoc} choice of $c$, as above,
-is necessary. 
+is necessary.
 %
 <<vsd>>=
 cdsBlind <- estimateDispersions( cds, method="blind" )
@@ -811,9 +811,9 @@ The data are now on a logarithm-like scale, and we can compute
 \emph{moderated log fold changes}.
 
 <<modlr>>=
-mod_lfc <- (rowMeans( vsd[, conditions(cds)=="treated", drop=FALSE] ) - 
+mod_lfc <- (rowMeans( vsd[, conditions(cds)=="treated", drop=FALSE] ) -
             rowMeans( vsd[, conditions(cds)=="untreated", drop=FALSE] ))
-@ 
+@
 
 Now let us compare these to the original ($\log_2$) fold changes. First we find that many of the latter
 are infinite (resulting from division of a finite value by 0) or \emph{not a number} (NaN,
@@ -823,20 +823,20 @@ resulting from division of 0 by 0).
 lfc <- res$log2FoldChange
 finite <- is.finite(lfc)
 table(as.character(lfc[!finite]), useNA="always")
-@ 
+@
 % \fixme{Define 0/0 := 1 in the  appropriate place in the code, then the \texttt{NaN} can go away.}
 
 For plotting (Figure~\ref{figmodlr}), we replace the infinite values by an arbitrary fixed large number:
 <<repl>>=
 largeNumber <- 10
 lfc <- ifelse(finite, lfc, sign(lfc) * largeNumber)
-@ 
+@
 
 <<figmodlr, fig=TRUE>>=
 plot( lfc, mod_lfc, pch=20, cex=.3,
       col = ifelse( finite, "#80808040", "red" ) )
 abline( a=0, b=1, col="#40404040" )
-@ 
+@
 
 
 \begin{figure}
@@ -850,14 +850,14 @@ abline( a=0, b=1, col="#40404040" )
 \label{figmodlr}
 \end{figure}
 
-These data are now approximately homoscedastic and hence suitable as input to 
-a distance calculation. This can be useful, e.g., to visualise the expression 
+These data are now approximately homoscedastic and hence suitable as input to
+a distance calculation. This can be useful, e.g., to visualise the expression
 data of, say, the top 40 differentially expressed genes.
 %
 <<figHeatmap2a,fig=TRUE,width=7,height=10>>=
 select <- order(res$pval)[1:40]
 colors <- colorRampPalette(c("white","darkblue"))(100)
-heatmap( vsd[select,], 
+heatmap( vsd[select,],
          col = colors, scale = "none")
 @
 
@@ -866,9 +866,9 @@ heatmap( vsd[select,],
 \includegraphics[width=.49\textwidth]{DESeq-figHeatmap2a}
 \includegraphics[width=.49\textwidth]{DESeq-figHeatmap2b}
 \caption{Heatmaps showing the expression data of the top \Sexpr{length(select)}
-  differentially expressed genes. Left: clustering of the variance stabilisation 
+  differentially expressed genes. Left, the variance stabilisation
   transformed data (\Robject{vsd}),
-  right: clustering of the original count data (\Robject{counts{cds}}).
+  right, the original count data (\Robject{counts{cds}}).
   The right plot is dominated by a small number of data points with large values.}
 \label{figHeatmap2}
 \end{figure}
@@ -877,7 +877,7 @@ heatmap( vsd[select,],
 For comparison, let us also try the same with the untransformed counts.
 %
 <<figHeatmap2b,fig=TRUE,width=7,height=10>>=
-heatmap( counts(cds)[select,], 
+heatmap( counts(cds)[select,],
          col = colors, scale = "none")
 @
 The result is shown in Figure~\ref{figHeatmap2}.
@@ -895,9 +895,9 @@ or the manual page for \Rfunction{dendrogramGrob} in the package \Rpackage{latti
 \label{figHeatmapSamples}
 \end{figure}
 
-Another use of variance stabilized data is sample clustering. Here, we apply the 
+Another use of variance stabilized data is sample clustering. Here, we apply the
 \Rfunction{dist} function to the transpose of the \Robject{vsd} matrix to get
-sample-to-sample distances. We demonstrate this with the full data set with all 
+sample-to-sample distances. We demonstrate this with the full data set with all
 seven samples.
 
 <<sampleClust>>=
@@ -906,11 +906,11 @@ vsdFull <- getVarianceStabilizedData( cdsFullBlind )
 dists <- dist( t( vsdFull ) )
 @
 
-A heatmap of this dstance matrix now shows us, which samples 
+A heatmap of this dstance matrix now shows us, which samples
 are similar (Figure \ref{figHeatmapSamples}):
 
 <<figHeatmapSamples,fig=TRUE,width=7,height=7>>=
-heatmap( as.matrix( dists ), 
+heatmap( as.matrix( dists ),
    symm=TRUE, scale="none", margins=c(10,10),
    col = colorRampPalette(c("darkblue","white"))(100),
    labRow = paste( pData(cdsFullBlind)$condition, pData(cdsFullBlind)$type ) )
@@ -922,7 +922,7 @@ more similar when they have the same treatment or the same library type.
 mode ``blind'' (in the calculation for \Robject{cdsFullBlind} above, as only then,
 the variance stabilizing transformation is not informed about the design and
 hence not biased towards a result supporting it.) Such an analysis is useful
-for quality control, and (even though we finish our vignette with it), it may 
+for quality control, and (even though we finish our vignette with it), it may
 be useful to this first in any analysis.
 
 
@@ -937,7 +937,7 @@ help pages, especially the help page for \Rfunction{estimateDispersions}.
 sessionInfo()
 @
 
-\bibliographystyle{plain} 
+\bibliographystyle{plain}
 \bibliography{DESeq}
 
 
