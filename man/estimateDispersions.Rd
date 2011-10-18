@@ -29,11 +29,11 @@
   \item{method}{
      There are three ways how the empirical dispersion can be computed:
           
+     \itemize{
      \item \code{pooled} - Use the samples from all conditions with
      replicates to estimate a single pooled empirical dispersion value, 
      called "pooled", and assign it to all samples.
 
-     \itemize{
      \item \code{per-condition} - For each condition with replicates, compute
      a gene's empirical dispersion value by considering the data from samples for this
      condition.  For samples of unreplicated conditions, the maximum
