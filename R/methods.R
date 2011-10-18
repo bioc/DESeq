@@ -7,7 +7,7 @@ setMethod("estimateSizeFactors", signature(object="CountDataSet"),
   })
 
 setMethod("estimateDispersions", signature(object="CountDataSet"),
-  function( object, method = c( "per-condition", "pooled", "blind" ), 
+  function( object, method = c( "pooled", "per-condition", "blind" ), 
     sharingMode = c( "maximum", "fit-only", "gene-est-only" ),
     fitType = c( "parametric", "local" ),
     locfit_extra_args=list(), lp_extra_args=list(), 

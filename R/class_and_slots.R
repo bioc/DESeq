@@ -148,3 +148,14 @@ setReplaceMethod("dispTable", signature(object="CountDataSet"),
     object
 })   
 
+fitInfo <- function( cds, name=NULL )
+{
+   stopifnot( is( cds, "CountDataSet" ) )
+   if( length( ls( cds@fitInfo ) ) == 0 )
+      stop( "No fits available. Call 'estimateDispersions' first." )
+   if( length( ls( cds@fitInfo ) ) > 1 && is.null(name) )
+      stop( "More than one fitInfo object available. Specify by name. (See 'ls(cds@fitInfo)' for a list.)" )
+   if( length( ls( cds@fitInfo ) ) == 1 && is.null(name) )
+      name = ls( cds@fitInfo )[ 1 ]
+   cds@fitInfo[[ name]]
+}

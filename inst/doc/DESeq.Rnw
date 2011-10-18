@@ -225,72 +225,47 @@ expression in Section~\ref{sec:DE}.  However, it is prudent to check
 the dispersion estimates and to make sure that the data quality is as
 expected.
 
-The function \Rfunction{estimateDispersions} performs three steps. First, it estimates,
-for each gene and each (replicated) condition, a dispersion value, then, it fits,
+The function \Rfunction{estimateDispersions} performs three steps. First, it estimates 
+a dispersion value for each gene, then, it fits,
 for each condition, a curve through the estimates. Finally, it assigns to each gene
 a dispersion value, using either the estimated or the fitted value.
 To allow the user to inspect the
-intermediate steps, a ``fit info'' object is stored for each condition:
-
-<<ls>>=
-ls( cds@fitInfo )
-@
-
-Each of the objects in the environment \Robject{cds@fitInfo} contains
+intermediate steps, a ``fit info'' object is stored, which contains
 the empirical dispersion values for each gene, the curve fitted through the dispersions,
 and the fitted values that will be used in the test.
 
 <<str>>=
-str( cds@fitInfo[["untreated"]] )
+str( fitInfo(cds) )
 @
 
 To visualize these, we plot the per-gene estimates against the normalized mean
-expressions per gene, and then overlay the fitted curve in red. The following
-function does this.
+expressions per gene, and then overlay the fitted curve in red. As we will need
+this again later, we define a function:
 
 <<fitUntr, fig=TRUE>>=
-plotDispEsts <- function( cds, cond )
+plotDispEsts <- function( cds )
 {
    plot(
       rowMeans( counts( cds, normalized=TRUE ) ),
-      cds@fitInfo[[cond]]$perGeneDispEsts,
+      fitInfo(cds)$perGeneDispEsts,
       pch = '.', log="xy" )
    xg <- 10^seq( -.5, 5, length.out=300 )
-   lines( xg, cds@fitInfo[[cond]]$dispFun( xg ), col="red" )
+   lines( xg, fitInfo(cds)$dispFun( xg ), col="red" )
 }
 @
-
-%<<plotFitInfo>>=
-%plotFitInfo <- function(cds, cond = NULL, probs = c( .01, .05, .95, .99) ) {
-%  means <- rowMeans( counts( cds, normalized=TRUE ) )
-%  xg <- 10^seq( log10(min(means[means>0])), log10(max(means)), length.out=300 )
-%  df <- cds@fitInfo[[cond]]$df
-%  qvals <- cds@fitInfo[[cond]]$dispFunc( xg ) %*% rbind(c(1, qchisq( probs, df )/df))
-%  pge <- cds@fitInfo[[cond]][["perGeneDispEsts"]]
-%  matplot(xg,
-%    qvals,
-%    col = c( "red", rep( "blue", length(probs) ) ),
-%    lty = 1, type = "l", log = "xy", ylim = range( c( qvals, pge ), na.rm=TRUE ),
-%    main = cond, ylab = "dispersions", xlab= "average normalized count" )
-%  points(means, pge, pch=".")
-%}
-%@
 
 \begin{figure}
 \centering
 \includegraphics[width=\textwidth]{DESeq-figFit}
 \caption{Empirical (black dots) and fitted (red lines) dispersion values
-plotted against mean expression strength; left: for condition ``untreated'',
-right: for condition ``treated''.}
+plotted against mean expression strength.}
 \label{figFit}
 \end{figure}
 
-We call it for both conditions (Fig.\ \ref{figFit})
+Calling the function produces the plot (Fig.\ \ref{figFit}).
 
-<<figFit,fig=TRUE,width=11,height=5.5>>=
-par( mfrow=c(1,2) )
-plotDispEsts( cds, "untreated" )
-plotDispEsts( cds, "treated" )
+<<figFit,fig=TRUE>>=
+plotDispEsts( cds )
 @
 
 % check a claim made in the paragraph below.
@@ -348,11 +323,11 @@ the feature data slot of \texttt{cds}:
 head( fData(cds) )
 @
 
-You can verify that \texttt{disp\_untreated} indeed contains the maximum of the two value vectors
+You can verify that \texttt{disp\_pooled} indeed contains the maximum of the two value vectors
 we looked at before, namely
 
 <<str>>=
-str( cds@fitInfo[["untreated"]] )
+str( fitInfo(cds) )
 @
 
 Advanced users who want to fiddle with the dispersion estimation can change the values
@@ -419,7 +394,7 @@ It is also instructive to look at the histogram of $p$ values (Figure~\ref{fighi
 The enrichment of low po values stems from the differentially expressed genes,
 while those not differebtially expressed are spread uniformly over the range
 from zero to one (except for the $p$ values from genes with very low counts, which
-take discrete values and so give rise to higher bins at the right and in the middle.)
+take discrete values and so give rise to higher bins to the right.)
 %
 <<histp,fig=TRUE>>=
 hist(res$pval, breaks=100, col="skyblue", border="slateblue", main="")
@@ -489,12 +464,9 @@ Figure~\ref{figDE} mimics the shape seen in Figure~\ref{figMArepl}.
 %------------------------------------------------------------
 
 If you have replicates for one condition but not for the other, you can still proceed as
-before. As explained in the manual page of the \Rfunction{estimateDispersions} function,
-in such cases, the dispersion estimates for the conditions without replicates
-will simply be assigned the maximum of the dispersion estimates of those
-conditions that do have replicates.  Whether this is appropriate,
-needs to be checked, of course, but often, it may seem reasonable to assume that the data's
-dispersion in different conditions is not that different.
+before. In such cases only the conditions with replicates will be used to estimate the dispersion.
+Of course, this is only valid if you have good reason to believe that the unreplicated
+condition does not have larger variation than the replicated one.
 
 To demonstrate, we subset our data object to only three samples:
 
@@ -644,7 +616,7 @@ the design.
 
 <<estsfdisp,cache=TRUE>>=
 cdsFull <- estimateSizeFactors( cdsFull )
-cdsFull <- estimateDispersions( cdsFull, method="pooled" )
+cdsFull <- estimateDispersions( cdsFull )
 @
 
 \begin{figure}
@@ -659,7 +631,7 @@ regression curve (red).}
 We check the fit (Fig.~\ref{figFitPooled}):
 
 <<figFitPooled,fig=TRUE>>=
-plotDispEsts( cdsFull, "pooled" )
+plotDispEsts( cdsFull )
 @ %$
 
 For inference, we now specify two \emph{models} by formulas. The \emph{full model}
@@ -753,8 +725,7 @@ as outlined earlier, and without informing \Rpackage{DESeq} of the library types
 <<fullAnalysisSimple,cache=TRUE>>=
 cdsFullB <- newCountDataSet( fullCountsTable, design$condition )
 cdsFullB <- estimateSizeFactors( cdsFullB )
-cdsFullB <- estimateDispersions( cdsFullB, method="pooled",
-                                 sharingMode="maximum" )
+cdsFullB <- estimateDispersions( cdsFullB )
 resFullB <- nbinomTest( cdsFullB, "untreated", "treated" )
 <<table>>=
 table( "all-samples-simple" = resFullB$padj < 0.1,
@@ -931,6 +902,51 @@ be useful to this first in any analysis.
 For more information on the statistical method, see our paper~\cite{Anders:2010:GB}. For
 more information on how to customize the \Rpackage{DESeq} work flow, see the package
 help pages, especially the help page for \Rfunction{estimateDispersions}.
+
+\section{Changes since publication of the paper}
+
+Since our paper on DESeq was published in Genome Biology in Oct 2010, we made a
+number of changes to algorithm and implementation, which are listed here.
+
+\begin{itemize}
+
+\item \Rfunction{nbinomTest} calculates a p value by summing up the probabilities
+of all per-group count sums $a$ and $b$ that sum up to the observed count
+sum $k_{iS}$ and are more extreme than the observed count sums $k_{iA}$ and $k_{iB}$.
+Equation~(11) of the paper defines ``more extreme'' as those values pairs $(a,b)$
+that have smaller probability than the observed one. This caused problems in case
+that the dispersion exceeds 1. Hence, we now sum instead the probabilities of all
+values pairs that are ``further out'' in the sense that they cause a more extreme
+fold change $(a/s_A)/(b/s_B)$, where $s_A$ are the sums of the size factors of
+the samples in conditions $A$ and $B$. We do this in a one-tailed sense and 
+double the result. Furthermore, we now longer approximate the sum but always 
+calculate it exactly.
+
+\item We added the possibility to fit GLMs of the negative binomial family with
+log link as described in this vignette. $p$ values are calculated by a 
+standard $\chi^2$ likelihood ratio test. The logarithms of the size factors are 
+are given as offsets to the GLM fitting function.
+
+\item The option \texttt{sharingMode=\"maximum\"} was added to \Rfunction{estimateDispersion}
+and made default. This change makes DESeq robust against variance outliers and was not yet
+discussed in the paper.
+
+\item By default, DESeq now estimates one pooled dispersion estimate across all 
+(replicated) conditions. In the original version, we estimated a separate
+dispersion-mean relation for each condition. The ``maximum'' sharing mode achieves
+its goal of making DESeq robust against outliers only with pooled dispersion
+estimate, and hence, this is now the default. The option \texttt{method=`"per-condition\"} to
+\Rfunction{estimateDispersion} allows the user to go back to the old method.
+
+\item In the paper, the mean-dispersion relation is fitted by local regression. Now,
+DESeq also offers a parametric regression, as described in this vignette. The option
+\emph{fitType} to \emph{estimateDispersion} allows to choose between these.
+
+\item Finally, we replaced the term \emph{raw squared coefficient of variance}
+used in the paper with the more standard term \emph{dispersion}.
+
+
+\end{itemize}
 
 \section{Session Info}
 <<sessi>>=

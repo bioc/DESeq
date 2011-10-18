@@ -16,7 +16,7 @@
 }
 \usage{
 \S4method{estimateDispersions}{CountDataSet}( object, 
-   method = c( "per-condition", "pooled", "blind" ), 
+   method = c( "pooled", "per-condition", "blind" ), 
    sharingMode = c( "maximum", "fit-only", "gene-est-only" ),
    fitType = c("parametric", "local"),
    locfit_extra_args=list(), lp_extra_args=list(), 
@@ -28,7 +28,11 @@
   }
   \item{method}{
      There are three ways how the empirical dispersion can be computed:
-     
+          
+     \item \code{pooled} - Use the samples from all conditions with
+     replicates to estimate a single pooled empirical dispersion value, 
+     called "pooled", and assign it to all samples.
+
      \itemize{
      \item \code{per-condition} - For each condition with replicates, compute
      a gene's empirical dispersion value by considering the data from samples for this
@@ -38,10 +42,6 @@
      factor for the \code{condition} argument in
      \code{\link{newCountDataSet}}), this method is not available. (Note: This method was called ``normal'' in
         previous versions.)
-     
-     \item \code{pooled} - Use the samples from all conditions with
-     replicates to estimate a single pooled empirical dispersion value, 
-     called "pooled", and assign it to all samples.
 
      \item \code{blind} - Ignore the sample labels and compute a 
      gene's empirical dispersion value as if all samples were replicates of a
@@ -179,6 +179,6 @@
 cds <- makeExampleCountDataSet()
 cds <- estimateSizeFactors( cds )
 cds <- estimateDispersions( cds )
-dispTable( cds )
+str( fitInfo( cds ) )
 head( fData( cds ) )
 }

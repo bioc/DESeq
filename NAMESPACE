@@ -32,5 +32,6 @@ export(
    fitNbinomGLMs,
    nbkd.sf,
    nbinomGLMTest,
-   dispTable 
+   dispTable,
+   fitInfo
 )
