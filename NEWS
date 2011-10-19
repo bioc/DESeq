@@ -1,3 +1,7 @@
+2011-10-10: version 1.5.29
+
+- fixed a bug in parametricDispersionFit. (Thanks to Alejandro Reyes for spotting and fixing this one.)
+
 2011-10-18: version 1.5.27
 
 - method="pooled" is now default in estimateDispersions

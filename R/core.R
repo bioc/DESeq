@@ -53,7 +53,7 @@ parametricDispersionFit <- function( means, disps )
    iter <- 0   
    while(TRUE) {
       residuals <- disps / ( coefs[1] + coefs[2] / means )
-      good <- (residuals > 1e-4) & (residuals < 15)
+      good <- which( (residuals > 1e-4) & (residuals < 15) )
       fit <- glm( disps[good] ~ I(1/means[good]), 
          family=Gamma(link="identity"), start=coefs )
       oldcoefs <- coefs   
