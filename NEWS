@@ -1,17 +1,27 @@
-2011-10-10: version 1.5.29
+version 1.6.0: (Summary of important changes between Bioc release 2.8 to 2.9)
+
+- changes to dispersion estimation scheme to improve handling of outliers
+  (see vignette for details)
+
+- refactorized the workflow and overhauled and expanded the vignette (see there
+  for changes to user interface)
+
+- various changes and bug fixes (see appendix in vignette and NEWS file)
+
+version 1.5.29: (2011-10-10)
 
 - fixed a bug in parametricDispersionFit. (Thanks to Alejandro Reyes for spotting and fixing this one.)
 
-2011-10-18: version 1.5.27
+version 1.5.27: (2011-10-18)
 
 - method="pooled" is now default in estimateDispersions
 - added 'fitInfo' accessor function
 
-2011-08-10: version 1.5.24
+version 1.5.24: (2011-08-10)
 
 - fitNbinomGLM no longer stops when glm.fit throws an error
 
-2011-07-14: version 1.5.23
+version 1.5.23: (2011-07-14)
 
 - fixed bug in 'nbinomTest' again; now using a symmetric two-tailed test (i.e.,
   the one-tailed p value is doubled)
@@ -19,21 +29,21 @@
 - added warning in case of method='blind'  if not used together with
   sharingMode='fit-only'
 
-2011-07-14: version 1.5.22
+version 1.5.22: (2011-07-14)
 
 - fixed bug in 'nbinomTest' that led to wrong p values for dispersions larger than 1
 
-2011-07-14: version 1.5.21
+version 1.5.21: (2011-07-14)
 
 - minor changes to vignette
 
-2011-07-07: version 1.5.20
+version 1.5.20: (2011-07-07)
 
 - fixed bug in 'getVarianceStabilizedData'
 
 - more informative error message if parametric fit fails
 
-2011-06 / 2011-07: versions 1.5.1 to 1.5.19
+versions 1.5.1 to 1.5.19: (2011-06 / 2011-07)
 
 refactorized the way how dispersion estimation is handled, overhauled the vignette
 
@@ -55,27 +65,27 @@ refactorized the way how dispersion estimation is handled, overhauled the vignet
 - lots of further small changes  
 
 
-2011-03-08: version 1.3.3
+version 1.3.3: (2011-03-08)
 
 - added 'locfunc' argument to 'estimateSizeFactor' and 'estimateSizeFactorForMatrix'
 
-2011-03-08: version 1.3.2
+version 1.3.2: (2011-03-08)
 
 - added 'glmControl' argument to 'nbinomFitGLM' and 'nbinomGLMsForMatrix'
 
-2011-02-11: version 1.3.2
+version 1.3.2: (2011-02-11)
 
 - updated CITATION
 
-2010-09-06: version 1.1.13
+version 1.1.13: (2010-09-06)
 
 - corrected the sometimes missing names attribute in rawVarFuncTable
 
-2010-09-06: version 1.1.12
+version 1.1.12: (2010-09-06)
 
 - fixed a bug in the 'resVarB' column of the result of 'nbinomTest'.
 
-2010-08-17: version 1.1.11
+version 1.1.11: (2010-08-17)
 
 - fixed a bug in getVarianceStabilizedData; it failed to preserve 
 normalization. This is because the transformation function
@@ -89,47 +99,47 @@ As an alternative to judge similarity of samples, I have added
 two new functions, getRawScvForSamplePair and 
 getRawScvDistanceMatrix. See their help pages.
 
-2010-08-17: version 1.1.10
+version 1.1.10: (2010-08-17)
 
 - fixed bug in makeExampleCountDataSet: colnames were wrong
 
-2010-07-21: version 1.1.9
+version 1.1.9: (2010-07-21)
 
 - removed the variance adjustment factors introduced earlier; they caused
   more trouble than they were worth.
 
-2010-07-09: version 1.1.8
+version 1.1.8: (2010-07-09)
 
 - GLM functionality added but not yet documented
 
-2010-06-05: version 1.1.7
+version 1.1.7: (2010-06-05)
 
 - no change, just bumped version number as the build server seemed to have
   gotten confused
 
-2010-06-02: version 1.1.6
+version 1.1.6: (2010-06-02)
 
 - changed arguments for estimateVarianceFunctionsin preparation for a planned new
   feature; instead of pool=FALSE or pool=TRUE, use method="normal" or 
   method="blind".
 
-2010-06-01: version 1.1.5
+version 1.1.5: (2010-06-01)
 
 - fixed a small bug that caused p values to sometimes slighly exceed 1.0
   due to rounding errors
 
-2010-05-15: version 1.1.4
+version 1.1.4: (2010-05-15)
 
 - corrected a serious documentation bug: the effect of the variance
   adjustment factors was described the wrong way round
 
 - changed scvPlot: now does a bias correction by default
 
-2010-05-06: version 1.1.3
+version 1.1.3: (2010-05-06)
 
 - added a CITATION file
 
-2010-05-03: version 1.1.2
+version 1.1.2: (2010-05-03)
 
 - replaced the C function to calculate the p values. The new version is now
   a bit more conservative with its approximation, trying to ensure that p values
@@ -143,7 +153,7 @@ getRawScvDistanceMatrix. See their help pages.
   
 - The 'eps' parameter is now exposed in 'nbinomTest' as well.    
 
-2010-04-29: version 1.1.1
+version 1.1.1: (2010-04-29)
 
 - added "variance adjustment factors" in order to allow for manual scaling
   of the raw variance estimate in case that the residual ECDF plots indicate
