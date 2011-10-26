@@ -57,13 +57,15 @@ element in the table tells how many reads have been mapped in a given sample
 to a given gene.
 
 To obtain such a count table for your own data, you will need
-to create it from the sequence alignments by use of tools outside of the
-\Rpackage{DESeq} package. For instance, in the course materials
-available on the Bioconductor web page, there are examples for how to
-do this with the \Rpackage{ShortRead} and \Rpackage{IRanges}
-packages. The Bioconductor package \Rpackage{easyrnaseq} (by
-Nicolas Delhomme; in preparation, available soon; package name may change)
-will offer this functionality in a convenient manner.
+to create it from your sequence alignments and suitable annotation. Within Bioconductor,
+you can use the function \Rfunction{summerizeOverlaps} in the 
+\Rpackage{GenomicRanges} package. See the vignette, Ref.\ \cite{summerizeOverlaps},
+for a worked example. Another possibility (outside of Bioconductor)
+is the \emph{htseq-count} script distributed with the HTSeq Python framework
+\cite{htseq}. (You do not need to know any Python to use
+\texttt{htseq-count}.) A third possibility might be given by the Bioconductor 
+package \Rpackage{easyrnaseq} (by Nicolas Delhomme; in preparation, available 
+soon; package name may change).
 
 Another easy way to produce such a table from the output
   of the aligner is to use the \texttt{htseq-count} script distributed
@@ -953,7 +955,7 @@ used in the paper with the more standard term \emph{dispersion}.
 sessionInfo()
 @
 
-\bibliographystyle{plain}
+\bibliographystyle{unsrt}
 \bibliography{DESeq}
 
 
