@@ -137,7 +137,7 @@
 \details{
    Behaviour for \code{method="per-condition"}: For each replicated condition, a list, named
    with the condition's name, is placed in the environment \code{object@fitInfo}. This list
-   has four named elements: The vector \code{perGeneDispEsts} contains the
+   has five named elements: The vector \code{perGeneDispEsts} contains the
    empirical dispersions. The function \code{dispFunc}
    is the fitted function, i.e., it takes as its argument a normalized
    mean expression value and returns the corresponding
@@ -145,7 +145,9 @@
    in the third element \code{fittedDispEst}, a vector of the same
    length as \code{perGeneDispEsts}. The fourt element, \code{df},
    is an integer, indicating the number of degrees of freedom of
-   the per-gene estimation.
+   the per-gene estimation. The fifth element, \code{sharingMode},
+   stores the value of the \code{sharingMode} argument to
+   \code{esimateDispersions}.
 
    Behaviour for \code{method="blind"} and \code{method="pooled"}: Only one list is produced,
    named \code{"blind"} or \code{"pooled"} and placed in \code{object@fitInfo}.

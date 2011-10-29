@@ -26,8 +26,6 @@ setMethod("estimateDispersions", signature(object="CountDataSet"),
    if( sharingMode == "gene-est-only" )
       warning( "in estimateDispersions: sharingMode=='gene-est-only' will cause inflated numbers of false positives unless you have many replicates." )
    ## FIXME this warning should only be emitted when the number of replicates is indeed small. 
-   if( method == "blind" && sharingMode != "fit-only" )
-      warning( 'When specifying method="blind", also set sharingMode="fit-only".' )
    
    # Remove results from previous fits
    fData(object) <- fData(object)[ , ! colnames(fData(object)) %in% paste( "disp", object@dispTable, sep="_" ), drop=FALSE ]
@@ -43,7 +41,8 @@ setMethod("estimateDispersions", signature(object="CountDataSet"),
          perGeneDispEsts = dispsAndFunc$disps,
          dispFunc = dispsAndFunc$dispFunc,
          fittedDispEsts = dispsAndFunc$dispFunc( bmv$baseMean ),
-         df = ncol(counts(object)) - 1 )
+         df = ncol(counts(object)) - 1,
+         sharingMode = sharingMode )
       
       if( object@multivariateConditions )
          dispTable(object) <- c( "_all" = "blind" )
@@ -69,7 +68,8 @@ setMethod("estimateDispersions", signature(object="CountDataSet"),
             perGeneDispEsts = dispsAndFunc$disps,
             dispFunc = dispsAndFunc$dispFunc,
             fittedDispEsts = dispsAndFunc$dispFunc( overall_basemeans ),     # Note that we do not use bmv$baseMean here
-            df = sum(cols) - 1 ) }
+            df = sum(cols) - 1,
+            sharingMode = sharingMode ) }
          
       object@dispTable <- sapply( levels(conditions(object)), function( cond )
             ifelse( cond %in% replicated, cond, "max" ) ) 
@@ -92,7 +92,8 @@ setMethod("estimateDispersions", signature(object="CountDataSet"),
          perGeneDispEsts = dispsAndFunc$disps,
          dispFunc = dispsAndFunc$dispFunc,
          fittedDispEsts = dispsAndFunc$dispFunc( baseMeans ),
-         df = df )
+         df = df,
+         sharingMode = sharingMode )
 
       if( object@multivariateConditions )
          dispTable(object) <- c( "_all" = "pooled" )
@@ -145,6 +146,11 @@ nbinomTest <- function( cds, condA, condB, pvals_only=FALSE, eps=NULL )
       stop( "For CountDataSets with multivariate conditions, only the GLM-based test can be used." )
    if( all( is.na( dispTable(cds) ) ) )
       stop( "Call 'estimateDispersions' first." )
+
+   if( dispTable(cds)[condA] == "blind" || dispTable(cds)[condB] == "blind" ) {
+      if( fitInfo( cds, "blind" )$sharingMode != "fit-only" )
+      warning( 'You have used \'method="blind"\' in estimateDispersion without also setting \'sharingMode="fit-only"\'. This will not yield useful results.' )
+   }
 
    stopifnot( condA %in% levels(conditions(cds)) )  
    stopifnot( condB %in% levels(conditions(cds)) )     
@@ -257,6 +263,10 @@ fitNbinomGLMs <- function( cds, modelFormula, glmControl=list() )
    else
       stop( "Call 'estimateDispersions' with 'method=\"pooled\"' (or 'blind') first." )
 
+   if( dispTable(cds)[condA] == "blind" || dispTable(cds)[condB] == "blind" ) {
+      if( fitInfo( cds, "blind" )$sharingMode != "fit-only" )
+      warning( 'You have used \'method="blind"\' in estimateDispersion without also setting \'sharingMode="fit-only"\'. This will not yield useful results.' )
+   }
 
    fitNbinomGLMsForMatrix( counts(cds), sizeFactors(cds), disps, 
       modelFormula, pData(cds), glmControl=glmControl )

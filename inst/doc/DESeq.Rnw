@@ -72,7 +72,9 @@ Another easy way to produce such a table from the output
   with the \emph{HTSeq} package. Even though \emph{HTSeq} is a Python
   package, you do not need to know any Python to use
   \texttt{htseq-count}. See
-  \url{http://www-huber.embl.de/users/anders/HTSeq/doc/count.html}.
+  \url{http://www-huber.embl.de/users/anders/HTSeq/doc/count.html}. (If you use
+htseq-count, be sure to remove the extra lines with general counters (``ambiguous'' etc.)
+when importing the data.)
 
 The count values must be raw counts of
 sequencing reads. This is important for DESeq's statistical model to hold,
