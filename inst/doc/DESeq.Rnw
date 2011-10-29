@@ -258,7 +258,7 @@ plotDispEsts <- function( cds )
 
 \begin{figure}
 \centering
-\includegraphics[width=\textwidth]{DESeq-figFit}
+\includegraphics[width=.6\textwidth]{DESeq-figFit}
 \caption{Empirical (black dots) and fitted (red lines) dispersion values
 plotted against mean expression strength.}
 \label{figFit}
@@ -535,8 +535,12 @@ Now, without any replicates at all, the \Rfunction{estimateDispersions} function
 instruct it to ignore the condition labels and estimate the variance by treating all
 samples as if they were replicates of the same condition:
 <<cds2,cache=TRUE>>=
-cds2 <- estimateDispersions( cds2, method="blind" )
+cds2 <- estimateDispersions( cds2, method="blind", sharingMode="fit-only" )
 @
+Note the option \texttt{sharingMode="fit-only"}. Remember that the default, 
+\texttt{sharingMode="maximum"}, takes care of outliers, i.e., genes with
+dispersion much larer than the fitted values. Without replicates, we cannot
+catch such outliers and so have to disable this function. 
 
 Now, we can attempt to find differential expression:
 <<res2,cache=TRUE>>=
@@ -558,31 +562,7 @@ and from this table, tallying the number of significant hits in our previous and
 <<addmarg>>=
 addmargins( table( res_sig = res$padj < .1, res2_sig = res2$padj < .1 ) )
 @
-%As can be seen, we have still found about 1/5 of the hits, and only a reassuringly small number of
-%new (and potentially false) hits. \textsl{TODO: pdate discussion!}
 
-%One may finally ask whether the reduction of discoveries to a quarter is due to the higher variance
-%estimate, or due to the lower confidence in the base mean estimates, which is due to the reduced
-%sample size. To see this, we run the original analysis again, but now using the new, worse variance function.
-
-%To do so, we just copy the dispersion values from the feature data of \texttt{cds2}
-%to a copy of \texttt{cds}:
-
-%<<cdsB,cache=TRUE>>=
-%cdsB <- cds
-%fData(cdsB) <- fData(cds2)
-%resB <- nbinomTest( cdsB, "untreated", "treated" )
-
-%addmargins( table(
-%   res_sig = res$padj < .1,
-%   resB_sig = resB$padj < .1 ) )
-%@
-
-%%In conclusion, the worse variance estimates costs less in power than the reduction
-%%in sample size. For another data set, this may well be quite different.
-
-%\textsl{TODO: This is an incorrect comparison. We are comparing here
-%a two tests with different sharingMode setting.}
 
 %-------------------------------------------------------------------------------------------------
 \section{Multi-factor designs} \label{sec:GLM}
