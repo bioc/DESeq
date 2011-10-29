@@ -58,13 +58,13 @@ to a given gene.
 
 To obtain such a count table for your own data, you will need
 to create it from your sequence alignments and suitable annotation. Within Bioconductor,
-you can use the function \Rfunction{summerizeOverlaps} in the 
+you can use the function \Rfunction{summerizeOverlaps} in the
 \Rpackage{GenomicRanges} package. See the vignette, Ref.\ \cite{summerizeOverlaps},
 for a worked example. Another possibility (outside of Bioconductor)
 is the \emph{htseq-count} script distributed with the HTSeq Python framework
 \cite{htseq}. (You do not need to know any Python to use
-\texttt{htseq-count}.) A third possibility might be given by the Bioconductor 
-package \Rpackage{easyrnaseq} (by Nicolas Delhomme; in preparation, available 
+\texttt{htseq-count}.) A third possibility might be given by the Bioconductor
+package \Rpackage{easyrnaseq} (by Nicolas Delhomme; in preparation, available
 soon; package name may change).
 
 Another easy way to produce such a table from the output
@@ -77,7 +77,7 @@ htseq-count, be sure to remove the extra lines with general counters (``ambiguou
 when importing the data.)
 
 The count values must be raw counts of
-sequencing reads. This is important for DESeq's statistical model to hold,
+sequencing reads. This is important for \Rpackage{DESeq}'s statistical model to hold,
 as only raw reads allow to assess the measurement precision correctly. (Hence,
 do not supply rounded values of normalized counts, or counts of covered base pairs.)
 
@@ -182,7 +182,7 @@ count data. (See the man page of
 \Rfunction{estimateSizeFactorsForMatrix} for technical details on the
 calculation.)
 %
-<<estimateSizeFactors,cache=TRUE>>=
+<<estimateSizeFactors>>=
 cds <- estimateSizeFactors( cds )
 sizeFactors( cds )
 @
@@ -229,7 +229,7 @@ expression in Section~\ref{sec:DE}.  However, it is prudent to check
 the dispersion estimates and to make sure that the data quality is as
 expected.
 
-The function \Rfunction{estimateDispersions} performs three steps. First, it estimates 
+The function \Rfunction{estimateDispersions} performs three steps. First, it estimates
 a dispersion value for each gene, then, it fits,
 for each condition, a curve through the estimates. Finally, it assigns to each gene
 a dispersion value, using either the estimated or the fitted value.
@@ -306,11 +306,11 @@ On the othe hand, not all of he values above the red line are overestimations, a
 hence, the conservative choice is to keep them instead of replacing them with
 their fitted values. If you do not like this default behaviour, you can change it
 with the option \texttt{sharingMode} of \Rfunction{estimateDispersions}. Note that
-DESeq orginally (as described in the DESeq paper \cite{Anders:2010:GB}) only
+\Rpackage{DESeq} orginally (as described in~\cite{Anders:2010:GB}) only
 used the fitted values (\texttt{sharingMode="fit-only"}). The
 current default (\texttt{sharingMode="maximum"}) is more conservative.
 
-Another difference of the current DESeq version to the original method described in the
+Another difference of the current \Rpackage{DESeq} version to the original method described in the
 paper is the way how the mean-dispersion relation is fitted. By default,
 \Rfunction{estimateDispersion} now performs a parametric fit: Using a gamma-family
 GLM, two coefficients $\alpha_0, \alpha_1$ are found to
@@ -712,10 +712,116 @@ cdsFullB <- estimateSizeFactors( cdsFullB )
 cdsFullB <- estimateDispersions( cdsFullB )
 resFullB <- nbinomTest( cdsFullB, "untreated", "treated" )
 <<table>>=
-table( "all-samples-simple" = resFullB$padj < 0.1,
-       "all-samples-GLM"    = padjGLM < 0.1 )
+addmargins(table(
+   `all samples simple` = resFullB$padj < 0.1,
+   `all samples GLM`    = padjGLM < 0.1 ))
 @ %$
 
+%--------------------------------------------------
+\section{Independent filtering} \label{sec:indepfilt}
+%--------------------------------------------------
+The analyses of the previous sections involve the application of
+statistical tests, one by one, to each row of the dataset, in order to
+identify those genes that have evidence for differential expression.
+The idea of \emph{independent filtering} is to filter out those tests
+from the procedure that have no, or little chance of showing significant
+evidence, without even doing the testing. Typically, this results in
+increased detection power --- at the same type I error
+as measured, e.\,g., in terms of false discovery rate.
+A good choice for a filtering criterion is one that
+\begin{enumerate}
+  \item\label{it:indp} is statistically independent from the test statistic
+    under the null hypothesis,
+  \item\label{it:corr} is correlated with the test statistic under the
+    alternative, and
+  \item\label{it:joint} does not notably change the dependence
+    structure --if there is any-- between the
+    tests that pass the filter, compared to the dependence structure
+    between the tests before filtering.
+\end{enumerate}
+The benefit from filtering relies on property~\ref{it:corr}, and we
+will explore it further in Section~\ref{sec:whyitworks}. Its
+statistical validity relies on properties \ref{it:indp} and
+\ref{it:joint}, and we refer to~\cite{Bourgon:2010:PNAS} for further
+explanation of this topic.
+Here, we consider filtering by the overall sum of counts (irrespective
+of biological condition):
+<<rs>>=
+rs <- rowSums ( counts ( cdsFull ))
+use = (rs > quantile(rs, 0.4))
+table(use)
+cdsFilt <- cdsFull[ use, ]
+@
+<<check,echo=FALSE>>=
+stopifnot(!any(is.na(use)))
+@
+We perform the testing as before in Section~\ref{sec:GLM}.
+<<fitFilt,cache=TRUE,results=hide>>=
+fitFilt1  <- fitNbinomGLMs( cdsFilt, count ~ type + condition )
+fitFilt0  <- fitNbinomGLMs( cdsFilt, count ~ type  )
+pvalsFilt <- nbinomGLMTest( fitFilt1, fitFilt0 )
+padjFilt  <- p.adjust(pvalsFilt, method="BH" )
+@
+<<doublecheck,echo=FALSE>>=
+stopifnot(all.equal(pvalsFilt, pvalsGLM[use]))
+@
+Let us compare the number of genes found at an FDR of 0.1 by this
+analysis with that from the previous one (\Robject{padjGLM}).
+<<tab>>=
+padjFiltForComparison = rep(+Inf, length(padjGLM))
+padjFiltForComparison[use] = padjFilt
+tab = table( `no filtering`   = padjGLM < .1,
+             `with filtering` = padjFiltForComparison < .1 )
+addmargins(tab)
+@
+The analysis with filtering found an additional \Sexpr{tab[1,2]}
+genes, an increase in the detection rate by about
+\Sexpr{round(100*tab[1,2]/tab[2,2])}\%,
+while \Sexpr{tab[2,1]} genes were only found by the previous analysis.
+
+\subsection{Why does it work?}\label{sec:whyitworks}
+First, consider Figure~\ref{figscatterindepfilt}, which shows that
+among the 40--45\% of genes with lowest overall counts, \Robject{rs},
+there are essentially none that achieve an (unadjusted) $p$ value less than
+\Sexpr{signif(quantile(pvalsGLM[!use],0.0001, na.rm=TRUE),1)}.
+%
+<<figscatterindepfilt,fig=TRUE>>=
+plot(rank(rs)/length(rs), -log10(pvalsGLM), pch=".")
+@
+\begin{figure}
+\centering
+\includegraphics[width=.5\textwidth]{DESeq-figscatterindepfilt}
+\caption{Scatterplot of rank of filter criterion (overall sum of
+  counts \Robject{rs}) versus the negative logarithm of the test statistic \Robject{pvalsGLM}.}
+\label{figscatterindepfilt}
+\end{figure}
+This means that by dropping the 40\% genes with lowest \Robject{rs},
+we do not loose anything substantial from our subsequent
+results. Second, consider the $p$ value histogram Figure~\ref{fighistindepfilt}.
+It shows how the filtering ameliorates the multiple testing problem
+-- and thus the severity of a multiple testing adjustment -- by
+removing a background set of hypotheses whose $p$ values are distributed
+more or less uniformly in $[0,1]$.
+<<histindepfilt,width=7,height=5>>=
+h1 = hist(pvalsGLM[!use], breaks=50, plot=FALSE)
+h2 = hist(pvalsGLM[use], breaks=50, plot=FALSE)
+colori = c(`do not pass`="khaki", `pass`="powderblue")
+<<fighistindepfilt,fig=TRUE>>=
+barplot(height = rbind(h1$counts, h2$counts),
+        beside = FALSE, col = colori,
+        space = 0, main = "", ylab="frequency")
+text(x = c(0, length(h1$counts)), y = 0,
+     label = paste(c(0,1)), adj = c(0.5,1.7), xpd=NA)
+legend("topright", fill=colori, legend=names(colori))
+@
+\begin{figure}
+\centering
+\includegraphics[width=.5\textwidth]{DESeq-fighistindepfilt}
+\caption{Histogram of $p$ values for all tests (\Robject{pvalsGLM}).
+  The area shaded in blue indicates the subset of those that pass the filtering,
+  the area in khaki those that do not pass.}
+\label{fighistindepfilt}
+\end{figure}
 
 %-------------------------------------------------------------------------------------------------
 \section{Moderated fold change estimates and applications to sample clustering and visualisation}
@@ -880,17 +986,20 @@ hence not biased towards a result supporting it.) Such an analysis is useful
 for quality control, and (even though we finish our vignette with it), it may
 be useful to this first in any analysis.
 
-
+%------------------------------------------------------------
 \section{Further reading}
+%------------------------------------------------------------
 
 For more information on the statistical method, see our paper~\cite{Anders:2010:GB}. For
 more information on how to customize the \Rpackage{DESeq} work flow, see the package
 help pages, especially the help page for \Rfunction{estimateDispersions}.
 
+%------------------------------------------------------------
 \section{Changes since publication of the paper}
-
-Since our paper on DESeq was published in Genome Biology in Oct 2010, we made a
-number of changes to algorithm and implementation, which are listed here.
+%------------------------------------------------------------
+Since our paper on \Rpackage{DESeq} was published in Genome Biology in
+Oct 2010, we have made a number of changes to algorithm and
+implementation, which are listed here.
 
 \begin{itemize}
 
@@ -902,20 +1011,20 @@ that have smaller probability than the observed one. This caused problems in cas
 that the dispersion exceeds 1. Hence, we now sum instead the probabilities of all
 values pairs that are ``further out'' in the sense that they cause a more extreme
 fold change $(a/s_A)/(b/s_B)$, where $s_A$ are the sums of the size factors of
-the samples in conditions $A$ and $B$. We do this in a one-tailed sense and 
-double the result. Furthermore, we now longer approximate the sum but always 
+the samples in conditions $A$ and $B$. We do this in a one-tailed sense and
+double the result. Furthermore, we now longer approximate the sum but always
 calculate it exactly.
 
 \item We added the possibility to fit GLMs of the negative binomial family with
-log link as described in this vignette. $p$ values are calculated by a 
-standard $\chi^2$ likelihood ratio test. The logarithms of the size factors are 
+log link as described in this vignette. $p$ values are calculated by a
+standard $\chi^2$ likelihood ratio test. The logarithms of the size factors are
 are given as offsets to the GLM fitting function.
 
 \item The option \texttt{sharingMode=\"maximum\"} was added to \Rfunction{estimateDispersion}
 and made default. This change makes DESeq robust against variance outliers and was not yet
 discussed in the paper.
 
-\item By default, DESeq now estimates one pooled dispersion estimate across all 
+\item By default, DESeq now estimates one pooled dispersion estimate across all
 (replicated) conditions. In the original version, we estimated a separate
 dispersion-mean relation for each condition. The ``maximum'' sharing mode achieves
 its goal of making DESeq robust against outliers only with pooled dispersion
