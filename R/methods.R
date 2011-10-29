@@ -258,15 +258,12 @@ fitNbinomGLMs <- function( cds, modelFormula, glmControl=list() )
 
    if( "disp_pooled" %in% colnames( fData(cds) ) )
       disps <- fData(cds)$disp_pooled
-   else if( "disp_blind" %in% colnames( fData(cds) ) )
-      disps <- fData(cds)$disp_blind
-   else
-      stop( "Call 'estimateDispersions' with 'method=\"pooled\"' (or 'blind') first." )
-
-   if( dispTable(cds)[condA] == "blind" || dispTable(cds)[condB] == "blind" ) {
+   else if( "disp_blind" %in% colnames( fData(cds) ) ) {
       if( fitInfo( cds, "blind" )$sharingMode != "fit-only" )
-      warning( 'You have used \'method="blind"\' in estimateDispersion without also setting \'sharingMode="fit-only"\'. This will not yield useful results.' )
-   }
+         warning( 'You have used \'method="blind"\' in estimateDispersion without also setting \'sharingMode="fit-only"\'. This will not yield useful results.' )
+      disps <- fData(cds)$disp_blind
+   } else
+      stop( "Call 'estimateDispersions' with 'method=\"pooled\"' (or 'blind') first." )
 
    fitNbinomGLMsForMatrix( counts(cds), sizeFactors(cds), disps, 
       modelFormula, pData(cds), glmControl=glmControl )
