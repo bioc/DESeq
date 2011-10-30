@@ -539,10 +539,10 @@ samples as if they were replicates of the same condition:
 <<cds2,cache=TRUE>>=
 cds2 <- estimateDispersions( cds2, method="blind", sharingMode="fit-only" )
 @
-Note the option \texttt{sharingMode="fit-only"}. Remember that the default, 
+Note the option \texttt{sharingMode="fit-only"}. Remember that the default,
 \texttt{sharingMode="maximum"}, takes care of outliers, i.e., genes with
 dispersion much larer than the fitted values. Without replicates, we cannot
-catch such outliers and so have to disable this function. 
+catch such outliers and so have to disable this function.
 
 Now, we can attempt to find differential expression:
 <<res2,cache=TRUE>>=
@@ -748,7 +748,7 @@ Here, we consider filtering by the overall sum of counts (irrespective
 of biological condition):
 <<rs>>=
 rs <- rowSums ( counts ( cdsFull ))
-use = (rs > quantile(rs, 0.4))
+use <- (rs > quantile(rs, 0.4))
 table(use)
 cdsFilt <- cdsFull[ use, ]
 @
@@ -812,7 +812,7 @@ barplot(height = rbind(h1$counts, h2$counts),
         space = 0, main = "", ylab="frequency")
 text(x = c(0, length(h1$counts)), y = 0,
      label = paste(c(0,1)), adj = c(0.5,1.7), xpd=NA)
-legend("topright", fill=colori, legend=names(colori))
+legend("topright", fill=rev(colori), legend=rev(names(colori)))
 @
 \begin{figure}
 \centering
@@ -944,7 +944,7 @@ heatmap( counts(cds)[select,],
 The result is shown in Figure~\ref{figHeatmap2}.
 
 We note that the \Rfunction{heatmap} function that we have used here is rather basic, and that better
-options exist, for instance the \Rfunction{heatmap.2} function from the package \Rpackage{gplots}
+options exist. For instance, consider the \Rfunction{heatmap.2} function from the package \Rpackage{gplots}
 or the manual page for \Rfunction{dendrogramGrob} in the package \Rpackage{latticeExtra}.
 
 \begin{figure}
@@ -1003,24 +1003,25 @@ implementation, which are listed here.
 
 \begin{itemize}
 
-\item \Rfunction{nbinomTest} calculates a p value by summing up the probabilities
+\item \Rfunction{nbinomTest} calculates a $p$ value by summing up the probabilities
 of all per-group count sums $a$ and $b$ that sum up to the observed count
 sum $k_{iS}$ and are more extreme than the observed count sums $k_{iA}$ and $k_{iB}$.
-Equation~(11) of the paper defines ``more extreme'' as those values pairs $(a,b)$
-that have smaller probability than the observed one. This caused problems in case
-that the dispersion exceeds 1. Hence, we now sum instead the probabilities of all
-values pairs that are ``further out'' in the sense that they cause a more extreme
-fold change $(a/s_A)/(b/s_B)$, where $s_A$ are the sums of the size factors of
-the samples in conditions $A$ and $B$. We do this in a one-tailed sense and
-double the result. Furthermore, we now longer approximate the sum but always
+Equation~(11) of the paper defined \emph{more extreme} as those pairs of values $(a,b)$
+that had smaller probability than the observed pair. This caused problems in cases
+where the dispersion exceeded 1. Hence, we now sum instead the probabilities of all
+values pairs that are \emph{further out} in the sense that they cause a more extreme
+fold change $(a/s_A)/(b/s_B)$, where $s_A$ and $s_B$ are the sums of the size factors of
+the samples in conditions $A$ and $B$, respectively. We do this in a one-tailed manner and
+double the result. Furthermore, we no longer approximate the sum, but always
 calculate it exactly.
 
-\item We added the possibility to fit GLMs of the negative binomial family with
-log link as described in this vignette. $p$ values are calculated by a
-standard $\chi^2$ likelihood ratio test. The logarithms of the size factors are
-are given as offsets to the GLM fitting function.
+\item We added the possibility to fit GLMs of the negative binomial
+family with log link.
+This new functionality is described in this vignette. $p$ values are calculated by a
+$\chi^2$ likelihood ratio test. The logarithms of the size factors are
+are provided as offsets to the GLM fitting function.
 
-\item The option \texttt{sharingMode=\"maximum\"} was added to \Rfunction{estimateDispersion}
+\item The option \texttt{sharingMode='maximum'} was added to \Rfunction{estimateDispersion}
 and made default. This change makes DESeq robust against variance outliers and was not yet
 discussed in the paper.
 
@@ -1028,16 +1029,15 @@ discussed in the paper.
 (replicated) conditions. In the original version, we estimated a separate
 dispersion-mean relation for each condition. The ``maximum'' sharing mode achieves
 its goal of making DESeq robust against outliers only with pooled dispersion
-estimate, and hence, this is now the default. The option \texttt{method=`"per-condition\"} to
-\Rfunction{estimateDispersion} allows the user to go back to the old method.
+estimate, and hence, this is now the default. The option \texttt{method='per-condition'} to
+\Rfunction{estimateDispersions} allows the user to go back to the old method.
 
 \item In the paper, the mean-dispersion relation is fitted by local regression. Now,
 DESeq also offers a parametric regression, as described in this vignette. The option
-\emph{fitType} to \emph{estimateDispersion} allows to choose between these.
+\texttt{fitType} to \Rfunction{estimateDispersions} allows the user to choose between these.
 
-\item Finally, we replaced the term \emph{raw squared coefficient of variance}
-used in the paper with the more standard term \emph{dispersion}.
-
+\item Finally, instead of the term \emph{raw squared coefficient of variance}
+used in the paper we now prefer the more standard term \emph{dispersion}.
 
 \end{itemize}
 
