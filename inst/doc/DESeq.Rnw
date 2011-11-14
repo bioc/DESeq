@@ -2,7 +2,7 @@
 %\VignettePackage{DESeq}
 
 % To compile this document
-% library('weaver'); rm(list=ls()); Sweave('DESeq.Rnw', driver=weaver()); system('pdflatex DESeq')
+% library('cacheSweave'); rm(list=ls()); Sweave('DESeq.Rnw', driver=cacheSweaveDriver()); system('pdflatex DESeq')
 
 \documentclass{article}
 
@@ -10,6 +10,7 @@
 \usepackage[a4paper]{geometry}
 \usepackage{hyperref,graphicx}
 \usepackage{color}
+\usepackage{xstring}
 
 \SweaveOpts{keep.source=TRUE,eps=FALSE,include=FALSE,width=4,height=4.5}
 \newcommand{\Robject}[1]{\texttt{#1}}
@@ -25,6 +26,10 @@
 
 \title{\textsf{\textbf{Analysing RNA-Seq data with the \Rpackage{DESeq} package}}}
 
+% The following command makes use of SVN's 'Date' keyword substitution
+% To activate this, I used: svn propset svn:keywords Date DESeq.Rnw
+\date{\StrMid{$Date$}{8}{18}}
+
 \begin{document}
 
 \maketitle
@@ -39,6 +44,10 @@ expression by use of the negative binonial distribution and a shrinkage estimato
 This vignette explains the use of the package. For an exposition of
 the statistical method, please see our paper~\cite{Anders:2010:GB}.
 \end{abstract}
+
+<<options,results=hide,echo=FALSE>>=
+options(digits=3)
+@
 
 \tableofcontents
 
@@ -93,68 +102,80 @@ As an example dataset, we use the gene level read counts from the
 \Rpackage{pasilla} data package. This dataset is from an experiment on
 \emph{Drosophila melanogaster} cell cultures and
 investigated the effect of RNAi knock-down of the splicing factor
-\emph{pasilla}~\cite{Brooks2010}. The data are presented in the object
-called \Robject{pasillaGenes}. For a description how this data object
-was created from the raw data of Ref.~\cite{Brooks2010}, see the vingette
-included with the \Rpackage{pasilla} package.
+\emph{pasilla}~\cite{Brooks2010}. 
 
-The \Robject{pasillaGenes} object is of class
-\Rclass{CountDataSet}, which is the data container used by
-\Rpackage{DESeq}. We load the needed packages and the data as
-follows.
+A table of gene-level count data derived from this dataset is 
+supplied with the package \Rpackage{pasilla} as a text file of 
+tab-separated values. The function \Rfunction{system.file} tells
+us where this file is stored in the local installation.
 
-<<options,results=hide,echo=FALSE>>=
-options(digits=3)
+<<systemFile>>=
+datafile <- system.file( "extdata/pasilla_gene_counts.tsv", package="pasilla" )
+datafile
 @
 
-<<pasilla2,results=hide>>=
-library( "DESeq" )
-library( "pasilla" )
-data( "pasillaGenes" )
+Have a look at the file with a text editor to see how it is formatted. To read
+this file with R, we use the function \Rfunction{read.table}.
+
+<<readTable>>=
+pasillaCountTable <- read.table( datafile, header=TRUE, row.names=1 )
+head( pasillaCountTable )
 @
 
-\Robject{pasillaGenes} contains the counts and also metadata about the samples:
+Here, \texttt{header=TRUE} indicates that the first line contains column names
+and \texttt{row.names=1} means that the first column should be used as
+row names. This leaves us with a data frame consisting only of integer
+count values.
 
-<<look_into_pasillaGenes>>=
-head( counts(pasillaGenes) )
-pData( pasillaGenes )
+We also need a description of the samples:
+<<pasillaDesign>>=
+pasillaDesign <- data.frame(
+   row.names = colnames( pasillaCountTable ),
+   condition = c( "untreated", "untreated", "untreated",
+      "untreated", "treated", "treated", "treated" ),
+   libType = c( "single-end", "single-end", "paired-end",
+      "paired-end", "single-end", "paired-end", "paired-end" ) )
+
+pasillaDesign
 @
 
-As you can see, the samples differ by experimental condition (untreated or treated, i.\,e., with
-pasilla knocked down) and by library type. To keep things simple, we will only
-look at the paired-end data for now. In Section \ref{sec:GLM}, we will see how to deal
-with more than one factor.
-
-For your own analysis, you will start form a count table, so we ``unpack'' the
-\Rclass{countDataSet} object and build a new one ``from scratch'' to demonstrate how this is done.
+To analyse these samples, we should account for the fact that we have 
+both single-end and paired-end method. To keep things simple, we defer the
+discussion of this to Section \ref{sec:GLM} and first demonstrate a simple
+analysis by using only the paired-end samples.
 
 <<pairedSamples>>=
-pairedSamples <- pData(pasillaGenes)$type == "paired-end"
-countsTable <- counts(pasillaGenes)[ , pairedSamples ]
-conds <- pData(pasillaGenes)$condition[ pairedSamples ]
+pairedSamples <- pasillaDesign$libType == "paired-end"
+countTable <- pasillaCountTable[ , pairedSamples ]
+conds <- pasillaDesign$condition[ pairedSamples ]
 @
 
-Now, we have a count table, as described above, of integer count data. For your own data,
-use R's \Rfunction{read.table} or \Rfunction{read.csv} function to read your count data
-from a text file.
+Now, we have data input as follows.
 
-We also need a description of the samples, which is here simply a factor:
-
-<<conds>>=
+<<>>=
+head(countTable)
 conds
 @
 
 For your own data, create such a factor simply with
 <<conds,eval=FALSE>>=
 #not run
-conds <- factor( c( "treated", "treated", "untreated", "untreated" ) )
+conds <- factor( c( "untreated", "untreated", "treated", "treated" ) )
 @
+
+<<condsCheck,results=hide,echo=FALSE>>=
+#not run
+stopifnot( identical( conds, factor( c( "untreated", "untreated", "treated", "treated" ) ) ) )
+@
+
 
 We can now instantiate a \Rclass{CountDataSet}, which is the central
 data structure in the \Rpackage{DESeq} package:
 %
 <<instantiate>>=
-cds <- newCountDataSet( countsTable, conds )
+library( DESeq )
+
+cds <- newCountDataSet( countTable, conds )
 @
 
 The \Rclass{CountDataSet} class is derived from \Rpackage{Biobase}'s
@@ -530,7 +551,7 @@ side of being too conservative.
 We shall now see how well this works for our example data.
 We reduce our count data set to just two columns, one ``untreated'' and one ``treated'' sample:
 <<subset2>>=
-cds2 <- cds[ ,c(  "untreated3fb", "treated3fb"   ) ]
+cds2 <- cds[ ,c(  "untreated3", "treated3"   ) ]
 @
 
 Now, without any replicates at all, the \Rfunction{estimateDispersions} function will refuse to proceed unless we
@@ -570,27 +591,19 @@ addmargins( table( res_sig = res$padj < .1, res2_sig = res2$padj < .1 ) )
 \section{Multi-factor designs} \label{sec:GLM}
 %-------------------------------------------------------------------------------------------------
 
-Let us return to the full pasilla data set, which we got as \Robject{pasillaGenes}
-from the \Rpackage{pasilla} package. Due to the usage of both single-end
-and paired-end libraries, it has a design with two factors,  \emph{condition}
-(or treatment) and library \emph{type}:
+Let us return to the full pasilla data set. Remember that we started of with this data:
 
-<<design>>=
-design <- pData(pasillaGenes)[ , c("condition","type") ]
-design
+<<reminderFullData>>=
+head( pasillaCountTable )
+pasillaDesign
 @
 
 When creating a count data set with multiple factors, just pass a data frame
 instead of the condition factor:
 
 <<fct>>=
-fullCountsTable <- counts( pasillaGenes )
-
-cdsFull <- newCountDataSet( fullCountsTable, design )
+cdsFull <- newCountDataSet( pasillaCountTable, pasillaDesign )
 @
-
-\Robject{cdsFull} is now essentially the same object as \Robject{pasillaGenes},
-we have only recreated it for demonstration.
 
 As before, we estimate the size factors and then the dispersions. For the latter,
 we specify the method ``pooled''. Then, only one dispersion is computed for each gene,
@@ -627,8 +640,8 @@ the additional specification of the treatment improves the fit and hence, whethe
 the treatment has significant effect.
 
 <<fit1,cache=TRUE,results=hide>>=
-fit1 <- fitNbinomGLMs( cdsFull, count ~ type + condition )
-fit0 <- fitNbinomGLMs( cdsFull, count ~ type  )
+fit1 <- fitNbinomGLMs( cdsFull, count ~ libType + condition )
+fit0 <- fitNbinomGLMs( cdsFull, count ~ libType  )
 @
 These commands take a while to execute. Also, they may produce a few warnings,
 informing you that the GLM fit failed to converge (and the results from these
@@ -707,7 +720,7 @@ good detection power by doing the analysis again using the standard workflow,
 as outlined earlier, and without informing \Rpackage{DESeq} of the library types:
 
 <<fullAnalysisSimple,cache=TRUE>>=
-cdsFullB <- newCountDataSet( fullCountsTable, design$condition )
+cdsFullB <- newCountDataSet( pasillaCountTable, pasillaDesign$condition )
 cdsFullB <- estimateSizeFactors( cdsFullB )
 cdsFullB <- estimateDispersions( cdsFullB )
 resFullB <- nbinomTest( cdsFullB, "untreated", "treated" )
@@ -757,8 +770,8 @@ stopifnot(!any(is.na(use)))
 @
 We perform the testing as before in Section~\ref{sec:GLM}.
 <<fitFilt,cache=TRUE,results=hide>>=
-fitFilt1  <- fitNbinomGLMs( cdsFilt, count ~ type + condition )
-fitFilt0  <- fitNbinomGLMs( cdsFilt, count ~ type  )
+fitFilt1  <- fitNbinomGLMs( cdsFilt, count ~ libType + condition )
+fitFilt0  <- fitNbinomGLMs( cdsFilt, count ~ libType  )
 pvalsFilt <- nbinomGLMTest( fitFilt1, fitFilt0 )
 padjFilt  <- p.adjust(pvalsFilt, method="BH" )
 @
@@ -974,7 +987,7 @@ are similar (Figure \ref{figHeatmapSamples}):
 heatmap( as.matrix( dists ),
    symm=TRUE, scale="none", margins=c(10,10),
    col = colorRampPalette(c("darkblue","white"))(100),
-   labRow = paste( pData(cdsFullBlind)$condition, pData(cdsFullBlind)$type ) )
+   labRow = paste( pData(cdsFullBlind)$condition, pData(cdsFullBlind)$libType ) )
 @
 
 The clustering correctly reflects our experimental design, i.e., samples are
