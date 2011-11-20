@@ -67,8 +67,8 @@ to a given gene.
 
 To obtain such a count table for your own data, you will need
 to create it from your sequence alignments and suitable annotation. Within Bioconductor,
-you can use the function \Rfunction{summerizeOverlaps} in the
-\Rpackage{GenomicRanges} package. See the vignette, Ref.\ \cite{summerizeOverlaps},
+you can use the function \Rfunction{summarizeOverlaps} in the
+\Rpackage{GenomicRanges} package. See the vignette, Ref.\ \cite{summarizeOverlaps},
 for a worked example. Another possibility (outside of Bioconductor)
 is the \emph{htseq-count} script distributed with the HTSeq Python framework
 \cite{htseq}. (You do not need to know any Python to use
