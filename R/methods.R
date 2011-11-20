@@ -110,7 +110,10 @@ setMethod("estimateDispersions", signature(object="CountDataSet"),
       fData(object)[[ paste( "disp", n, sep="_" ) ]] <- 
          switch( sharingMode, 
             `fit-only`      = object@fitInfo[[ n ]]$fittedDispEsts,
-            `gene-est-only` = object@fitInfo[[ n ]]$perGeneDispEsts,
+            `gene-est-only` = {
+               a <- object@fitInfo[[ n ]]$perGeneDispEsts
+               a[ is.nan(a) ] <- 0
+               pmax( a, 1e-8 ) },
             `maximum`       = pmax( object@fitInfo[[ n ]]$fittedDispEsts, object@fitInfo[[ n ]]$perGeneDispEsts, na.rm=TRUE ),
             stop(sprintf("Invalid sharingMode '%s'.", sharingMode))
          ) ## switch

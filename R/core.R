@@ -119,7 +119,7 @@ estimateAndFitDispersionsFromBaseMeansAndVariances <- function( means,
       ans <- parametricDispersionFit( means, disps )
    
    } else
-      stop( "Unkknown fitType." )
+      stop( "Unknown fitType." )
    
    attr( ans, "fitType" ) <- fitType
    list( disps=dispsAll, dispFunc=ans )
