@@ -861,11 +861,25 @@ cdsBlind <- estimateDispersions( cds, method="blind" )
 vsd <- getVarianceStabilizedData( cdsBlind )
 @
 %
-The resulting transformation is shown in the left panel of Figure~\ref{figvsd} (the code
-that produces the figure is hidden from this vignette for the sake of
-presentation, but can be seen in the \texttt{.Rnw} or \texttt{.R}
-source files).
+The resulting transformation is shown in the left panel of
+Figure~\ref{figvsd}.  The code that produces the figure is hidden from
+this vignette for the sake of presentation, but can be seen in the
+\texttt{.Rnw} or \texttt{.R} source files.
 %
+\begin{figure}
+\centering
+\includegraphics[width=.49\textwidth]{DESeq-vsd1}
+\includegraphics[width=.49\textwidth]{DESeq-vsd2}
+\caption{Left: Graphs of the variance stabilizing transformation for
+  sample 1, in blue, and of the transformation $f(n)=log_2(n/s_1)$, in
+  black. $s_1$ is the size factor for the first sample.
+  Right: density plot of the per-gene standard deviation of the transformed data,
+  across samples, against the rank of the mean. \fixme{The trend in
+  this plot should be flat -- something is wrong.}
+}
+\label{figvsd}
+\end{figure}
+
 \fixme{\Rfunction{getVarianceStabilizedData} should do the offset
   correction by a common offset \Robject{mean(offsets)} computed like
   in the following code:}
@@ -879,7 +893,8 @@ offsets = sapply(seq_len(ncol(vsd)), function(j) {
 offsets
 offset = mean(offsets)
 @
-<<vsd, fig=TRUE, echo=FALSE, width=5, height=5>>=
+<<vsd1, fig=TRUE, echo=FALSE, width=4.75, height=4.75>>=
+##par(mai=ifelse(1:4 <= 2, par("mai"), 0))
 px     = counts(cds)[,1] / sizeFactors(cds)[1]
 ord    = order(px)
 ord    = ord[px[ord] < 150]
@@ -888,14 +903,20 @@ last   = ord[length(ord)]
 colors = c("blue", "black")
 matplot(px[ord],
         cbind(vsd[, 1] + offset, log2(px))[ord, ],
-        type="l", lty=1, col=colors, xlab="n", ylab="y")
+        type="l", lty=1, col=colors, xlab="n", ylab="f(n)")
 legend("bottomright",
        legend = c(
         expression("variance stabilizing transformation"),
         expression(log[2](n/s))),
        fill=colors)
 @
-
+The right panel of Figure~\ref{figvsd} plots the standard
+deviation of the transformed data, across samples, against the mean.
+%
+<<vsd2, fig=TRUE, width=4.75, height=4.75, results=hide>>=
+library("vsn")
+meanSdPlot(vsd)
+@
 
 %---------------------------------------------------------------
 \subsection{Application to moderated fold change estimates}
@@ -929,7 +950,8 @@ table(as.character(lfc[!finite]), useNA="always")
 \fixme{Define 0/0 := 1 in the  appropriate place in the code, then the
   \texttt{NaN} can go away.}
 
-For plotting (right panel of Figure~\ref{figvsd}), we replace the infinite values by an arbitrary fixed large number:
+For plotting, we replace the infinite values by an arbitrary fixed large number.
+The result is shown in Figure~\ref{figmodlr}.
 <<repl>>=
 largeNumber <- 7
 lfc <- ifelse(finite, lfc, sign(lfc) * largeNumber)
@@ -937,16 +959,13 @@ lfc <- ifelse(finite, lfc, sign(lfc) * largeNumber)
 
 \begin{figure}
 \centering
-\includegraphics[width=.49\textwidth]{DESeq-vsd}
-\includegraphics[width=.49\textwidth]{DESeq-figmodlr}
-\caption{Left: Graphs of the variance stabilizing transformation for sample 1
-  (blue) and of the transformation $y=log_2(n)$ (black).
-  Right: scatterplot of direct (\Robject{lfc}) versus \emph{moderated} log-ratios (\Robject{mod\_lfc}).
+\includegraphics[width=.6\textwidth]{DESeq-figmodlr}
+\caption{Scatterplot of direct (\Robject{lfc}) versus \emph{moderated} log-ratios (\Robject{mod\_lfc}).
   The moderation criterion used is variance stabilisation.
   The red points correspond to values that were infinite in \Robject{lfc}
   and were abitrarily set to $\pm\Sexpr{largeNumber}$ for the purpose of plotting.
   These values vary in a finite range (as shown in the plot) in \Robject{mod\_lfc}.}
-\label{figvsd}
+\label{figmodlr}
 \end{figure}
 
 <<figmodlr, fig=TRUE>>=
