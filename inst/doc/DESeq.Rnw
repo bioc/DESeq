@@ -849,11 +849,12 @@ conditions (and non-zero in others), some people advocate the use of
 \end{equation}
 where $n$ represents the count values and $n_0$ is a somehow chosen
 positive constant. In this Section, we discuss a related, alternative
-approach that is based on error modeling and the concept of
-variance stabilizing transformations~\cite{Tibshirani1988,sagmb2003,Anders:2010:GB}. We first estimate an
-overall mean-dispersion relationship of the data using
+approach that is based on error modeling and the concept of variance
+stabilizing
+transformations~\cite{Tibshirani1988,sagmb2003,Anders:2010:GB}. We
+estimate an overall mean-dispersion relationship of the data using
 \Rfunction{estimateDispersions} with the argument
-\Robject{method="blind"} and then call the function
+\Robject{method="blind"} and call the function
 \Rfunction{getVarianceStabilizedData}.
 %
 <<defvsd>>=
@@ -863,8 +864,8 @@ vsd <- getVarianceStabilizedData( cdsBlind )
 %
 The resulting transformation is shown in the left panel of
 Figure~\ref{figvsd}.  The code that produces the figure is hidden from
-this vignette for the sake of presentation, but can be seen in the
-\texttt{.Rnw} or \texttt{.R} source files.
+this vignette for the sake of brevity, but can be seen in the
+\texttt{.Rnw} or \texttt{.R} source file.
 %
 \begin{figure}
 \centering
