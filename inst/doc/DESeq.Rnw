@@ -102,10 +102,10 @@ As an example dataset, we use the gene level read counts from the
 \Rpackage{pasilla} data package. This dataset is from an experiment on
 \emph{Drosophila melanogaster} cell cultures and
 investigated the effect of RNAi knock-down of the splicing factor
-\emph{pasilla}~\cite{Brooks2010}. 
+\emph{pasilla}~\cite{Brooks2010}.
 
-A table of gene-level count data derived from this dataset is 
-supplied with the package \Rpackage{pasilla} as a text file of 
+A table of gene-level count data derived from this dataset is
+supplied with the package \Rpackage{pasilla} as a text file of
 tab-separated values. The function \Rfunction{system.file} tells
 us where this file is stored in the local installation.
 
@@ -139,7 +139,7 @@ pasillaDesign <- data.frame(
 pasillaDesign
 @
 
-To analyse these samples, we should account for the fact that we have 
+To analyse these samples, we should account for the fact that we have
 both single-end and paired-end method. To keep things simple, we defer the
 discussion of this to Section \ref{sec:GLM} and first demonstrate a simple
 analysis by using only the paired-end samples.
@@ -172,8 +172,8 @@ stopifnot( identical( conds, factor( c( "untreated", "untreated", "treated", "tr
 We can now instantiate a \Rclass{CountDataSet}, which is the central
 data structure in the \Rpackage{DESeq} package:
 %
-<<instantiate>>=
-library( DESeq )
+<<instantiate, results=hide>>=
+library( "DESeq" )
 
 cds <- newCountDataSet( countTable, conds )
 @
@@ -227,7 +227,7 @@ between the data's dispersion and their mean.
 
 The \emph{dispersion} can be understood as the square of the coefficient
 of biological variation. So, if a gene's expression typically differs
-from replicate to replicate sample by 20\%, this gene's dispersion is $.20^2=.04$.
+from replicate to replicate sample by 20\%, this gene's dispersion is $0.2^2=.04$.
 Note that the variance seen between counts is the sum of two components: the
 sample-to-sample variation just mentioned, and the uncertainty in measuring
 a concentration by counting reads. The latter, known as shot noise or Poisson
@@ -836,97 +836,133 @@ legend("topright", fill=rev(colori), legend=rev(names(colori)))
 \label{fighistindepfilt}
 \end{figure}
 
-%-------------------------------------------------------------------------------------------------
-\section{Moderated fold change estimates and applications to sample clustering and visualisation}
-%-------------------------------------------------------------------------------------------------
-In Section~\ref{sec:DE} we have seen how to use \Rpackage{DESeq} for
-calling differentially expressed genes. For each gene,
-\Rpackage{DESeq} reports a (logarithm base 2) fold change estimate and a
-$p$ value, as shown for instance in the dataframe \Robject{res} in the
-beginning of that section.  When the involved counts are small, the
-(logarithmic) fold-change estimate can be highly variable, and can even be
-infinite.
-
-For some purposes, such as the clustering of samples (or genes)
-according to their overall profiles, or for visualisation of the data,
-the (logarithmic) fold changes may thus not be useful: the random variability
-associated with fold changes computed from ratios between low counts
-might drown informative, systematic signal in other parts of the data.
-We would like to \emph{moderate} the fold change estimates in some
-way, so that they are more amenable to plotting or clustering. One
-approach to do so uses so-called pseudocounts: instead of the
-log-ratio $\log_2(n_A/n_B)$ between the counts $n_A$, $n_B$ in two
-conditions $A$ and $B$ consider $\log_2\left((n_A+c)/(n_B+c)\right)$,
-where $c$ is a small positive number, e.\,g.\ $c=0.5$ or $c=1$.  For
-small values of either $n_A$ or $n_B$, or both, the value of this term
-is shifted towards 0 compared to the direct log-ratio
-$\log_2(n_A/n_B)$. When $n_A$ and $n_B$ are both large, the direct
-log-ratio and the log-ratio with pseudocounts (asymptotically) agree.
-This approach is simple and intuitive, but it requires making a choice
-for what value to use for $c$, and that may not be obvious.
-
-A variant of this approach is to look for a mathematical function of
-$n_A$ and $n_B$ that is like $\log_2(n_A/n_B)$ when $n_A$ and $n_B$
-are large enough, but still behaves gracefully when they become
-small. If we interpret \emph{graceful} as having the same variance
-throughout, then we arrive at variance stabilising transformations
-(VST)~\cite{Anders:2010:GB}. An advantage is that the parameters of
-this function are chosen automatically based on the
-variability of the data, and no \emph{ad hoc} choice of $c$, as above,
-is necessary.
+%---------------------------------------------------
+\section{Variance stabilizing transformation}
+%---------------------------------------------------
+For some applications, it is useful to work with transformed versions
+of the count data. Maybe the most obvious choice is logarithmic
+transformation. Since count values for a gene can be zero in some
+conditions (and non-zero in others), some people advocate the use of
+\emph{pseudocounts}, i.\,e.\ transformations of the form
+\begin{equation}
+  y = \log_2(n + n_0),
+\end{equation}
+where $n$ represents the count values and $n_0$ is a somehow chosen
+positive constant. In this Section, we discuss a related, alternative
+approach that is based on error modeling and the concept of
+variance stabilizing transformations~\cite{Tibshirani1988,sagmb2003,Anders:2010:GB}. We first estimate an
+overall mean-dispersion relationship of the data using
+\Rfunction{estimateDispersions} with the argument
+\Robject{method="blind"} and then call the function
+\Rfunction{getVarianceStabilizedData}.
 %
-<<vsd>>=
+<<defvsd>>=
 cdsBlind <- estimateDispersions( cds, method="blind" )
 vsd <- getVarianceStabilizedData( cdsBlind )
 @
+%
+The resulting transformation is shown in the left panel of Figure~\ref{figvsd} (the code
+that produces the figure is hidden from this vignette for the sake of
+presentation, but can be seen in the \texttt{.Rnw} or \texttt{.R}
+source files).
+%
+\fixme{\Rfunction{getVarianceStabilizedData} should do the offset
+  correction by a common offset \Robject{mean(offsets)} computed like
+  in the following code:}
+<<offsets>>=
+scaledCounts = counts(cds, normalized=TRUE)
+offsets = sapply(seq_len(ncol(vsd)), function(j) {
+    cj = scaledCounts[, j]
+    wh = which.max(cj)
+    log2(cj[wh]) - vsd[wh, j]
+})
+offsets
+offset = mean(offsets)
+@
+<<vsd, fig=TRUE, echo=FALSE, width=5, height=5>>=
+px     = counts(cds)[,1] / sizeFactors(cds)[1]
+ord    = order(px)
+ord    = ord[px[ord] < 150]
+ord    = ord[seq(1, length(ord), length=50)]
+last   = ord[length(ord)]
+colors = c("blue", "black")
+matplot(px[ord],
+        cbind(vsd[, 1] + offset, log2(px))[ord, ],
+        type="l", lty=1, col=colors, xlab="n", ylab="y")
+legend("bottomright",
+       legend = c(
+        expression("variance stabilizing transformation"),
+        expression(log[2](n/s))),
+       fill=colors)
+@
 
 
-The data are now on a logarithm-like scale, and we can compute
-\emph{moderated log fold changes}.
-
+%---------------------------------------------------------------
+\subsection{Application to moderated fold change estimates}
+%---------------------------------------------------------------
+In the beginning of Section~\ref{sec:DE}, we have seen in the
+dataframe \Robject{res} the (logarithm base 2) fold change estimate
+computed from the size-factor adjusted counts.  When the involved
+counts are small, these (logarithmic) fold-change estimates can be
+highly variable, and can even be infinite. For some purposes, such as
+the clustering of samples or genes according to their expression
+profiles, or for visualisation of the data, this high variability from
+ratios between low counts might drown informative, systematic signal
+in other parts of the data.  The variance stabilizing transformation
+offers one way to \emph{moderate} the fold change estimates, so that
+they are more amenable to plotting or clustering.
+%
 <<modlr>>=
 mod_lfc <- (rowMeans( vsd[, conditions(cds)=="treated", drop=FALSE] ) -
             rowMeans( vsd[, conditions(cds)=="untreated", drop=FALSE] ))
 @
-
-Now let us compare these to the original ($\log_2$) fold changes. First we find that many of the latter
+%
+Let us compare these to the original ($\log_2$) fold changes. First we find that many of the latter
 are infinite (resulting from division of a finite value by 0) or \emph{not a number} (NaN,
 resulting from division of 0 by 0).
-
+%
 <<dah>>=
 lfc <- res$log2FoldChange
 finite <- is.finite(lfc)
 table(as.character(lfc[!finite]), useNA="always")
 @
-% \fixme{Define 0/0 := 1 in the  appropriate place in the code, then the \texttt{NaN} can go away.}
+\fixme{Define 0/0 := 1 in the  appropriate place in the code, then the
+  \texttt{NaN} can go away.}
 
-For plotting (Figure~\ref{figmodlr}), we replace the infinite values by an arbitrary fixed large number:
+For plotting (right panel of Figure~\ref{figvsd}), we replace the infinite values by an arbitrary fixed large number:
 <<repl>>=
-largeNumber <- 10
+largeNumber <- 7
 lfc <- ifelse(finite, lfc, sign(lfc) * largeNumber)
 @
 
+\begin{figure}
+\centering
+\includegraphics[width=.49\textwidth]{DESeq-vsd}
+\includegraphics[width=.49\textwidth]{DESeq-figmodlr}
+\caption{Left: Graphs of the variance stabilizing transformation for sample 1
+  (blue) and of the transformation $y=log_2(n)$ (black).
+  Right: scatterplot of direct (\Robject{lfc}) versus \emph{moderated} log-ratios (\Robject{mod\_lfc}).
+  The moderation criterion used is variance stabilisation.
+  The red points correspond to values that were infinite in \Robject{lfc}
+  and were abitrarily set to $\pm\Sexpr{largeNumber}$ for the purpose of plotting.
+  These values vary in a finite range (as shown in the plot) in \Robject{mod\_lfc}.}
+\label{figvsd}
+\end{figure}
+
 <<figmodlr, fig=TRUE>>=
-plot( lfc, mod_lfc, pch=20, cex=.3,
+plot( lfc, mod_lfc, pch=20, cex=.4, asp=1,
       col = ifelse( finite, "#80808040", "red" ) )
 abline( a=0, b=1, col="#40404040" )
 @
 
 
-\begin{figure}
-\centering
-\includegraphics[width=.6\textwidth]{DESeq-figmodlr}
-\caption{Scatterplot of direct (\Robject{lfc}) versus \emph{moderated} log-ratios (\Robject{mod\_lfc}).
-  The moderation criterion used is variance stabilisation.
-  The red points correspond to values that were infinite in \Robject{lfc}
-  and were abitrarily set to $\pm\Sexpr{largeNumber}$ for the purpose of plotting.
-  These values vary in a finite range (as shown in the plot) in \Robject{mod\_lfc}.}
-\label{figmodlr}
-\end{figure}
-
-These data are now approximately homoscedastic and hence suitable as input to
-a distance calculation. This can be useful, e.g., to visualise the expression
-data of, say, the top 40 differentially expressed genes.
+%---------------------------------------------------------------
+\subsection{Application to sample clustering and visualisation}
+%---------------------------------------------------------------
+The moderated logarithmic fold changes \Robject{mod\_lfc} are now approximately homoscedastic and hence suitable as input to
+a distance calculation. This can be useful, e.\,g., to visualise the expression
+data of the differentially expressed genes. The result, shown in
+Figure~\ref{figHeatmap2}, shows the heatmap for the top 40.
 %
 <<figHeatmap2a,fig=TRUE,width=7,height=10>>=
 select <- order(res$pval)[1:40]
