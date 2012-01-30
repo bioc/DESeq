@@ -31,7 +31,7 @@ getVarianceStabilizedData(cds)
    the following variance stabilizing transformation is used on the normalized
    count data, using the coefficients \code{asymptDisp} and \code{extraPois} from the dispersion fit:
    
-   \code{vst( q ) = 2/log(2) * log( asymptDisp * sqrt(q) + asymptDisp * sqrt( 1 + extraPois + asymptDisp * q ) )}
+   \code{vst( q ) = 2/log(2) * log( asymptDisp * sqrt(q) + sqrt( asymptDisp * ( extraPois + asymptDisp * q ) ) - log( asymptDisp * extraPois )/ log(2) }
 
    This transformation is scaled such that for large counts, it become asymptotically
    equal to log2.

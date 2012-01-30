@@ -1,4 +1,14 @@
-version 1.6.0: (Summary of important changes between Bioc release 2.8 to 2.9)
+version 1.7.6:
+
+- fixed regression bug in getVarianceStabilizedData: the formula for
+  parametric dispersion fit was wrong since I "fixed" the factor
+  to get log2 asymptotic behaviour.
+
+version 1.7.1 - 1.7.5:
+
+- various changes to vignette by whuber
+
+version 1.6.0 / 1.7.0: (Summary of important changes between Bioc release 2.8 to 2.9)
 
 - changes to dispersion estimation scheme to improve handling of outliers
   (see vignette for details)

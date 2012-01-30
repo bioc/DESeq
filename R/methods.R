@@ -215,7 +215,8 @@ getVarianceStabilizedData <- function( cds ) {
       coefs <- attr( fitInfo$dispFunc, "coefficients" )
       vst <- function( q )
          2/log(2) * log( coefs["asymptDisp"] * sqrt(q) + 
-            coefs["asymptDisp"] * sqrt( 1 + coefs["extraPois"] + coefs["asymptDisp"] * q ) )
+               sqrt( coefs["asymptDisp"] * ( coefs["extraPois"] + coefs["asymptDisp"] * q ) ) ) -
+            log( coefs["asymptDisp"] * coefs["extraPois"] ) / log(2)
       vst( ncounts )
    } else {  
       # non-parametric fit -> numerical integration
