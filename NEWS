@@ -1,3 +1,8 @@
+version 1.7.7:
+
+- changed the variance stabilizing transformation once more; this time it is hopefully
+  correct. The derivation of the formula is now documented in the new file vst.pdf.
+
 version 1.7.6:
 
 - fixed regression bug in getVarianceStabilizedData: the formula for

@@ -28,10 +28,8 @@ getVarianceStabilizedData(cds)
    with \code{method="blind"} before calling it. 
 
    If \code{\link{estimateDispersions}} was called with \code{fitType="parametric"},
-   the following variance stabilizing transformation is used on the normalized
-   count data, using the coefficients \code{asymptDisp} and \code{extraPois} from the dispersion fit:
-   
-   \code{vst( q ) = 2/log(2) * log( asymptDisp * sqrt(q) + sqrt( asymptDisp * ( extraPois + asymptDisp * q ) ) - log( asymptDisp * extraPois )/ log(2) }
+   a closed-form expression for the variance stabilizing transformation is used on the normalized
+   count data, which can be found in the file vst.pdf, which is distributed with the vignette.
 
    This transformation is scaled such that for large counts, it become asymptotically
    equal to log2.

@@ -861,6 +861,12 @@ estimate an overall mean-dispersion relationship of the data using
 cdsBlind <- estimateDispersions( cds, method="blind" )
 vsd <- getVarianceStabilizedData( cdsBlind )
 @
+Here, we have used a parametric fit for the dispersion. In this case,
+the a closed-form expression for the variance-stabilizing transformation
+is used by \Rfunction{getVarianceStabilizedData}, which is derived in
+the file \texttt{vst.pdf}, that is distributed in the package
+alongside this vignette. If a local fit is used (option \texttt{fittype="local"}
+to \Rfunction{estimateDispersion}) a numerical integration is used instead.
 %
 The resulting transformation is shown in the left panel of
 Figure~\ref{figvsd}.  The code that produces the figure is hidden from
@@ -875,8 +881,7 @@ this vignette for the sake of brevity, but can be seen in the
   sample 1, in blue, and of the transformation $f(n)=log_2(n/s_1)$, in
   black. $s_1$ is the size factor for the first sample.
   Right: density plot of the per-gene standard deviation of the transformed data,
-  across samples, against the rank of the mean. \fixme{The trend in
-  this plot should be flat -- something is wrong.}
+  across samples, against the rank of the mean.
 }
 \label{figvsd}
 \end{figure}
@@ -948,33 +953,48 @@ lfc <- res$log2FoldChange
 finite <- is.finite(lfc)
 table(as.character(lfc[!finite]), useNA="always")
 @
-\fixme{Define 0/0 := 1 in the  appropriate place in the code, then the
-  \texttt{NaN} can go away.}
+%FIXME: Define 0/0 := 1 in the  appropriate place in the code, then the
+%  \texttt{NaN} can go away.
 
 For plotting, we replace the infinite values by an arbitrary fixed large number.
-The result is shown in Figure~\ref{figmodlr}.
 <<repl>>=
 largeNumber <- 7
 lfc <- ifelse(finite, lfc, sign(lfc) * largeNumber)
 @
-
+%
+We also bin genes by their log10 mean to colour them according to expression strength.
+%
+<<colorramp>>=
+logdecade <- 1 + round( log10( 1+rowMeans(counts(cdsBlind, normalized=TRUE)) ) )
+colors <- colorRampPalette( c( "gray", "blue" ) )(6)[logdecade]
+@
+%
 \begin{figure}
 \centering
 \includegraphics[width=.6\textwidth]{DESeq-figmodlr}
 \caption{Scatterplot of direct (\Robject{lfc}) versus \emph{moderated} log-ratios (\Robject{mod\_lfc}).
   The moderation criterion used is variance stabilisation.
-  The red points correspond to values that were infinite in \Robject{lfc}
+  The points are coloured in a scale from gray to blue, representing weakly to
+  strongly expressed genes.
+  The purple points correspond to values that were infinite in \Robject{lfc}
   and were abitrarily set to $\pm\Sexpr{largeNumber}$ for the purpose of plotting.
   These values vary in a finite range (as shown in the plot) in \Robject{mod\_lfc}.}
 \label{figmodlr}
 \end{figure}
 
+The result is shown in Figure~\ref{figmodlr}.
+%
 <<figmodlr, fig=TRUE>>=
 plot( lfc, mod_lfc, pch=20, cex=.4, asp=1,
-      col = ifelse( finite, "#80808040", "red" ) )
-abline( a=0, b=1, col="#40404040" )
+      col = ifelse( finite, colors, "purple" ) )
+abline( a=0, b=1, col="#40C04040" )
 @
-
+The free parameters of the VST (at least for parametric dispersion fit) are chosen
+such that for large count values, the difference become asymptoticaly equal to
+log2 fold changes, as can be seen from the dark blue points in the figure. For
+lower count values (grayish points), the moderated fold change is smaller than
+the unmoderated one, reflecting the fact that the same count ratio is then less
+significant.
 
 %---------------------------------------------------------------
 \subsection{Application to sample clustering and visualisation}
@@ -1104,6 +1124,8 @@ estimate, and hence, this is now the default. The option \texttt{method='per-con
 \item In the paper, the mean-dispersion relation is fitted by local regression. Now,
 DESeq also offers a parametric regression, as described in this vignette. The option
 \texttt{fitType} to \Rfunction{estimateDispersions} allows the user to choose between these.
+If a parametric regression is used, the variance stabilizing transformation is calculated
+using the closed-form expression given in the vignette supplement file \texttt{vst.pdf}.
 
 \item Finally, instead of the term \emph{raw squared coefficient of variance}
 used in the paper we now prefer the more standard term \emph{dispersion}.
