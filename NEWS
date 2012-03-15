@@ -1,3 +1,7 @@
+version 1.7.8:
+
+- The VST is now roughly equal to log2 for local dispersion fits, too.
+
 version 1.7.7:
 
 - changed the variance stabilizing transformation once more; this time it is hopefully

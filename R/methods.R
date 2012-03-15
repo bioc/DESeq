@@ -229,8 +229,12 @@ getVarianceStabilizedData <- function( cds ) {
          cumsum( 
             ( xg[-1] - xg[-length(xg)] ) * 
             ( integrand[-1] + integrand[-length(integrand)] )/2 ) )
+      h1 <- quantile( rowMeans(ncounts), .95 )
+      h2 <- quantile( rowMeans(ncounts), .999 )
+      eta <- ( log2(h2) - log2(h1) ) / ( splf(asinh(h2)) - splf(asinh(h1)) )
+      xi <- log2(h1) - eta * splf(asinh(h1))
       tc <- sapply( colnames(counts(cds)), function(clm)
-         splf( asinh( ncounts[,clm] ) ) )
+         eta * splf( asinh( ncounts[,clm] ) ) + xi )
       rownames( tc ) <- rownames( counts(cds) )
       tc
    }

@@ -664,11 +664,12 @@ testing using the Benjamini-Hochberg (BH) method.
 
 \begin{figure}
 \centering
-\includegraphics[width=.7\textwidth]{DESeq-figPval}
-\caption{Comparison of $p$ values (unadjusted) from the test using only the
-four paired-end samples and the test using all seven samples. We can see that
-the latter tend to be smaller, as expected from the higher power of the test with all samples.}
-\label{figPval}
+\includegraphics[width=.7\textwidth]{DESeq-figDispScatter}
+\caption{Comparison of per-genes estimates of the dispersion in the analysis using only the
+four paired-end samples and in the analysis using all seven samples. We can see that
+the additional samples tend to increase dispersion, which may indicate that the paired-end
+samples are of higher quality than the single-end ones.}
+\label{figDispScatter}
 \end{figure}
 
 Let's compare with the result from the four-samples test:
@@ -679,16 +680,26 @@ addmargins( tab )
 We see that the analyses find \Sexpr{tab[2,2]} genes in common, while
 \Sexpr{tab[1,2]} were only found in the analysis using all samples and
 \Sexpr{tab[2,1]} were specific for the \emph{paired end only} analysis.
-A more informative comparison might be a scatter plot of $p$ values:
-%
-<<figPval,fig=TRUE>>=
-bottom = function(x, theta=1e-12) pmax(x, theta)
-plot( bottom(res$pval), bottom(pvalsGLM), log="xy", pch=20, cex=.3 )
-abline(a=0, b=1, col="blue")
-@
-The result is shown in Fig.~\ref{figPval}.
 
-Now, we can extract the significant genes from the vector \Robject{padjGLM} as before.
+In this case, the improvement in power that we gained from the additional 
+samples is rather modest. This might indicate that the single-end samples
+(which are presumably older than the paired-end one) are of lower quality.
+This is supported by the observation that the dispersion estimates in the full
+data set tend to be larger than in the paired-end only one, despite the fact that 
+we now have more degrees of freedom for the dispersion estimation , i.e., the additional
+sample increased not only signal but also noise. See Fig.~\ref{figDispScatter}, which is produced
+by
+%
+<<figDispScatter,fig=TRUE>>=
+plot( 
+   fitInfo(cds)$perGeneDispEsts, 
+   fitInfo(cdsFull)$perGeneDispEsts,
+   asp=1, log="xy",  pch=20,cex=.1 )
+abline( a=0, b=1 )
+@
+
+Continuing with the analysis, we can now extract the significant genes 
+from the vector \Robject{padjGLM} as before.
 To see the corresponding fold changes, we have a closer look at the object
 \Robject{fit1}
 <<lookatfit1>>=
@@ -886,19 +897,6 @@ this vignette for the sake of brevity, but can be seen in the
 \label{figvsd}
 \end{figure}
 
-\fixme{\Rfunction{getVarianceStabilizedData} should do the offset
-  correction by a common offset \Robject{mean(offsets)} computed like
-  in the following code:}
-<<offsets>>=
-scaledCounts = counts(cds, normalized=TRUE)
-offsets = sapply(seq_len(ncol(vsd)), function(j) {
-    cj = scaledCounts[, j]
-    wh = which.max(cj)
-    log2(cj[wh]) - vsd[wh, j]
-})
-offsets
-offset = mean(offsets)
-@
 <<vsd1, fig=TRUE, echo=FALSE, width=4.75, height=4.75>>=
 ##par(mai=ifelse(1:4 <= 2, par("mai"), 0))
 px     = counts(cds)[,1] / sizeFactors(cds)[1]

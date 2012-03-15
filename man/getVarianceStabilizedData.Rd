@@ -38,8 +38,8 @@ getVarianceStabilizedData(cds)
    the reciprocal of the square root of the variance of the normalized counts, as derived
    from the dispersion fit, is then numerically
    integrated up, and the integral (approximated by a spline function) evaluated for each
-   count value in the column, yielding a transformed value. Note that the asymptotic 
-   property mentioned above does not hold in this case.
+   count value in the column, yielding a transformed value. A scaling is applied to make
+   the transformation roughly equal to log2 for large valuies.
    
    Limitations: In order to preserve normalization, the same transformation has to be used
    for all samples. This results in the variance stabilizition to be only approximate. The
