@@ -10,20 +10,26 @@
 NotebookFileLineBreakTest
 NotebookFileLineBreakTest
 NotebookDataPosition[       145,          7]
-NotebookDataLength[     33336,        944]
-NotebookOptionsPosition[     30648,        852]
-NotebookOutlinePosition[     31215,        872]
-CellTagsIndexPosition[     31172,        869]
+NotebookDataLength[     35124,        991]
+NotebookOptionsPosition[     32281,        895]
+NotebookOutlinePosition[     32848,        915]
+CellTagsIndexPosition[     32805,        912]
 WindowFrame->Normal*)
 
 (* Beginning of Notebook Content *)
 Notebook[{
 
 Cell[CellGroupData[{
-Cell["\<\
-Variance-stabilizing transformation for parametrized dispersion\
-\>", "Subtitle",
- CellChangeTimes->{{3.540622683759346*^9, 3.5406226961574497`*^9}}],
+Cell["Variance-stabilizing transformation for DESeq", "Subtitle",
+ CellChangeTimes->{{3.540622683759346*^9, 3.5406226961574497`*^9}, {
+  3.540815669170343*^9, 3.540815673334532*^9}}],
+
+Cell[BoxData[
+ StyleBox[
+  RowBox[{
+   RowBox[{"For", " ", "parametrized", " ", "dispersion", " ", "fit"}], 
+   "\[IndentingNewLine]"}], "Subsubtitle"]], "Input",
+ CellChangeTimes->{{3.540815676143361*^9, 3.5408157093482103`*^9}}],
 
 Cell[TextData[{
  "This file describes the variance stabilizing transformation (VST) used by \
@@ -149,13 +155,11 @@ Cell[TextData[{
     RowBox[{"v", "(", 
      RowBox[{
       StyleBox["E",
-       FontSlant->"Plain"], "(", "X", ")"}], ")"}]}], TraditionalForm]],
-  FormatType->"TraditionalForm"],
+       FontSlant->"Plain"], "(", "X", ")"}], ")"}]}], TraditionalForm]]],
  ", then ",
  Cell[BoxData[
   FormBox[
-   RowBox[{"u", "(", "X", ")"}], TraditionalForm]],
-  FormatType->"TraditionalForm"],
+   RowBox[{"u", "(", "X", ")"}], TraditionalForm]]],
  " has stabilized variance, i.e., is homoskedastic.\[LineSeparator]\nA VST ",
  StyleBox["u",
   FontSlant->"Italic"],
@@ -171,8 +175,7 @@ Cell[TextData[{
      SuperscriptBox["\[Integral]", "x"], 
      FractionBox["d\[Mu]", 
       SqrtBox[
-       RowBox[{"v", "(", "\[Mu]", ")"}]]]}]}], TraditionalForm]],
-  FormatType->"TraditionalForm"],
+       RowBox[{"v", "(", "\[Mu]", ")"}]]]}]}], TraditionalForm]]],
  ". \nHence, we can get a general VST with"
 }], "Text",
  CellChangeTimes->{{3.5406229237822933`*^9, 3.540622976488544*^9}, {
@@ -847,11 +850,51 @@ Log((1 + extraPois + 2*asymptDisp*q +
 \>", "Output",
  CellChangeTimes->{{3.5407064886833467`*^9, 3.540706495739716*^9}, {
   3.540706529058442*^9, 3.5407065480525093`*^9}}]
-}, Open  ]]
+}, Open  ]],
+
+Cell[BoxData["\[IndentingNewLine]"], "Input",
+ CellChangeTimes->{3.5408157360105877`*^9}],
+
+Cell[BoxData[
+ StyleBox[
+  RowBox[{"For", " ", "local", " ", "dispersion", " ", "fit"}], 
+  "Subsubtitle"]], "Input",
+ CellChangeTimes->{{3.540815731390847*^9, 3.540815731815278*^9}}],
+
+Cell[TextData[{
+ "In case of a local dispersion fit, the variance-stabilizing transformation ",
+ Cell[BoxData[
+  FormBox[
+   RowBox[{
+    RowBox[{"u", "(", "x", ")"}], " ", "=", 
+    RowBox[{
+     SuperscriptBox["\[Integral]", "x"], 
+     FractionBox["d\[Mu]", 
+      SqrtBox[
+       RowBox[{"v", "(", "\[Mu]", ")"}]]]}]}], TraditionalForm]]],
+ "is obtained by numerical integration of the fitted mean-dispersion relation \
+",
+ Cell[BoxData[
+  FormBox[
+   RowBox[{"v", "(", "\[Mu]", ")"}], TraditionalForm]],
+  FormatType->"TraditionalForm"],
+ " (by adding up along a asinh-spaced grid and a fitting a spline). Then, the \
+scaling parameters \[Eta] and \[Xi] (see above) are chosen such that the VST \
+is equal to ",
+ Cell[BoxData[
+  FormBox[
+   SubscriptBox["log", "2"], TraditionalForm]],
+  FormatType->"TraditionalForm"],
+ " for two large normalized count values (for which the 95- and the \
+99.9-percentile of the sample-averaged normalized count values are used.)"
+}], "Text",
+ CellChangeTimes->{{3.540815740854124*^9, 3.540815862626584*^9}, {
+  3.540815907181427*^9, 3.540816034208343*^9}, {3.540816089844325*^9, 
+  3.5408161426064177`*^9}, {3.5408161836470623`*^9, 3.540816250332963*^9}}]
 }, Open  ]]
 },
 WindowSize->{640, 750},
-WindowMargins->{{149, Automatic}, {Automatic, 25}},
+WindowMargins->{{148, Automatic}, {Automatic, 24}},
 PrintingPageRange->{Automatic, Automatic},
 PrintingOptions->{"Magnification"->1.,
 "PaperOrientation"->"Portrait",
@@ -872,79 +915,83 @@ CellTagsIndex->{}
 (*NotebookFileOutline
 Notebook[{
 Cell[CellGroupData[{
-Cell[567, 22, 159, 3, 85, "Subtitle"],
-Cell[729, 27, 431, 13, 71, "Text"],
-Cell[1163, 42, 92, 1, 32, "Input"],
-Cell[1258, 45, 575, 20, 51, "Text"],
+Cell[567, 22, 182, 2, 85, "Subtitle"],
+Cell[752, 26, 230, 5, 66, "Input"],
+Cell[985, 33, 431, 13, 71, "Text"],
+Cell[1419, 48, 92, 1, 32, "Input"],
+Cell[1514, 51, 575, 20, 51, "Text"],
 Cell[CellGroupData[{
-Cell[1858, 69, 330, 8, 32, "Input"],
-Cell[2191, 79, 234, 6, 47, "Output"]
+Cell[2114, 75, 330, 8, 32, "Input"],
+Cell[2447, 85, 234, 6, 47, "Output"]
 }, Open  ]],
-Cell[2440, 88, 487, 19, 31, "Text"],
-Cell[2930, 109, 105, 1, 31, "Text"],
+Cell[2696, 94, 487, 19, 31, "Text"],
+Cell[3186, 115, 105, 1, 31, "Text"],
 Cell[CellGroupData[{
-Cell[3060, 114, 255, 6, 32, "Input"],
-Cell[3318, 122, 305, 8, 33, "Output"]
+Cell[3316, 120, 255, 6, 32, "Input"],
+Cell[3574, 128, 305, 8, 33, "Output"]
 }, Open  ]],
-Cell[3638, 133, 1371, 45, 145, "Text"],
+Cell[3894, 139, 1272, 42, 145, "Text"],
 Cell[CellGroupData[{
-Cell[5034, 182, 768, 20, 61, "Input"],
-Cell[5805, 204, 679, 22, 72, "Output"]
+Cell[5191, 185, 768, 20, 61, "Input"],
+Cell[5962, 207, 679, 22, 72, "Output"]
 }, Open  ]],
-Cell[6499, 229, 578, 20, 31, "Text"],
+Cell[6656, 232, 578, 20, 31, "Text"],
 Cell[CellGroupData[{
-Cell[7102, 253, 264, 6, 32, "Input"],
-Cell[7369, 261, 769, 24, 72, "Output"]
+Cell[7259, 256, 264, 6, 32, "Input"],
+Cell[7526, 264, 769, 24, 72, "Output"]
 }, Open  ]],
-Cell[8153, 288, 437, 11, 51, "Text"],
+Cell[8310, 291, 437, 11, 51, "Text"],
 Cell[CellGroupData[{
-Cell[8615, 303, 515, 15, 32, "Input"],
-Cell[9133, 320, 301, 8, 52, "Output"]
+Cell[8772, 306, 515, 15, 32, "Input"],
+Cell[9290, 323, 301, 8, 52, "Output"]
 }, Open  ]],
-Cell[9449, 331, 180, 4, 31, "Text"],
+Cell[9606, 334, 180, 4, 31, "Text"],
 Cell[CellGroupData[{
-Cell[9654, 339, 211, 6, 63, "Input"],
-Cell[9868, 347, 178, 5, 54, "Output"]
+Cell[9811, 342, 211, 6, 63, "Input"],
+Cell[10025, 350, 178, 5, 54, "Output"]
 }, Open  ]],
-Cell[10061, 355, 139, 1, 31, "Text"],
+Cell[10218, 358, 139, 1, 31, "Text"],
 Cell[CellGroupData[{
-Cell[10225, 360, 517, 15, 32, "Input"],
-Cell[10745, 377, 330, 10, 63, "Output"]
+Cell[10382, 363, 517, 15, 32, "Input"],
+Cell[10902, 380, 330, 10, 63, "Output"]
 }, Open  ]],
-Cell[11090, 390, 92, 1, 31, "Text"],
+Cell[11247, 393, 92, 1, 31, "Text"],
 Cell[CellGroupData[{
-Cell[11207, 395, 354, 11, 70, "Input"],
-Cell[11564, 408, 323, 10, 63, "Output"]
+Cell[11364, 398, 354, 11, 70, "Input"],
+Cell[11721, 411, 323, 10, 63, "Output"]
 }, Open  ]],
-Cell[11902, 421, 123, 1, 31, "Text"],
+Cell[12059, 424, 123, 1, 31, "Text"],
 Cell[CellGroupData[{
-Cell[12050, 426, 449, 14, 32, "Input"],
-Cell[12502, 442, 92, 1, 31, "Output"]
+Cell[12207, 429, 449, 14, 32, "Input"],
+Cell[12659, 445, 92, 1, 31, "Output"]
 }, Open  ]],
 Cell[CellGroupData[{
-Cell[12631, 448, 517, 15, 32, "Input"],
-Cell[13151, 465, 96, 1, 31, "Output"]
+Cell[12788, 451, 517, 15, 32, "Input"],
+Cell[13308, 468, 96, 1, 31, "Output"]
 }, Open  ]],
-Cell[13262, 469, 113, 1, 31, "Text"],
+Cell[13419, 472, 113, 1, 31, "Text"],
 Cell[CellGroupData[{
-Cell[13400, 474, 434, 12, 32, "Input"],
-Cell[13837, 488, 695, 21, 68, "Output"]
+Cell[13557, 477, 434, 12, 32, "Input"],
+Cell[13994, 491, 695, 21, 68, "Output"]
 }, Open  ]],
-Cell[14547, 512, 579, 19, 51, "Text"],
+Cell[14704, 515, 579, 19, 51, "Text"],
 Cell[CellGroupData[{
-Cell[15151, 535, 685, 20, 55, "Input"],
-Cell[15839, 557, 5767, 102, 227, "Output"]
+Cell[15308, 538, 685, 20, 55, "Input"],
+Cell[15996, 560, 5767, 102, 227, "Output"]
 }, Open  ]],
-Cell[21621, 662, 382, 7, 71, "Text"],
+Cell[21778, 665, 382, 7, 71, "Text"],
 Cell[CellGroupData[{
-Cell[22028, 673, 958, 25, 55, "Input"],
-Cell[22989, 700, 6513, 112, 256, "Output"]
+Cell[22185, 676, 958, 25, 55, "Input"],
+Cell[23146, 703, 6513, 112, 256, "Output"]
 }, Open  ]],
-Cell[29517, 815, 126, 1, 31, "Text"],
+Cell[29674, 818, 126, 1, 31, "Text"],
 Cell[CellGroupData[{
-Cell[29668, 820, 676, 20, 55, "Input"],
-Cell[30347, 842, 273, 6, 80, "Output"]
-}, Open  ]]
+Cell[29825, 823, 676, 20, 55, "Input"],
+Cell[30504, 845, 273, 6, 65, "Output"]
+}, Open  ]],
+Cell[30792, 854, 89, 1, 55, "Input"],
+Cell[30884, 857, 183, 4, 37, "Input"],
+Cell[31070, 863, 1195, 29, 159, "Text"]
 }, Open  ]]
 }
 ]
