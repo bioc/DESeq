@@ -890,7 +890,7 @@ this vignette for the sake of brevity, but can be seen in the
 \includegraphics[width=.49\textwidth]{DESeq-vsd2}
 \caption{Left: Graphs of the variance stabilizing transformation for
   sample 1, in blue, and of the transformation $f(n)=log_2(n/s_1)$, in
-  black. $s_1$ is the size factor for the first sample.
+  black. $n$ are the counts and $s_1$ is the size factor for the first sample.
   Right: density plot of the per-gene standard deviation of the transformed data,
   across samples, against the rank of the mean.
 }
@@ -906,7 +906,7 @@ ord    = ord[seq(1, length(ord), length=50)]
 last   = ord[length(ord)]
 colors = c("blue", "black")
 matplot(px[ord],
-        cbind(vsd[, 1] + offset, log2(px))[ord, ],
+        cbind(vsd[, 1], log2(px))[ord, ],
         type="l", lty=1, col=colors, xlab="n", ylab="f(n)")
 legend("bottomright",
        legend = c(

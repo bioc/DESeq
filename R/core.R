@@ -257,7 +257,9 @@ fitNbinomGLMsForMatrix <- function( counts, sizeFactors, rawScv, modelFormula,
       if( !quiet & i %% 1000 == 0 )
          cat( '.' ) 
       nbfam <- nbkd.sf( 1 / rawScv[i], sizeFactors )      
-      fit <- try( glm.fit( modelMatrix, counts[i,], family=nbfam, control = glmControl ) )
+      fit <- try( 
+         glm.fit( modelMatrix, counts[i,], family=nbfam, control = glmControl ),
+         silent=TRUE )
       if( !is( fit, "try-error" ) )
          c( 
             coefficients(fit), 
@@ -267,7 +269,7 @@ fitNbinomGLMsForMatrix <- function( counts, sizeFactors, rawScv, modelFormula,
       else {
          coefs <- rep( NA, ncol(modelMatrix ) )
          names(coefs)  <- colnames(modelMatrix) 
-         warning( as.character( fit ) )
+         #warning( as.character( fit ) )
          c( 
             coefs, 
             deviance = NA, 

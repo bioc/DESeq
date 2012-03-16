@@ -1,8 +1,13 @@
-version 1.7.8:
+version 1.7.9:  (2011-03-16)
+
+- Fixed error in vignette.
+- Silenced warnings from nbinomFitGLM about convergence; this information is given in the result anyway.
+
+version 1.7.8:  (2011-03-15)
 
 - The VST is now roughly equal to log2 for local dispersion fits, too.
 
-version 1.7.7:
+version 1.7.7:  (2011-03-15)
 
 - changed the variance stabilizing transformation once more; this time it is hopefully
   correct. The derivation of the formula is now documented in the new file vst.pdf.
