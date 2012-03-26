@@ -7,7 +7,7 @@ setMethod("estimateSizeFactors", signature(object="CountDataSet"),
   })
 
 setMethod("estimateDispersions", signature(object="CountDataSet"),
-  function( object, method = c( "pooled", "per-condition", "blind" ), 
+  function( object, method = c( "pooled", "pooled-CR", "per-condition", "blind" ), 
     sharingMode = c( "maximum", "fit-only", "gene-est-only" ),
     fitType = c( "parametric", "local" ),
     locfit_extra_args=list(), lp_extra_args=list(), 
@@ -74,7 +74,9 @@ setMethod("estimateDispersions", signature(object="CountDataSet"),
       object@dispTable <- sapply( levels(conditions(object)), function( cond )
             ifelse( cond %in% replicated, cond, "max" ) ) 
                         
-   } else if( method == "pooled" ) { 
+   } else if( method == "pooled" || method == "pooled-CR" ) { 
+   
+      if( method == "pooled" ) {
    
          if( object@multivariateConditions ) {
             if( is.null( modelFrame ) )
@@ -82,12 +84,24 @@ setMethod("estimateDispersions", signature(object="CountDataSet"),
             conds <- modelMatrixToConditionFactor( modelFrame ) }
          else
             conds <- conditions(object)
+         if( !any( duplicated( conds ) ) )
+            stop( "None of your conditions is replicated. Use method='blind' to estimate across conditions, or 'pooled-CR', if you have crossed factors." )
          bmv <- getBaseMeansAndPooledVariances( counts(object), sizeFactors(object), conds )
          baseMeans <- bmv$baseMean
          dispsAndFunc <- estimateAndFitDispersionsFromBaseMeansAndVariances( bmv$baseMean,
             bmv$baseVar, sizeFactors(object), fitType, locfit_extra_args, lp_extra_args )
          df <- ncol(counts(object)) - length(unique(conds))
       
+      } else {  # method == "pooled-CR"
+         if( is.null( modelFrame ) )
+            modelFrame <- pData(object)[ , colnames(pData(object)) != "sizeFactor", drop=FALSE ]
+         baseMeans <- rowMeans( counts( object, normalized=TRUE ) )
+         
+         dispsAndFunc <- estimateAndFitDispersionsWithCoxReid( counts(object), modelFormula, modelFrame,
+            sizeFactors(cds), fitType, locfit_extra_args, lp_extra_args )      
+         df <- NA
+      }
+
       object@fitInfo[[ "pooled" ]] <- list( 
          perGeneDispEsts = dispsAndFunc$disps,
          dispFunc = dispsAndFunc$dispFunc,

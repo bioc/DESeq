@@ -1,3 +1,8 @@
+version 1.7.10:  (2011-03-26)
+
+- Added pooled-CR method.
+- Fixed error message for insufficient replication.
+
 version 1.7.9:  (2011-03-16)
 
 - Fixed error in vignette.

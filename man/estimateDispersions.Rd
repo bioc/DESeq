@@ -16,7 +16,7 @@
 }
 \usage{
 \S4method{estimateDispersions}{CountDataSet}( object, 
-   method = c( "pooled", "per-condition", "blind" ), 
+   method = c( "pooled", "pooled-CR", "per-condition", "blind" ), 
    sharingMode = c( "maximum", "fit-only", "gene-est-only" ),
    fitType = c("parametric", "local"),
    locfit_extra_args=list(), lp_extra_args=list(), 
@@ -33,6 +33,18 @@
      \item \code{pooled} - Use the samples from all conditions with
      replicates to estimate a single pooled empirical dispersion value, 
      called "pooled", and assign it to all samples.
+
+     \item \code{pooled-CR} - Fit models according to \code{modelFormula} and
+     estimate the dispersion by maximizing a Cox-Reid adjusted profile
+     likelihood (CR-APL). This method
+     is much slower than \code{method=="pooled"} but works also with crossed
+     factors (as may occur, e.g., in designs with paired samples). (Note: 
+     The method of using CR-APL maximization for this application has been
+     developed by McCarthy, Chen and Smyth [Nucl. Acid Res., 2012 and been 
+     first implemented in edgeR (in 2010). DESeq optimizes the expression
+     for the CR-APL given in McCarthy et al.'s paper, but does not use the
+     weigthed maximum likelihood scheme proposed there.)
+
 
      \item \code{per-condition} - For each condition with replicates, compute
      a gene's empirical dispersion value by considering the data from samples for this
