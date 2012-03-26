@@ -38,13 +38,15 @@
      estimate the dispersion by maximizing a Cox-Reid adjusted profile
      likelihood (CR-APL). This method
      is much slower than \code{method=="pooled"} but works also with crossed
-     factors (as may occur, e.g., in designs with paired samples). (Note: 
-     The method of using CR-APL maximization for this application has been
+     factors (as may occur, e.g., in designs with paired samples). 
+     Usually, you will need to specify the model formula, which should be the
+     same as the one used later in the call to \code{nbinomFitGLMs} for fitting the full model. 
+
+     Note: The method of using CR-APL maximization for this application has been
      developed by McCarthy, Chen and Smyth [Nucl. Acid Res., 2012 and been 
      first implemented in edgeR (in 2010). DESeq optimizes the expression
      for the CR-APL given in McCarthy et al.'s paper, but does not use the
-     weigthed maximum likelihood scheme proposed there.)
-
+     weigthed maximum likelihood scheme proposed there.
 
      \item \code{per-condition} - For each condition with replicates, compute
      a gene's empirical dispersion value by considering the data from samples for this
