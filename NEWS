@@ -1,3 +1,7 @@
+version 1.9.1: (2012-4-1)
+
+- Added a new function 'varianceStabilizingTransformation'
+
 version 1.7.10:  (2011-03-26)
 
 - Added pooled-CR method.

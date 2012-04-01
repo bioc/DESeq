@@ -254,6 +254,17 @@ getVarianceStabilizedData <- function( cds ) {
    }
 }
 
+
+varianceStabilizingTransformation <- function (cds) {
+  new("ExpressionSet",
+      exprs          = getVarianceStabilizedData(cds),
+      phenoData      = phenoData(cds),
+      featureData    = featureData(cds),           
+      experimentData = experimentData(cds),
+      annotation     = annotation(cds),
+      protocolData   = protocolData(cds))
+}
+
 makeExampleCountDataSet <- function( ) 
 {
    ngenes <- 10000
