@@ -98,7 +98,7 @@ setMethod("estimateDispersions", signature(object="CountDataSet"),
          baseMeans <- rowMeans( counts( object, normalized=TRUE ) )
          
          dispsAndFunc <- estimateAndFitDispersionsWithCoxReid( counts(object), modelFormula, modelFrame,
-            sizeFactors(cds), fitType, locfit_extra_args, lp_extra_args )      
+            sizeFactors(object), fitType, locfit_extra_args, lp_extra_args )      
          df <- NA
       }
 
