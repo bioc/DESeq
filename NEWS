@@ -1,3 +1,11 @@
+version 1.8.1: (2011-04-05)
+
+- fixed bug in pooled-CR dispersion estimation
+
+version 1.8.0:  (2011-04-03)
+
+- version bumped for Bioc release; identical to version 1.7.10 
+
 version 1.7.10:  (2011-03-26)
 
 - Added pooled-CR method.
