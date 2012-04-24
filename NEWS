@@ -1,4 +1,8 @@
-version 1.8.1: (2011-04-05)
+version 1.9.4: (2011-04-24)
+
+- fixed handling of rank-deficient observations
+
+version 1.9.2: (2011-04-05)
 
 - fixed bug in pooled-CR dispersion estimation
 
