@@ -367,8 +367,11 @@ fitNbinomGLMsForMatrix <- function( counts, sizeFactors, rawScv, modelFormula,
    if( !quiet )
       cat( "\n" ) 
 
-   df.residual <- na.omit( res[ , "df.residual" ] )[1]
-   stopifnot( all( na.omit( res[ , "df.residual" ] == df.residual ) ) )
+   df.residual <- max( na.omit( res[ , "df.residual" ] ) )
+   if( !all( na.omit( res[ , "df.residual" ] == df.residual ) ) ) {
+      res[ res[ , "df.residual" ] != df.residual, "deviance" ] <- NA
+      warning( "Some deviances set to NA due to reduction in degrees of freedom." )
+   }
 
    # Put in the NAs
    res2 <- data.frame(
