@@ -255,30 +255,19 @@ a dispersion value for each gene, then, it fits,
 for each condition, a curve through the estimates. Finally, it assigns to each gene
 a dispersion value, using either the estimated or the fitted value.
 To allow the user to inspect the
-intermediate steps, a ``fit info'' object is stored, which contains
+intermediate steps, a \Robject{fitInfo} object is stored, which contains
 the empirical dispersion values for each gene, the curve fitted through the dispersions,
 and the fitted values that will be used in the test.
-
+%
 <<str>>=
 str( fitInfo(cds) )
 @
-
-To visualize these, we plot the per-gene estimates against the normalized mean
-expressions per gene, and then overlay the fitted curve in red. As we will need
-this again later, we define a function:
-
-<<fitUntr, fig=TRUE>>=
-plotDispEsts <- function( cds )
-{
-   plot(
-      rowMeans( counts( cds, normalized=TRUE ) ),
-      fitInfo(cds)$perGeneDispEsts,
-      pch = '.', log="xy" )
-   xg <- 10^seq( -.5, 5, length.out=300 )
-   lines( xg, fitInfo(cds)$dispFun( xg ), col="red" )
-}
-@
-
+%
+It is useful to inspect the results of these steps visually.  We can
+plot the per-gene estimates against the normalized mean expressions
+per gene and overlay the fitted curve by using the helper function
+\Rfunction{plotDispEsts} (Fig.~\ref{figFit}).
+%
 \begin{figure}
 \centering
 \includegraphics[width=.6\textwidth]{DESeq-figFit}
@@ -286,9 +275,7 @@ plotDispEsts <- function( cds )
 plotted against mean expression strength.}
 \label{figFit}
 \end{figure}
-
-Calling the function produces the plot (Fig.\ \ref{figFit}).
-
+%
 <<figFit,fig=TRUE>>=
 plotDispEsts( cds )
 @
@@ -681,24 +668,24 @@ We see that the analyses find \Sexpr{tab[2,2]} genes in common, while
 \Sexpr{tab[1,2]} were only found in the analysis using all samples and
 \Sexpr{tab[2,1]} were specific for the \emph{paired end only} analysis.
 
-In this case, the improvement in power that we gained from the additional 
+In this case, the improvement in power that we gained from the additional
 samples is rather modest. This might indicate that the single-end samples
 (which are presumably older than the paired-end one) are of lower quality.
 This is supported by the observation that the dispersion estimates in the full
-data set tend to be larger than in the paired-end only one, despite the fact that 
+data set tend to be larger than in the paired-end only one, despite the fact that
 we now have more degrees of freedom for the dispersion estimation , i.e., the additional
 sample increased not only signal but also noise. See Fig.~\ref{figDispScatter}, which is produced
 by
 %
 <<figDispScatter,fig=TRUE>>=
-plot( 
-   fitInfo(cds)$perGeneDispEsts, 
+plot(
+   fitInfo(cds)$perGeneDispEsts,
    fitInfo(cdsFull)$perGeneDispEsts,
    asp=1, log="xy",  pch=20,cex=.1 )
 abline( a=0, b=1 )
 @
 
-Continuing with the analysis, we can now extract the significant genes 
+Continuing with the analysis, we can now extract the significant genes
 from the vector \Robject{padjGLM} as before.
 To see the corresponding fold changes, we have a closer look at the object
 \Robject{fit1}

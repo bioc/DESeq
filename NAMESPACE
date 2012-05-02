@@ -15,16 +15,16 @@ exportMethods(
    estimateDispersions
 )
 
-export( 
+export(
    newCountDataSet,
-   estimateVarianceFunctions,  # removed; only stub with error msg left
-   varianceFitDiagnostics,     # removed; only stub with error msg left
-   residualsEcdfPlot,          # removed; only stub with error msg left
+   estimateVarianceFunctions,  # defunct
+   varianceFitDiagnostics,     # defunct
+   residualsEcdfPlot,          # defunct
    nbinomTest,
    getBaseMeansAndVariances,
    nbinomTestForMatrices,
    estimateSizeFactorsForMatrix,
-   scvPlot,                    # removed; only stub with error msg left
+   scvPlot,                    # defunct
    getVarianceStabilizedData,
    makeExampleCountDataSet,
    adjustScvForBias,
@@ -33,5 +33,6 @@ export(
    nbkd.sf,
    nbinomGLMTest,
    dispTable,
-   fitInfo
+   fitInfo,
+   plotDispEsts
 )
