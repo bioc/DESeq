@@ -171,16 +171,21 @@ estimateAndFitDispersionsWithCoxReid <- function( counts, modelFormula, modelFra
       modelFormula <- modelFormula[-2]   # the '[-2]' removes the lhs, i.e., the response
    mm <- model.matrix( modelFormula, modelFrame )  
    disps <- apply( counts, 1, function( y ) {
-      fit <- glm.fit( mm, y, family=MASS::negative.binomial( initialGuess ), offset=log(sizeFactors) )
-      if( df.residual(fit) == 0 )
-         stop( "No residual degrees of freedom. Most likely the design is lacking sufficient replication." )
-      exp(
-         optimize( 
-            function(logalpha)
-               profileLogLikelihood( exp(logalpha), mm, y, fitted.values(fit) ),
-            log( c( 1e-11, 1e5 ) ),
-            maximum=TRUE 
-         )$maximum ) } )
+      fit <- try( 
+         glm.fit( mm, y, family=MASS::negative.binomial( initialGuess ), offset=log(sizeFactors) ),
+         silent=TRUE )
+      if( inherits( fit, "try-error" ) )
+         NA
+      else {
+         if( df.residual(fit) == 0 )
+            stop( "No residual degrees of freedom. Most likely the design is lacking sufficient replication." )
+         exp(
+            optimize( 
+               function(logalpha)
+                  profileLogLikelihood( exp(logalpha), mm, y, fitted.values(fit) ),
+               log( c( 1e-11, 1e5 ) ),
+               maximum=TRUE 
+            )$maximum ) } } )
 
    means <- colMeans( t(counts) / sizeFactors )
    xim <- mean( 1/sizeFactors )
@@ -348,7 +353,7 @@ fitNbinomGLMsForMatrix <- function( counts, sizeFactors, rawScv, modelFormula,
       fit <- try( 
          glm.fit( modelMatrix, counts[i,], family=nbfam, control = glmControl ),
          silent=TRUE )
-      if( !is( fit, "try-error" ) )
+      if( !inherits( fit, "try-error" ) )
          c( 
             coefficients(fit), 
             deviance = deviance(fit), 

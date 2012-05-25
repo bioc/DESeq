@@ -1,12 +1,24 @@
-version 1.9.4: (2011-04-24)
+version 1.9.7: (2012-05-25)
+
+- fixed handling of rank-deficient observations now also in estimateDispersions
+
+version 1.9.6:
+
+- fixed that varianceStabilizingTransformation was missing in exports
+
+version 1.9.5:
+
+- added function plotDispEsts
+
+version 1.9.4: (2012-04-24)
 
 - fixed handling of rank-deficient observations
 
-version 1.9.2: (2011-04-05)
+version 1.9.2: (2012-04-05)
 
 - fixed bug in pooled-CR dispersion estimation
 
-version 1.9.1: (2012-4-1)
+version 1.9.1: (2012-04-01)
 
 - Added a new function 'varianceStabilizingTransformation'
 
