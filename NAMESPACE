@@ -1,6 +1,8 @@
 import( Biobase )
+import( lattice )
 importFrom( genefilter, rowVars )
 importFrom( geneplotter, multiecdf )
+importFrom( RColorBrewer, brewer.pal )
 
 useDynLib( DESeq, calc_pvals )
 
