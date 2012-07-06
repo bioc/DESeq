@@ -37,5 +37,7 @@ export(
    nbinomGLMTest,
    dispTable,
    fitInfo,
-   plotDispEsts
+   plotDispEsts,
+   plotMA,
+   plotPCA
 )
