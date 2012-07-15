@@ -262,12 +262,12 @@ makeExampleCountDataSet <- function( )
    q0B <- ifelse( is_DE, q0 * 2^( -lfc/2 ), q0 )
    true_sf <- c( 1., 1.3, .7, .9, 1.6 )
    conds <- c( "A", "A", "B", "B", "B" )
-   m <- t( sapply( 1:ngenes, function(i)
+   m <- t( sapply( seq_len(ngenes), function(i)
       sapply( 1:5, function( j )
          rnbinom( 1, mu = true_sf[j] * ifelse( conds[j]=="A", q0A[i], q0B[i] ),
             size = 1/.2 ) ) ) )
    colnames(m) <- c( "A1", "A2", "B1", "B2", "B3" )
-   rownames(m) <- paste( "gene", 1:ngenes,
+   rownames(m) <- paste( "gene", seq_len(ngenes),
       ifelse( is_DE, "T", "F" ), sep="_" )
    newCountDataSet( m, conds )
 }
