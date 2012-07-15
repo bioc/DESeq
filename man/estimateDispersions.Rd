@@ -15,11 +15,11 @@
     argument.
 }
 \usage{
-\S4method{estimateDispersions}{CountDataSet}( object, 
-   method = c( "pooled", "pooled-CR", "per-condition", "blind" ), 
+\S4method{estimateDispersions}{CountDataSet}( object,
+   method = c( "pooled", "pooled-CR", "per-condition", "blind" ),
    sharingMode = c( "maximum", "fit-only", "gene-est-only" ),
    fitType = c("parametric", "local"),
-   locfit_extra_args=list(), lp_extra_args=list(), 
+   locfit_extra_args=list(), lp_extra_args=list(),
    modelFrame = NULL, modelFormula = count ~ condition, ... )
 }
 \arguments{
@@ -28,22 +28,22 @@
   }
   \item{method}{
      There are three ways how the empirical dispersion can be computed:
-          
+
      \itemize{
      \item \code{pooled} - Use the samples from all conditions with
-     replicates to estimate a single pooled empirical dispersion value, 
+     replicates to estimate a single pooled empirical dispersion value,
      called "pooled", and assign it to all samples.
 
      \item \code{pooled-CR} - Fit models according to \code{modelFormula} and
      estimate the dispersion by maximizing a Cox-Reid adjusted profile
      likelihood (CR-APL). This method
      is much slower than \code{method=="pooled"} but works also with crossed
-     factors (as may occur, e.g., in designs with paired samples). 
+     factors (as may occur, e.g., in designs with paired samples).
      Usually, you will need to specify the model formula, which should be the
-     same as the one used later in the call to \code{nbinomFitGLMs} for fitting the full model. 
+     same as the one used later in the call to \code{nbinomFitGLMs} for fitting the full model.
 
      Note: The method of using CR-APL maximization for this application has been
-     developed by McCarthy, Chen and Smyth [Nucl. Acid Res., 2012 and been 
+     developed by McCarthy, Chen and Smyth [Nucl. Acid Res., 2012 and been
      first implemented in edgeR (in 2010). DESeq optimizes the expression
      for the CR-APL given in McCarthy et al.'s paper, but does not use the
      weigthed maximum likelihood scheme proposed there.
@@ -57,13 +57,13 @@
      \code{\link{newCountDataSet}}), this method is not available. (Note: This method was called ``normal'' in
         previous versions.)
 
-     \item \code{blind} - Ignore the sample labels and compute a 
+     \item \code{blind} - Ignore the sample labels and compute a
      gene's empirical dispersion value as if all samples were replicates of a
      single condition. This can be done even if there are no biological
      replicates. This method can lead to loss of power; see
      the vignette for details. The single estimated dispersion condition
      is called "blind" and used for all samples.
-    
+
      } }
 
    \item{sharingMode}{
@@ -78,8 +78,8 @@
      will be written to the \code{featureData}'s \code{disp_} columns
      and hence will be used by the functions \code{\link{nbinomTest}}
      and \code{\link{fitNbinomGLMs}}.
-     
-     \itemize{     
+
+     \itemize{
      \item \code{fit-only} - use only the fitted value, i.e., the
      empirical value is used only as input to the fitting, and then
      ignored. Use this only with very \emph{few} replicates, and when
@@ -111,7 +111,7 @@
      }
 
      \itemize{
-     \item \code{local} - Use the locfit package to fit a dispersion-mean 
+     \item \code{local} - Use the locfit package to fit a dispersion-mean
      relation, as described in the DESeq paper.
      }
 
@@ -129,11 +129,11 @@
       \code{locfit} package for details. In most cases, you will not
       need to provide these parameters, as the defaults seem to work
       quite well.}
-      
+
    \item{modelFrame}{
-      By default, the information in \code{conditions(object)} or \code{pData(object)} is used to 
+      By default, the information in \code{conditions(object)} or \code{pData(object)} is used to
       determine which samples are replicates (see \code{\link{newCountDataSet}}).
-      For \code{method="pooled"}, a data frame can be passed 
+      For \code{method="pooled"}, a data frame can be passed
       here, and all rows that are identical in this data frame are considered
       to indicate replicate samples in \code{object}. For \code{method="pooled-CR"},
       the data frame is used in the fits. For the other methods, this argument is
@@ -165,23 +165,23 @@
 
    Behaviour for \code{method="blind"} and \code{method="pooled"}: Only one list is produced,
    named \code{"blind"} or \code{"pooled"} and placed in \code{object@fitInfo}.
-   
+
    For each list in the \code{fitInfo} environment, the dispersion
    values that are intended to be used in subsequent testing are computed according to
    the value of \code{sharingMode} and are placed in the
-   \code{featureData} data frame, in a column 
+   \code{featureData} data frame, in a column
    named with the same name, prefixed with "\code{disp_}".
-   
+
    Then, the \code{\link{dispTable}} (see there) is filled to assign to each
    condition the appropriate dispersion column in the phenoData frame.
-   
+
    Note: Up to DESeq version 1.4.x (Bioconductor release 2.8), this function was
-   called \code{estimateVarianceFunctions}, stored its result differently and had
-   did not yet have the arguments \code{sharingMode} and \code{fitType}.
+   called \code{estimateVarianceFunctions}, stored its result differently and
+   did not have the arguments \code{sharingMode} and \code{fitType}.
    \code{estimatevarianceFunction}'s behaviour corresponded
    to the settings \code{sharingMode="fit-only"} and \code{fitType="local"}. Note that
-   these are not the default, because the new functionalities sharingMode="maximum"
-   and fitType="local" tend to give better results in standard cases as they are more robust
+   these are not the default, because the new defaults \code{sharingMode="maximum"}
+   and \code{fitType="parametric"} are more robust and tend to give better results.
 }
 
 \value{
