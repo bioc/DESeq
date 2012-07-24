@@ -603,7 +603,7 @@ cds2 = estimateDispersions( cds2, method="blind", sharingMode="fit-only" )
 @
 Note the option \texttt{sharingMode="fit-only"}. Remember that the default,
 \texttt{sharingMode="maximum"}, takes care of outliers, i.e., genes with
-dispersion much larer than the fitted values. Without replicates, we cannot
+dispersion much larger than the fitted values. Without replicates, we cannot
 catch such outliers and so have to disable this functionality.
 
 Now, we can attempt to find differential expression:
