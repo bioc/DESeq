@@ -293,4 +293,20 @@ nbinomGLMTest <- function( resFull, resReduced )
    1 - pchisq( resReduced$deviance - resFull$deviance,
    attr( resReduced, "df.residual" ) - attr( resFull, "df.residual" ) )
 
-
+newCountDataSetFromHTSeqCount <- function( sampleTable, directory="" ) 
+{
+   l <- lapply( as.character( sampleTable[,2] ), function(fn) 
+      read.table( file.path( directory, fn ) ) )
+   if( ! all( sapply( l, function(a) all( a$V1 == l[[1]]$V1 ) ) ) )
+      stop( "Gene IDs (first column) differ between files." )
+   tbl <- sapply( l, function(a) a$V2 )
+   rownames(tbl) <- l[[1]]$V1
+   colnames(tbl) <- sampleTable[,1]
+   specialRows <- rownames(tbl) %in% c( "no_feature", "ambiguous",
+      "too_low_aQual", "not_aligned", "alignment_not_unique" )
+   tbl <- tbl[ !specialRows, ]
+   if( ncol(sampleTable) == 3 )
+      newCountDataSet( tbl, sampleTable[,3] )
+   else
+      newCountDataSet( tbl, sampleTable[,-(1:2)] )
+}   

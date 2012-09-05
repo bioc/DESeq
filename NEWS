@@ -1,3 +1,7 @@
+version 1.9.12: (2012-09-05)
+
+- added function newCountDataSetFromHTSeqCount
+
 version 1.9.7: (2012-05-25)
 
 - fixed handling of rank-deficient observations now also in estimateDispersions
