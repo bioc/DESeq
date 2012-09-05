@@ -39,5 +39,6 @@ export(
    fitInfo,
    plotDispEsts,
    plotMA,
-   plotPCA
+   plotPCA,
+   newCountDataSetFromHTSeqCount
 )
