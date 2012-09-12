@@ -28,5 +28,5 @@ Simon Anders}
 %% ~Make other sections like Warning with \section{Warning }{....} ~
 
 \seealso{
-\code{\link{newCountdataSet}}}
+\code{\link{newCountDataSet}}}
 

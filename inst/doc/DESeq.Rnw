@@ -131,8 +131,9 @@ aligner is to use the \texttt{htseq-count} script distributed with the
 Python, you do not need to know any Python to use
 \texttt{htseq-count}. See
 \url{http://www-huber.embl.de/users/anders/HTSeq/doc/count.html}.
-\footnote{If you use htseq-count, be sure to remove the extra lines with general
-counters (``ambiguous'' etc.) at the end of the count table when importing the data.}
+HTSeq-count produces one count file for each sample. \Rpackage{DESeq}
+offers the function \Rfunction{newCountDataSetFromHTSeqCount},
+described below, to get an analysis started from these files.
 
 In this vignette, we will work with the gene level read counts from
 the \Rpackage{pasilla} data package. This data set is from an
@@ -229,6 +230,16 @@ data structure in the \Rpackage{DESeq} package:
 library( "DESeq" )
 cds = newCountDataSet( countTable, condition )
 @
+
+If you have used \emph{htseq-count} (see above) to obtain your read counts, you can
+use the funtion \Rfunction{newCountDataSetFromHTSeqCount} to obtain a CountDataSe
+directly from the count files produced by \emph{htseq-count}. To this end,
+produce a data frame, similar to \emph{pasillaDesign} constructed above, with
+the sample names in the first column, the file names in the scond column, and 
+the condition in the third column (or, if you have more than one factor in your design matrix,
+all these factors in the third and folling columns), and pass this data frame
+to the function. See the help page (``\texttt{?newCountDataSetFromHTSeqCount}'')
+for further details.
 
 The \Rclass{CountDataSet} class is derived from \Rpackage{Biobase}'s
 \Rclass{eSet} class and so shares all features of this standard
