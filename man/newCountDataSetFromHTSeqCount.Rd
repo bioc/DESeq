@@ -3,6 +3,8 @@
 \title{
 Create a new CountDataSet from count files generated with htseq-count
 }
+\description{Use this function to start a DESeq analysis if you used htseq-count
+to count your reads.}
 \usage{
 newCountDataSetFromHTSeqCount(sampleTable, directory = "")
 }
