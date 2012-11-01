@@ -985,24 +985,27 @@ close to
   F(t) = \frac{m_0}{m} F_0(t) + \frac{m-m_0}{m} F_1(t).
 \end{equation}
 %
-Such a situation is shown in the right panel of
-Figure~\ref{figmulttest}. If
-$F_1(t)/F_0(t)$ is small for small $t$, then the mixture fraction
-$\frac{m_0}{m}$ can be estimated by fitting a line to the left-hand portion of
-the plot, and then noting its height on the right. Such a fit is shown by the
-red line in the right panel of Figure~\ref{figmulttest}.
-%
 <<SchwSpjot,echo=FALSE,results=hide>>=
 j  = round(length(pvalsFilt)*c(1, .66))
 px = (1-pvalsFilt[orderInPlot[j]])
 py = ((length(pvalsFilt)-1):0)[j]
 slope = diff(py)/diff(px)
 @
+%
+Such a situation is shown in the right panel of
+Figure~\ref{figmulttest}. If
+$F_1(t)/F_0(t)$ is small for small $t$, then the mixture fraction
+$\frac{m_0}{m}$ can be estimated by fitting a line to the left-hand portion of
+the plot, and then noting its height on the right. Such a fit is shown by the
+red line in the right panel of Figure~\ref{figmulttest}. Here we used
+a value for \Robject{slope} of \Sexpr{round(slope)}, the computation
+can be seen in the \texttt{.Rnw} source code of this vignette.
+%
 <<SchwederSpjotvoll,fig=TRUE, width=4.5, height=4.5>>=
 plot(1-pvalsFilt[orderInPlot],
      (length(pvalsFilt)-1):0, pch=".",
      xlab=expression(1-p[i]), ylab=expression(N(p[i])))
-abline(a=0, slope, col="red3", lwd=2)
+abline(a=0, b=slope, col="red3", lwd=2)
 @
 
 \begin{figure}[ht]
