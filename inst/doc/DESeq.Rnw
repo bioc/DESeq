@@ -236,7 +236,7 @@ If you have used \emph{htseq-count} (see above) to obtain your read counts, you 
 use the funtion \Rfunction{newCountDataSetFromHTSeqCount} to obtain a CountDataSe
 directly from the count files produced by \emph{htseq-count}. To this end,
 produce a data frame, similar to \emph{pasillaDesign} constructed above, with
-the sample names in the first column, the file names in the scond column, and 
+the sample names in the first column, the file names in the scond column, and
 the condition in the third column (or, if you have more than one factor in your design matrix,
 all these factors in the third and folling columns), and pass this data frame
 to the function. See the help page (``\texttt{?newCountDataSetFromHTSeqCount}'')
@@ -1035,9 +1035,9 @@ abline(a=0, b=slope, col="red3", lwd=2)
 \section{Variance stabilizing transformation}
 %---------------------------------------------------
 For some applications, it is useful to work with transformed versions
-of the count data. Maybe the most obvious choice is logarithmic
+of the count data. Maybe the most obvious choice is the logarithmic
 transformation. Since count values for a gene can be zero in some
-conditions (and non-zero in others), some people advocate the use of
+conditions (and non-zero in others), some advocate the use of
 \emph{pseudocounts}, i.\,e.\ transformations of the form
 \begin{equation}\label{eq:shiftedlog}
   y = \log_2(n + 1)\quad\mbox{or more generally,}\quad y = \log_2(n + n_0),
@@ -1045,7 +1045,7 @@ conditions (and non-zero in others), some people advocate the use of
 where $n$ represents the count values and $n_0$ is a somehow chosen
 positive constant. In this section, we discuss a related, alternative
 approach that offers more theoretical justification and a rational way
-of chosen the parameter equivalent to $n_0$ above. It is based on
+of choosing the parameter equivalent to $n_0$ above. It is based on
 error modeling and the concept of variance stabilizing
 transformations~\cite{Tibshirani1988,sagmb2003,Anders:2010:GB}. We
 estimate an overall mean-dispersion relationship of the data using
@@ -1060,8 +1060,8 @@ vsd = varianceStabilizingTransformation( cdsBlind )
 Here, we have used a parametric fit for the dispersion. In this case,
 the a closed-form expression for the variance stabilizing transformation
 is used by \Rfunction{getVarianceStabilizedData}, which is derived in
-the file \texttt{vst.pdf}, that is distributed in the package
-alongside this vignette. If a local fit is used (option \texttt{fittype="local"}
+the document \texttt{vst.pdf} (you find it in the \Rpackage{DESeq} package
+alongside this vignette). If a local fit is used (option \texttt{fittype="local"}
 to \Rfunction{estimateDispersion}) a numerical integration is used instead.
 %
 The resulting transformation is shown in
