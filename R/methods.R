@@ -109,15 +109,16 @@ setMethod("estimateDispersions", signature(object="CountDataSet"),
          df = df,
          sharingMode = sharingMode )
 
-      if( object@multivariateConditions )
-         dispTable(object) <- c( "_all" = "pooled" )
-      else {
-         a <- rep( "pooled", length( levels( conditions(object) ) ) )
-         names(a) <- levels( conditions(object) )
-         object@dispTable <- a }
-
-   } else
-
+      dt = if( object@multivariateConditions ) c( "_all" = "pooled" ) else character(0)
+      
+      if("condition" %in% colnames(pData(object))) {
+        a <- rep( "pooled", length( levels( conditions(object) ) ) )
+        names(a) <- levels( conditions(object) )
+        dt = c(dt, a)
+      }
+      dispTable(object) = dt
+      
+    } else
       stop(sprintf("Invalid method '%s'.", method))
 
    for( n in ls(object@fitInfo) )
@@ -135,7 +136,6 @@ setMethod("estimateDispersions", signature(object="CountDataSet"),
    if( "max" %in% object@dispTable )
       fData(object)[["disp_max"]] <- do.call( pmax,
          c( fData(object)[ , colnames(fData(object)) %in% paste( "disp", object@dispTable, sep="_" ), drop=FALSE ], na.rm=TRUE ) )
-
 
    validObject( object )
    object
