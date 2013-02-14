@@ -120,8 +120,8 @@ setMethod("conditions", signature(object="CountDataSet"),
   function( object, ... ) {
    if(length(list(...))!=0)
      warning("in conditions: Ignoring second and/or further arguments.")
-   if( object@multivariateConditions )
-     stop( "The 'conditions' accessor is only for simple single-factor conditions, but you have specified multivariate conditions. Access them via 'pData'." )
+   if( object@multivariateConditions && !("condition" %in% colnames(pData(object))))
+     stop( "Could not find 'condition' column in pData." )
    conds <- pData(object)$`condition`
    names( conds ) <- colnames( counts(object) )
    conds

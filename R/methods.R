@@ -152,8 +152,8 @@ varianceFitDiagnostics <- residualsEcdfPlot <- scvPlot <- function( ... )
 nbinomTest <- function( cds, condA, condB, pvals_only=FALSE, eps=NULL )
 {
    stopifnot( is( cds, "CountDataSet" ) )
-   if( cds@multivariateConditions )
-      stop( "For CountDataSets with multivariate conditions, only the GLM-based test can be used." )
+   #if( cds@multivariateConditions )
+   #   stop( "For CountDataSets with multivariate conditions, only the GLM-based test can be used." )
    if( all( is.na( dispTable(cds) ) ) )
       stop( "Call 'estimateDispersions' first." )
 
@@ -293,7 +293,7 @@ nbinomGLMTest <- function( resFull, resReduced )
    1 - pchisq( resReduced$deviance - resFull$deviance,
    attr( resReduced, "df.residual" ) - attr( resFull, "df.residual" ) )
 
-newCountDataSetFromHTSeqCount <- function( sampleTable, directory="" ) 
+newCountDataSetFromHTSeqCount <- function( sampleTable, directory="." ) 
 {
    l <- lapply( as.character( sampleTable[,2] ), function(fn) 
       read.table( file.path( directory, fn ) ) )
