@@ -2,71 +2,27 @@
 %\VignettePackage{DESeq}
 
 % To compile this document
-% library('cacheSweave'); rm(list=ls()); Sweave('DESeq.Rnw', driver=cacheSweaveDriver())
+% library('cacheSweave');rm(list=ls());Sweave('DESeq.Rnw',driver=cacheSweaveDriver());system("pdflatex DESeq")
 
 \documentclass[10pt,oneside]{article}
-\usepackage[a4paper,left=1.9cm,top=1.9cm,bottom=2.5cm,right=1.9cm,ignoreheadfoot]{geometry}
-\pagestyle{empty}
-\usepackage[usenames,dvipsnames]{color}
-\usepackage{helvet}
-\renewcommand{\familydefault}{\sfdefault}
-
-\newcommand{\Robject}[1]{{\small\texttt{#1}}}
-\newcommand{\Rfunction}[1]{\Robject{#1}}
-\newcommand{\Rpackage}[1]{\textit{#1}}
-\newcommand{\Rclass}[1]{\textit{#1}}
 
 \newcommand{\thetitle}{Differential expression of RNA-Seq data at the gene level -- the DESeq package}
-
 \usepackage[pdftitle={\thetitle},%
-  pdfauthor={Wolfgang Huber},%
-  bookmarks,%
-  colorlinks,%
-  linktoc=section,%
-  linkcolor=RedViolet,%
-  citecolor=RedViolet,%
-  urlcolor=RedViolet,%
-  linkbordercolor={1 1 1},%
-  citebordercolor={1 1 1},%
-  urlbordercolor={1 1 1},%
-  raiselinks,%
-  plainpages,%
-  pdftex]{hyperref}
+  pdfauthor={Wolfgang Huber}]{whbiocvignette}
 
-\usepackage{cite}
-\renewcommand{\floatpagefraction}{0.9}
-
-\usepackage{sectsty}
-\sectionfont{\sffamily\bfseries\color{RoyalBlue}\sectionrule{0pt}{0pt}{-1ex}{1pt}}
-\subsectionfont{\sffamily\bfseries\color{RoyalBlue}}
-\subsubsectionfont{\sffamily\bfseries\color{RoyalBlue}}
-\usepackage{fancyhdr}
-\pagestyle{fancy}
-\fancyhead{}
-\fancyfoot{}
-\lfoot{}\cfoot{\thetitle}\rfoot{}
-\renewcommand{\headrule}{}
-
-\usepackage{graphicx}
-\usepackage{xstring}
-
-\usepackage{Sweave}
-%\SweaveOpts{keep.source=TRUE,eps=FALSE,include=FALSE,width=6,height=4}
-\SweaveOpts{keep.source=TRUE,eps=FALSE,pdf=FALSE,png=TRUE,include=FALSE,width=5.4,height=3.7,resolution=180}
-
-\newcommand{\fixme}[1]{{\textbf{Fixme:} \textit{\textcolor{blue}{#1}}}}
-
+\title{\textsf{\textbf{\thetitle}}}
 \author{Simon Anders$^1$, Wolfgang Huber\\[1em]European Molecular Biology Laboratory (EMBL),\\ Heidelberg, Germany\\
 \texttt{$^1$sanders@fs.tum.de}}
 
-\title{\textsf{\textbf{\thetitle}}}
-
 % The following command makes use of SVN's 'Date' keyword substitution
 % To activate this, I used: svn propset svn:keywords Date DESeq.Rnw
-%\date{\StrMid{$Date$}{8}{18}}
 \date{\Rpackage{DESeq} version \Sexpr{packageDescription("DESeq")$Version}  (Last revision \StrMid{$Date$}{8}{18})}
 
 \begin{document}
+
+<<options,results=hide,echo=FALSE>>=
+options(digits=3, width=100)
+@
 
 \maketitle
 
@@ -81,11 +37,6 @@ This vignette explains the use of the package. For an exposition of
 the statistical method, please see our paper~\cite{Anders:2010:GB} and the additional information in
 Section~\ref{sec:changes}.
 \end{abstract}
-
-<<options,results=hide,echo=FALSE>>=
-options(digits=3, width=100)
-library("pasilla") # make sure this is installed, since we need it in the next section
-@
 
 \tableofcontents
 
@@ -925,6 +876,16 @@ legend("topright", fill=rev(colori), legend=rev(names(colori)))
   the area in khaki those that do not pass.}
 \label{fighistindepfilt}
 \end{figure}
+
+%--------------------------------------------------
+\subsection{How to choose the filter statistic and the cutoff?}\label{sec:indepfilterchoose}
+%--------------------------------------------------
+Please refer to the vignette \emph{Diagnostic plots for independent
+  filtering} in the \Rpackage{genefilter} package for a discussion on 
+\begin{packeditemize}
+\item best choice of filter criterion and
+\item the choice of filter cutoff.  
+\end{packeditemize}
 
 %---------------------------------------------------
 \subsection{Diagnostic plots for multiple testing}
