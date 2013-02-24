@@ -7,8 +7,8 @@
 \documentclass[10pt,oneside]{article}
 
 \newcommand{\thetitle}{Differential expression of RNA-Seq data at the gene level -- the DESeq package}
-\usepackage[pdftitle={\thetitle},%
-  pdfauthor={Wolfgang Huber}]{whbiocvignette}
+%\usepackage[pdftitle={\thetitle},pdfauthor={Wolfgang Huber}]{whbiocvignette}
+\usepackage{whbiocvignette}
 
 \title{\textsf{\textbf{\thetitle}}}
 \author{Simon Anders$^1$, Wolfgang Huber\\[1em]European Molecular Biology Laboratory (EMBL),\\ Heidelberg, Germany\\
@@ -18,8 +18,9 @@
 % To activate this, I used: svn propset svn:keywords Date DESeq.Rnw
 \date{\Rpackage{DESeq} version \Sexpr{packageDescription("DESeq")$Version}  (Last revision \StrMid{$Date$}{8}{18})}
 
-\begin{document}
+\SweaveOpts{keep.source=TRUE,eps=FALSE,pdf=FALSE,png=TRUE,include=FALSE,width=5.4,height=3.7,resolution=180}
 
+\begin{document}
 <<options,results=hide,echo=FALSE>>=
 options(digits=3, width=100)
 @
@@ -781,17 +782,15 @@ A good choice for a filtering criterion is one that
   \item\label{it:corr} is correlated with the test statistic under the
     alternative, and
   \item\label{it:joint} does not notably change the dependence
-    structure --if there is any-- between the
-    tests that pass the filter, compared to the dependence structure
-    between the tests before filtering.
+    structure --if there is any--  between the
+    test statistics of nulls and alternatives.
 \end{enumerate}
 The benefit from filtering relies on property~\ref{it:corr}, and we
 will explore it further in Section~\ref{sec:whyitworks}. Its
-statistical validity relies on property \ref{it:indp} --which is
-simple to formally prove for many combinations of filter criteria
-with test statistics-- and \ref{it:joint}, which is less easy to theoretically
-imply from first principles, but rarely a problem in practice.  We refer
-to~\cite{Bourgon:2010:PNAS} for further discussion of this topic.
+statistical validity relies on properties~\ref{it:indp} and
+\ref{it:joint}.  We refer to~\cite{Bourgon:2010:PNAS} for further
+discussion on the mathematical and conceptual background.
+%
 <<rs>>=
 rs = rowSums ( counts ( cdsFull ))
 theta = 0.4
