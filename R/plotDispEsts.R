@@ -7,6 +7,8 @@ plotMA = function(x, ylim,
   if (!(is.data.frame(x) && all(c("baseMean", "log2FoldChange") %in% colnames(x))))
     stop("'x' must be a data frame with columns named 'baseMean', 'log2FoldChange'.")
 
+  force( col )
+  col = col[ x$baseMean != 1 ]
   x = subset(x, baseMean!=0)
   py = x$log2FoldChange
   if(missing(ylim))
