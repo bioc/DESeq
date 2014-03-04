@@ -1,16 +1,17 @@
 Package: DESeq
-Version: 1.15.2
-Title: Differential gene expression analysis based on the negative binomial distribution
+Version: 1.15.3
+Title: Differential gene expression analysis based on the negative
+        binomial distribution
 Author: Simon Anders, EMBL Heidelberg <sanders@fs.tum.de>
 Maintainer: Simon Anders <sanders@fs.tum.de>
 Imports: genefilter, geneplotter, methods, MASS, RColorBrewer
 Depends: BiocGenerics (>= 0.7.5), Biobase (>= 2.21.7), locfit, lattice
 Suggests: pasilla (>= 0.2.10), vsn, gplots
-Description: Estimate variance-mean dependence in count data from high-throughput
-   sequencing assays and test for differential expression based on a model using
-   the negative binomial distribution
+Description: Estimate variance-mean dependence in count data from
+        high-throughput sequencing assays and test for differential
+        expression based on a model using the negative binomial
+        distribution
 License: GPL (>= 3)
 URL: http://www-huber.embl.de/users/anders/DESeq
-biocViews: HighThroughputSequencing, ChIPseq, RNAseq, SAGE,
-   DifferentialExpression
 Collate: class_and_slots.R core.R methods.R plotDispEsts.R welcome.R
+biocViews: Sequencing, ChIPSeq, RNASeq, SAGE, DifferentialExpression
