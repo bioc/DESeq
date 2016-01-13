@@ -1078,8 +1078,8 @@ standard deviation in the lower count range.
 library("vsn")
 par(mfrow=c(1,2))
 notAllZero = (rowSums(counts(cds))>0)
-meanSdPlot(log2(counts(cds)[notAllZero, ] + 1), ylim = c(0,2.5))
-meanSdPlot(vsd[notAllZero, ], ylim = c(0,2.5))
+meanSdPlot(log2(counts(cds)[notAllZero, ] + 1))
+meanSdPlot(vsd[notAllZero, ])
 @
 
 %---------------------------------------------------------------
