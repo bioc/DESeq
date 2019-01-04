@@ -1,5 +1,5 @@
 Package: DESeq
-Version: 1.35.0
+Version: 1.35.1
 Title: Differential gene expression analysis based on the negative
         binomial distribution
 Author: Simon Anders, EMBL Heidelberg <sanders@fs.tum.de>
@@ -14,4 +14,4 @@ Description: Estimate variance-mean dependence in count data from
 License: GPL (>= 3)
 URL: http://www-huber.embl.de/users/anders/DESeq
 Collate: class_and_slots.R core.R methods.R plotDispEsts.R welcome.R
-biocViews: Sequencing, ChIPSeq, RNASeq, SAGE, DifferentialExpression
+biocViews: ImmunoOncology, Sequencing, ChIPSeq, RNASeq, SAGE, DifferentialExpression
